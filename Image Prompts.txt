@@ -1,0 +1,7 @@
+I want to create a board game with hexagonal tiles with different terrain types, 
+the game will be fantasy in the same genre as "magic the gathering". I want
+the art style to be Classic High Fantasy: Romanticism / Oil Painting.
+There are 4 terrain types: Mountain, Plain, Forrest and Swamp.
+Each terrain types in turn have 4 variations with different degree of terrain.
+For mountains the first variantion might be hills and the last several step mountains.
+For plains the first might be desert and the last might be lush fields of grass or corn.

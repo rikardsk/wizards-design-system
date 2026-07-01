@@ -1,0 +1,3623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic: The Gathering Card Creator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #07080d;
+            --bg-card: #0b0c16;
+            --panel-bg: rgba(15, 18, 36, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.06);
+            --panel-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --text-main: #f0f2ff;
+            --text-muted: #8d93b4;
+            
+            --accent-gold: #e2b747;
+            --gold-hover: #f3ce69;
+            --gold-glow: rgba(226, 183, 71, 0.2);
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            
+            --font-main: 'Outfit', sans-serif;
+            --font-heading: 'Cinzel', serif;
+            --font-card: 'EB Garamond', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(20, 25, 45, 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(10, 12, 30, 0.6) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* App Layout Container */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* Sidebars Shared Styles */
+        .sidebar {
+            width: 330px;
+            height: calc(100vh - 24px);
+            margin: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 16px;
+        }
+
+        .sidebar-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-header p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px var(--gold-glow);
+            margin-bottom: 6px;
+        }
+
+        .control-sections {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Custom Scrollbar for sidebars */
+        .control-sections::-webkit-scrollbar {
+            width: 4px;
+        }
+        .control-sections::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .control-sections::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+        }
+        .control-sections::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Glassmorphism panel styling */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--panel-glow);
+            border-radius: 16px;
+        }
+
+        /* UI Control Groups */
+        .control-group {
+            margin-bottom: 18px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .control-group h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group h3 span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reset-panel-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.6;
+        }
+
+        .reset-panel-btn:hover {
+            color: var(--accent-gold);
+            opacity: 1;
+        }
+
+        .input-container {
+            margin-bottom: 10px;
+        }
+        .input-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-container label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 8px rgba(226, 183, 71, 0.15);
+        }
+
+        /* Row Layout */
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .input-row .input-container {
+            flex: 1;
+        }
+
+        /* Mana Cost Builder */
+        .mana-builder-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mana-display-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 32px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 4px 8px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .mana-display-row:empty::after {
+            content: "No mana cost";
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        .mana-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+        }
+
+        .mana-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mana-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-gold);
+        }
+
+        .mana-btn.clear-mana-btn {
+            grid-column: span 6;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        /* Color Preset Buttons */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .color-preset-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .color-preset-btn:hover {
+            border-color: var(--text-main);
+        }
+
+        .color-preset-btn.active {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.05);
+            box-shadow: 0 0 10px rgba(226, 183, 71, 0.1);
+        }
+
+        /* Drop Zone */
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 18px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.02);
+        }
+
+        .dropzone i {
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+            margin-bottom: 6px;
+        }
+
+        .dropzone p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .dropzone-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            margin-top: 8px;
+        }
+
+        .filename-display {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 170px;
+            color: var(--text-main);
+        }
+
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+        .remove-file-btn:hover {
+            color: var(--danger-hover);
+        }
+
+        /* Sliders */
+        .slider-container {
+            margin-bottom: 12px;
+        }
+
+        .slider-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .slider-control-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .slider-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 8px rgba(226, 183, 71, 0.3);
+        }
+
+        .slider-btn:active {
+            transform: scale(0.9);
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .slider-header span.val-display {
+            color: var(--accent-gold);
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            box-shadow: 0 0 6px rgba(226, 183, 71, 0.3);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Common Buttons */
+        .btn-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .primary-btn, .secondary-btn, .danger-btn {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .primary-btn {
+            background: var(--accent-gold);
+            color: #000;
+            border: none;
+        }
+        .primary-btn:hover {
+            background: var(--gold-hover);
+            box-shadow: 0 0 12px rgba(226, 183, 71, 0.35);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--text-main);
+        }
+
+        .danger-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .danger-btn:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+
+        /* Viewport Styling */
+        .viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 12px;
+            position: relative;
+        }
+
+        .viewport-header {
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .mode-badge {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+        }
+
+        .card-container-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            overflow: auto;
+        }
+
+        /* HIGH-FIDELITY MTG CARD LAYOUT */
+        .mtg-card-frame {
+            width: 375px;
+            height: 523px;
+            background-color: #121212;
+            border-radius: 18px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            border: 10px solid #0d0d0c; /* Bold black card border */
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* Color-specific card styles based on frame color */
+        .mtg-card-frame.style-red {
+            background: linear-gradient(135deg, #ae3d24 0%, #6e1c0d 100%);
+            box-shadow: 0 0 20px rgba(174, 61, 36, 0.15), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-green {
+            background: linear-gradient(135deg, #275924 0%, #112d0e 100%);
+            box-shadow: 0 0 20px rgba(39, 89, 36, 0.15), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-black {
+            background: linear-gradient(135deg, #37333d 0%, #151119 100%);
+            box-shadow: 0 0 20px rgba(55, 51, 61, 0.15), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-white {
+            background: linear-gradient(135deg, #e7ddc4 0%, #a49673 100%);
+            box-shadow: 0 0 20px rgba(231, 221, 196, 0.1), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-blue {
+            background: linear-gradient(135deg, #2c5c8e 0%, #122846 100%);
+            box-shadow: 0 0 20px rgba(44, 92, 142, 0.15), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-gold {
+            background: linear-gradient(135deg, #cb9b3c 0%, #7d591b 100%);
+            box-shadow: 0 0 20px rgba(203, 155, 60, 0.15), 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .mtg-card-frame.style-artifact {
+            background: linear-gradient(135deg, #8d9299 0%, #4b4e54 100%);
+            box-shadow: 0 0 20px rgba(141, 146, 153, 0.1), 0 15px 40px rgba(0,0,0,0.8);
+        }
+
+        /* Inner pinstripe border */
+        .mtg-card-frame::before {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid rgba(226, 183, 71, 0.3);
+            border-radius: 9px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Inner Content Border box */
+        .card-inner-border {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: 3px double rgba(0, 0, 0, 0.45);
+            border-radius: 8px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Card Header (Title & Mana Cost) */
+        .card-header-bar {
+            height: 30px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid #332b1d;
+            border-radius: 5px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.3);
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #111;
+            margin-bottom: 4px;
+            font-family: var(--font-card);
+        }
+
+        /* Text shadow colors based on frame selection to blend headers */
+        .style-red .card-header-bar, .style-red .card-type-bar { background: #dfc4b9; }
+        .style-green .card-header-bar, .style-green .card-type-bar { background: #c6dfc3; }
+        .style-black .card-header-bar, .style-black .card-type-bar { background: #cbc5d0; }
+        .style-white .card-header-bar, .style-white .card-type-bar { background: #fdfaf2; }
+        .style-blue .card-header-bar, .style-blue .card-type-bar { background: #c7dcef; }
+        .style-gold .card-header-bar, .style-gold .card-type-bar { background: #eae1c9; }
+        .style-artifact .card-header-bar, .style-artifact .card-type-bar { background: #dcdfe3; }
+
+        .card-title-text {
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: -0.2px;
+            font-style: normal;
+        }
+
+        .card-mana-cost {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        /* Mana SVGs */
+        .mana-icon-svg {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            box-shadow: 0.5px 1px 1.5px rgba(0,0,0,0.5);
+            display: inline-block;
+        }
+
+        .card-art-frame {
+            height: 220px;
+            border: 2px solid #332b1d;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            margin-bottom: 4px;
+            border-radius: 2px;
+        }
+
+        .card-art-img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+        }
+
+        .card-art-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #4a5068;
+            font-size: 0.8rem;
+            gap: 6px;
+        }
+        .card-art-placeholder i {
+            font-size: 1.8rem;
+        }
+
+        /* Card Type Bar */
+        .card-type-bar {
+            height: 26px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid #332b1d;
+            border-radius: 5px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.3);
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #111;
+            margin-bottom: 4px;
+            font-family: var(--font-card);
+        }
+
+        .card-type-text {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .card-expansion-icon {
+            font-size: 0.8rem;
+            color: #111;
+        }
+
+        /* Card Rules Text Box */
+        .card-text-box {
+            flex: 1;
+            background: rgba(234, 230, 222, 0.88); /* Authentic parchment feel */
+            border: 2px solid #332b1d;
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: #0b0b0b;
+            font-family: var(--font-card);
+            font-size: 0.88rem;
+            line-height: 1.25;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-rules-text {
+            white-space: pre-wrap;
+            text-align: left;
+            font-style: normal;
+        }
+
+        .card-rules-text .mana-icon-svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin: 0 1px;
+            position: relative;
+            top: -1px;
+        }
+
+        /* Keyword Preset Buttons */
+        .keyword-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .keyword-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .keyword-btn:hover {
+            border-color: var(--text-main);
+        }
+
+        .keyword-btn.active {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.05);
+            box-shadow: 0 0 10px rgba(226, 183, 71, 0.1);
+        }
+
+        /* Activated Abilities Builder styling */
+        .ability-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            margin-bottom: 2px;
+        }
+
+        .ability-item-details {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .ability-item-mana {
+            display: flex;
+            align-items: center;
+            gap: 1.5px;
+            flex-shrink: 0;
+        }
+
+        .ability-item-mana .mana-icon-svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .ability-item-text {
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ability-item-delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 0.75rem;
+            transition: color 0.2s;
+        }
+
+        .ability-item-delete-btn:hover {
+            color: var(--danger);
+        }
+
+        .mini-mana-btn {
+            padding: 4px 0 !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* Power & Toughness Badge */
+        .card-pt-box {
+            position: absolute;
+            bottom: -6px;
+            right: 12px;
+            background: #eae1c9;
+            border: 2px solid #332b1d;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: var(--font-card);
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #111;
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+            z-index: 5;
+            display: none; /* Only visible for Creatures */
+        }
+
+        /* Card footer details */
+        .card-footer-info {
+            height: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-main);
+            font-size: 0.5rem;
+            color: rgba(255, 255, 255, 0.65);
+            padding: 2px 4px 0 4px;
+        }
+
+        /* Deck List (Right Sidebar) */
+        .deck-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .deck-card-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .deck-card-row:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .deck-card-row.selected {
+            background: rgba(226, 183, 71, 0.08);
+            border-color: rgba(226, 183, 71, 0.6);
+            box-shadow: 0 0 8px rgba(226, 183, 71, 0.15);
+        }
+
+        .deck-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .deck-card-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-main);
+        }
+
+        .deck-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .deck-card-type {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .deck-card-mana {
+            display: flex;
+            align-items: center;
+            gap: 1.5px;
+        }
+
+        .deck-card-mana .mana-icon-svg {
+            width: 11px;
+            height: 11px;
+        }
+
+        .deck-card-delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+
+        .deck-card-delete-btn:hover {
+            color: var(--danger);
+        }
+
+        .deck-empty-placeholder {
+            padding: 40px 10px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .deck-empty-placeholder i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Deck Manager Filters */
+        .deck-filters {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .mana-filter-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1.5px solid transparent;
+            background: rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0;
+            outline: none;
+            opacity: 0.85;
+        }
+
+        .mana-filter-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+            opacity: 1;
+        }
+
+        .mana-filter-btn.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 15px var(--glow-color, rgba(255, 255, 255, 0.4));
+            border-color: #ffffff;
+            outline: 2px solid var(--accent-gold);
+            outline-offset: 2px;
+            opacity: 1 !important;
+        }
+        
+        .mana-filter-btn[data-color="W"] { --glow-color: rgba(248, 246, 240, 0.4); background: #fdfbe6; }
+        .mana-filter-btn[data-color="U"] { --glow-color: rgba(43, 120, 197, 0.6); background: #cbdcf0; }
+        .mana-filter-btn[data-color="B"] { --glow-color: rgba(18, 18, 18, 0.8); background: #cbc5d0; }
+        .mana-filter-btn[data-color="R"] { --glow-color: rgba(211, 56, 30, 0.6); background: #f8a790; }
+        .mana-filter-btn[data-color="G"] { --glow-color: rgba(45, 137, 72, 0.6); background: #99d1ad; }
+        .mana-filter-btn[data-color="C"] { --glow-color: rgba(120, 120, 120, 0.4); background: #cccccc; }
+
+        .filter-buttons.has-active .mana-filter-btn:not(.active) {
+            opacity: 0.35;
+        }
+
+        .filter-buttons.has-active .mana-filter-btn:not(.active):hover {
+            opacity: 0.65;
+        }
+
+        .mana-filter-btn svg {
+            width: 14px;
+            height: 14px;
+            pointer-events: none;
+        }
+
+        .type-filter-btn {
+            padding: 3px 8px;
+            font-size: 0.68rem;
+            font-weight: 500;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            opacity: 0.85;
+        }
+
+        .type-filter-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            opacity: 1;
+        }
+
+        .type-filter-btn.active {
+            background: var(--accent-gold);
+            color: #111111;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 10px var(--gold-glow);
+            font-weight: 600;
+            opacity: 1 !important;
+            transform: translateY(-1px);
+        }
+
+        .filter-buttons.has-active .type-filter-btn:not(.active) {
+            opacity: 0.4;
+        }
+
+        .filter-buttons.has-active .type-filter-btn:not(.active):hover {
+            opacity: 0.7;
+        }
+        
+        .clear-filters-btn {
+            font-size: 0.62rem;
+            color: var(--accent-gold);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            display: none;
+            text-transform: none;
+            letter-spacing: 0px;
+            font-family: inherit;
+        }
+
+        .clear-filters-btn:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar-footer {
+            margin-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 12px;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(11, 12, 22, 0.95);
+            border: 1px solid var(--accent-gold);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 15px rgba(226, 183, 71, 0.25);
+            border-radius: 50px;
+            padding: 12px 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast i {
+            color: var(--accent-gold);
+            font-size: 1.05rem;
+        }
+
+        /* Manage Keywords Modal CSS styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 5, 10, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal-content {
+            width: 420px;
+            max-width: 90%;
+            padding: 24px;
+            background: rgba(11, 14, 30, 0.95);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            box-shadow: var(--panel-glow), 0 0 20px rgba(226, 183, 71, 0.15);
+            animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        
+        @keyframes modalSlideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+        }
+        
+        .modal-header h3 {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .close-modal-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        
+        .close-modal-btn:hover {
+            color: var(--danger);
+        }
+        
+        .keyword-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .keyword-input-row input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .keyword-input-row input:focus {
+            border-color: var(--accent-gold);
+        }
+        
+        .keyword-input-row button {
+            background: var(--accent-gold);
+            color: #0b0c16;
+            border: none;
+            border-radius: 8px;
+            padding: 0 18px;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .keyword-input-row button:hover {
+            background: var(--gold-hover);
+        }
+        
+        .keywords-manager-list {
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+        }
+        
+        /* Custom scrollbar for list */
+        .keywords-manager-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .keywords-manager-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+        
+        .keywords-manager-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .keywords-manager-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .keyword-manager-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+        }
+        
+        .delete-keyword-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: color 0.2s, transform 0.1s;
+        }
+        
+        .delete-keyword-btn:hover {
+            color: var(--danger);
+            transform: scale(1.1);
+        }
+
+        /* Color Icons SVG Assets definitions inside html */
+        .svg-defs {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Inline SVG definitions for MTG Mana symbols -->
+    <svg class="svg-defs">
+        <defs>
+            <!-- Plains Symbol (Sun) -->
+            <g id="mana-w">
+                <circle cx="9" cy="9" r="9" fill="#fdfbe6"/>
+                <path d="M9 3.5 L9.5 5 L11 4 L10 5.5 L11.5 6 L10 7 L11 8.5 L9.5 8 L9 9.5 L8.5 8 L7 8.5 L8 7 L6.5 6 L8 5.5 L7 4 L8.5 5 Z" fill="#e2b127"/>
+                <circle cx="9" cy="6.2" r="1.8" fill="#e2b127"/>
+            </g>
+            <!-- Island Symbol (Water Drop) -->
+            <g id="mana-u">
+                <circle cx="9" cy="9" r="9" fill="#cbdcf0"/>
+                <path d="M9 3.5 C9 3.5, 6 7.5, 6 9.5 C6 11.2, 7.3 12.5, 9 12.5 C10.7 12.5, 12 11.2, 12 9.5 C12 7.5, 9 3.5, 9 3.5 Z M9 11.5 C8 11.5, 7.3 10.8, 7.3 9.8 C7.3 9, 8.5 7, 9 6.2 C9.5 7, 10.7 9, 10.7 9.8 C10.7 10.8, 10 11.5, 9 11.5 Z" fill="#135292"/>
+            </g>
+            <!-- Swamp Symbol (Skull) -->
+            <g id="mana-b">
+                <circle cx="9" cy="9" r="9" fill="#cbc5d0"/>
+                <path d="M9 3.5 C7 3.5, 5.5 5, 5.5 7 C5.5 9, 6.5 10, 6.5 11.5 L8 11.5 L8 12.5 L10 12.5 L10 11.5 L11.5 11.5 C11.5 10, 12.5 9, 12.5 7 C12.5 5, 11 3.5, 9 3.5 Z M7.3 6.5 C7.8 6.5, 8.1 7, 8.1 7.5 C8.1 8, 7.8 8.5, 7.3 8.5 C6.8 8.5, 6.5 8, 6.5 7.5 C6.5 7, 6.8 6.5, 7.3 6.5 Z M10.7 6.5 C11.2 6.5, 11.5 7, 11.5 7.5 C11.5 8, 11.2 8.5, 10.7 8.5 C10.2 8.5, 9.9 8, 9.9 7.5 C9.9 7, 10.2 6.5, 10.7 6.5 Z" fill="#1a121d"/>
+            </g>
+            <!-- Mountain Symbol (Fire) -->
+            <g id="mana-r">
+                <circle cx="9" cy="9" r="9" fill="#f8a790"/>
+                <path d="M9.5 3 C9.5 3, 11 5, 11 6.5 C11 8, 10.2 8.5, 10.2 9.5 C10.2 10.5, 11 11, 10.5 12 C10 12.5, 8.5 12.5, 7.8 11.5 C7 10.5, 7 9, 7.8 8 C8.2 7.5, 8.2 6.5, 8.2 6 C8.2 5.5, 7.2 6.2, 6.8 6.5 C6 7.2, 5.5 8, 5.5 9 C5.5 11.2, 7 13, 9 13 C11.5 13, 12.8 11, 12.5 9 C12.2 7.2, 10.5 4.5, 9.5 3 Z" fill="#b12d14"/>
+            </g>
+            <!-- Forest Symbol (Tree) -->
+            <g id="mana-g">
+                <circle cx="9" cy="9" r="9" fill="#99d1ad"/>
+                <path d="M9 3 C9 3, 6.5 7, 6.5 8 L7.8 8 L6 10 L8 10 L6.8 12 L11.2 12 L10 10 L12 10 L10.2 8 L11.5 8 Z M8.3 12 L8.3 13.5 L9.7 13.5 L9.7 12 Z" fill="#0f4a1f"/>
+            </g>
+            <!-- Colorless template (Generic Numbers) -->
+            <g id="mana-c">
+                <circle cx="9" cy="9" r="9" fill="#cccccc"/>
+                <text x="9" y="13" font-family="'Inter', sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#111111"></text>
+            </g>
+        </defs>
+    </svg>
+
+    <div class="app-container">
+        
+        <!-- Left Sidebar: Card Settings -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                <h2>Card Creator</h2>
+                <p>MTG Playing Card Generator</p>
+            </div>
+            
+            <div class="control-sections">
+                
+                <!-- Title & Frame Group -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-id-card"></i> Identity & Frame</span>
+                        <button class="reset-panel-btn" id="reset-identity-btn" title="Reset Identity & Frame"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    
+                    <div class="input-container">
+                        <label for="card-name-input">Card Name</label>
+                        <input type="text" id="card-name-input" placeholder="e.g. Pyromancer Mage" value="Volcano Elemental">
+                    </div>
+
+                    <div class="input-container">
+                        <label>Frame Color Style</label>
+                        <div class="preset-grid">
+                            <button class="color-preset-btn active" data-style="red" title="Mountain / Red">Red</button>
+                            <button class="color-preset-btn" data-style="green" title="Forest / Green">Green</button>
+                            <button class="color-preset-btn" data-style="black" title="Swamp / Black">Black</button>
+                            <button class="color-preset-btn" data-style="white" title="Plains / White">White</button>
+                            <button class="color-preset-btn" data-style="blue" title="Island / Blue">Blue</button>
+                            <button class="color-preset-btn" data-style="gold" title="Multicolor / Gold">Gold</button>
+                            <button class="color-preset-btn" data-style="artifact" title="Artifact / Grey">Artifact</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mana Cost Builder Group -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-bolt"></i> Mana Cost</span>
+                        <button class="reset-panel-btn" id="reset-mana-btn" title="Reset Mana Cost"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="mana-builder-wrapper">
+                        <div class="mana-display-row" id="mana-display-container"></div>
+                        <div class="mana-buttons-grid">
+                            <button class="mana-btn" data-mana="C1" title="Colorless 1">1</button>
+                            <button class="mana-btn" data-mana="C2" title="Colorless 2">2</button>
+                            <button class="mana-btn" data-mana="W" title="White (Plains)">W</button>
+                            <button class="mana-btn" data-mana="U" title="Blue (Island)">U</button>
+                            <button class="mana-btn" data-mana="B" title="Black (Swamp)">B</button>
+                            <button class="mana-btn" data-mana="R" title="Red (Mountain)">R</button>
+                            <button class="mana-btn" data-mana="G" title="Green (Forest)">G</button>
+                            <button class="mana-btn clear-mana-btn" id="clear-mana-btn">
+                                <i class="fa-solid fa-trash-can"></i> Clear Mana
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Type & Stats Group -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-gears"></i> Type & Stats</span>
+                        <button class="reset-panel-btn" id="reset-type-stats-btn" title="Reset Type & Stats"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    
+                    <div class="input-container">
+                        <label for="card-type-select">Card Type</label>
+                        <select id="card-type-select">
+                            <option value="Creature">Creature</option>
+                            <option value="Artifact">Artifact</option>
+                            <option value="Enchantment">Enchantment</option>
+                            <option value="Spell">Spell (Sorcery/Instant)</option>
+                        </select>
+                    </div>
+
+                    <!-- Creature Stats row (Dynamic visibility) -->
+                    <div class="input-row" id="creature-stats-row">
+                        <div class="input-container">
+                            <label for="card-power-input">Power</label>
+                            <input type="text" id="card-power-input" value="4" placeholder="4">
+                        </div>
+                        <div class="input-container">
+                            <label for="card-toughness-input">Toughness</label>
+                            <input type="text" id="card-toughness-input" value="5" placeholder="5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Art Group -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-image"></i> Card Illustration</span>
+                        <button class="reset-panel-btn" id="reset-illustration-btn" title="Reset Illustration"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="dropzone" id="card-art-dropzone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p>Drag & Drop Art here<br><span style="font-size: 0.65rem; opacity: 0.8;">or click to browse files</span></p>
+                        <input type="file" id="card-art-file" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="dropzone-preview" id="art-filename-preview" style="display: none;">
+                        <span class="filename-display" id="art-filename">No file selected</span>
+                        <button class="remove-file-btn" id="remove-art-btn" title="Remove art"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <!-- Illustration Scale & Rotation Sliders -->
+                    <div class="slider-container" style="margin-top: 12px;">
+                        <div class="slider-header">
+                            <span>Illustration Scale</span>
+                            <span class="val-display" id="art-scale-val">100%</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="art-scale-slider" title="Decrease Scale"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="art-scale-slider" min="10" max="400" value="100">
+                            <button class="slider-btn inc-btn" data-target="art-scale-slider" title="Increase Scale"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="slider-container" style="margin-top: 12px;">
+                        <div class="slider-header">
+                            <span>Illustration Rotation</span>
+                            <span class="val-display" id="art-rotate-val">0°</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="art-rotate-slider" title="Decrease Rotation"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="art-rotate-slider" min="0" max="360" value="0">
+                            <button class="slider-btn inc-btn" data-target="art-rotate-slider" title="Increase Rotation"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keyword Abilities -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-circle-check"></i> Keyword Abilities</span>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="reset-panel-btn" id="manage-keywords-btn" title="Manage Keywords" style="opacity: 0.8;"><i class="fa-solid fa-gear"></i> Edit</button>
+                            <button class="reset-panel-btn" id="reset-keywords-btn" title="Reset Keywords"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                        </div>
+                    </h3>
+                    <div class="keyword-grid" id="keyword-btns-container">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Activated Abilities -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-burst"></i> Activated Abilities</span>
+                        <button class="reset-panel-btn" id="reset-activated-btn" title="Reset Activated Abilities"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="mana-builder-wrapper">
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Activation Mana Cost</label>
+                        <div class="mana-display-row" id="ability-mana-display"></div>
+                        <div class="mana-buttons-grid" style="grid-template-columns: repeat(7, 1fr); margin-top: 4px;">
+                            <button class="mana-btn mini-mana-btn" data-mana="C1" title="Colorless 1">1</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="C2" title="Colorless 2">2</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="W" title="White (Plains)">W</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="U" title="Blue (Island)">U</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="B" title="Black (Swamp)">B</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="R" title="Red (Mountain)">R</button>
+                            <button class="mana-btn mini-mana-btn" data-mana="G" title="Green (Forest)">G</button>
+                            <button class="mana-btn clear-mana-btn" id="clear-ability-mana-btn" style="grid-column: span 7; font-size: 0.65rem; padding: 4px 0; margin-top: 4px;">
+                                <i class="fa-solid fa-trash-can"></i> Clear Cost
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-container" style="margin-top: 10px;">
+                        <label for="ability-desc-input">Ability Description</label>
+                        <input type="text" id="ability-desc-input" placeholder="e.g. Deals 2 damage to any target.">
+                    </div>
+                    <button class="secondary-btn" id="add-ability-btn" style="margin-top: 8px; font-size: 0.8rem; padding: 6px 12px;">
+                        <i class="fa-solid fa-plus"></i> Add Ability
+                    </button>
+                    <div id="abilities-list-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;"></div>
+                </div>
+
+                <!-- Card Rules Text -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-font"></i> Custom Rules Text</span>
+                        <button class="reset-panel-btn" id="reset-custom-rules-btn" title="Reset Custom Rules"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="input-container">
+                        <textarea id="card-text-input" rows="3" placeholder="Enter other rules/flavor text..."></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Operations buttons -->
+            <div class="btn-column">
+                <button class="primary-btn" id="new-card-btn">
+                    <i class="fa-solid fa-plus"></i> New Card
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center Viewport: Interactive MTG Card Preview -->
+        <main class="viewport">
+            <div class="viewport-header glass-panel">
+                <span class="mode-badge"><i class="fa-solid fa-eye"></i> Card Live Composition</span>
+                <button class="secondary-btn" id="download-card-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
+                    <i class="fa-solid fa-download"></i> Save Card Image (PNG)
+                </button>
+            </div>
+
+            <!-- Center container with grid wrapper -->
+            <div class="card-container-wrapper" id="canvas-wrapper">
+                <!-- THE LIVE RENDERED CARD -->
+                <div class="mtg-card-frame style-red" id="mtg-card-preview">
+                    <div class="card-inner-border">
+                        
+                        <!-- Header bar -->
+                        <div class="card-header-bar">
+                            <span class="card-title-text" id="card-preview-title">Volcano Elemental</span>
+                            <div class="card-mana-cost" id="card-preview-mana">
+                                <!-- Mana symbol SVGs injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Art Box -->
+                        <div class="card-art-frame" id="card-art-frame">
+                            <img class="card-art-img" id="card-preview-art" style="display: none;">
+                            <div class="card-art-placeholder" id="card-art-placeholder">
+                                <i class="fa-solid fa-wand-magic"></i>
+                                <span>No Illustration Selected</span>
+                            </div>
+                        </div>
+
+                        <!-- Type bar -->
+                        <div class="card-type-bar">
+                            <span class="card-type-text" id="card-preview-type">Creature</span>
+                            <i class="fa-solid fa-clover card-expansion-icon"></i>
+                        </div>
+
+                        <!-- Text/Rules box -->
+                        <div class="card-text-box">
+                            <div class="card-rules-text" id="card-preview-rules">Trample.<br><br>When Volcano Elemental attacks, it deals 2 damage to any target.</div>
+                            
+                            <!-- Power and Toughness badge -->
+                            <div class="card-pt-box" id="card-preview-pt" style="display: block;">4/5</div>
+                        </div>
+
+                        <!-- Footer fine print -->
+                        <div class="card-footer-info">
+                            <span>001/015 M</span>
+                            <span>&copy; 2026 Wizards of the North</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Deck List / Collection Manager -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-folder-open logo-icon"></i>
+                <h2>Deck Manager</h2>
+                <p id="deck-count">0 Cards in Deck</p>
+            </div>
+            
+            <div class="control-sections">
+                <!-- Deck Name Section -->
+                <div class="deck-name-container" style="margin-bottom: 16px; padding: 0 4px;">
+                    <div class="input-label" style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-gold); margin-bottom: 6px;">Deck Name</div>
+                    <input type="text" id="deck-name-input" placeholder="Wizards Deck" value="Wizards Deck">
+                </div>
+
+                <!-- Deck Filters -->
+                <div class="deck-filters">
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Mana</span>
+                            <button class="clear-filters-btn" id="clear-mana-filters-btn">Clear</button>
+                        </div>
+                        <div class="filter-buttons">
+                            <button class="mana-filter-btn" data-color="W" title="White (Plains)"></button>
+                            <button class="mana-filter-btn" data-color="U" title="Blue (Island)"></button>
+                            <button class="mana-filter-btn" data-color="B" title="Black (Swamp)"></button>
+                            <button class="mana-filter-btn" data-color="R" title="Red (Mountain)"></button>
+                            <button class="mana-filter-btn" data-color="G" title="Green (Forest)"></button>
+                            <button class="mana-filter-btn" data-color="C" title="Colorless"></button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Type</span>
+                            <button class="clear-filters-btn" id="clear-type-filters-btn">Clear</button>
+                        </div>
+                        <div class="filter-buttons">
+                            <button class="type-filter-btn" data-type="Creature">Creature</button>
+                            <button class="type-filter-btn" data-type="Artifact">Artifact</button>
+                            <button class="type-filter-btn" data-type="Enchantment">Enchantment</button>
+                            <button class="type-filter-btn" data-type="Spell">Spell</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deck items container -->
+                <div class="deck-list" id="deck-list-container">
+                    <div class="deck-empty-placeholder">
+                        <i class="fa-solid fa-box-open"></i>
+                        No cards in deck yet.<br>Create a card and click "Generate".
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deck settings and import/export operations -->
+            <div class="sidebar-footer">
+                <div class="btn-column">
+                    <button class="secondary-btn" id="export-deck-btn">
+                        <i class="fa-solid fa-file-export"></i> Export Deck (JSON)
+                    </button>
+                    <button class="secondary-btn" id="import-deck-btn">
+                        <i class="fa-solid fa-file-import"></i> Import Deck (JSON)
+                    </button>
+                    <button class="danger-btn" id="clear-deck-btn">
+                        <i class="fa-solid fa-trash-can"></i> Clear Entire Deck
+                    </button>
+                    <button class="secondary-btn" style="margin-top: 6px;" onclick="window.location.href='index.html'">
+                        <i class="fa-solid fa-circle-arrow-left"></i> Return to Map
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Hidden input for file importing -->
+            <input type="file" id="import-deck-file" accept=".json" style="display: none;">
+        </aside>
+    <!-- Manage Keywords Modal -->
+    <div class="modal-overlay" id="keywords-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gear"></i> Manage Keywords</h3>
+                <button type="button" class="close-modal-btn" id="close-keywords-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="keyword-input-row">
+                    <input type="text" id="new-keyword-input" placeholder="Enter new keyword (e.g. Haste)..." maxlength="30">
+                    <button type="button" id="add-keyword-btn">Add</button>
+                </div>
+                <div class="keywords-manager-list" id="keywords-manager-list">
+                    <!-- Dynamically generated list of keywords -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">Card added to deck!</span>
+    </div>
+
+    <script>
+        // App State
+        const state = {
+            selectedCardId: "default_volcano",
+            deckName: "Wizards Deck",
+            cardName: "Volcano Elemental",
+            frameStyle: "red", // red, green, black, white, blue, gold, artifact
+            manaCost: ["C2", "R", "R"], // W, U, B, R, G, C1, C2...
+            cardType: "Creature", // Creature, Artifact, Enchantment, Spell
+            rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
+            power: "4",
+            toughness: "5",
+            artImage: null,
+            artFilename: "",
+            artScale: 1.0,
+            artRotation: 0,
+            artX: 0,
+            artY: 0,
+            
+            // New state fields
+            keywords: ["Trample"],
+            activatedAbilities: [],
+            tempAbilityManaCost: [],
+            
+            // Full deck database
+            deck: [],
+            selectedCardId: null // If editing a card, its ID
+        };
+
+        // Available Keywords (loaded from localStorage with defaults)
+        const DEFAULT_KEYWORDS = ["First Strike", "Flying", "Trample"];
+        let availableKeywords = [...DEFAULT_KEYWORDS];
+
+        function loadAvailableKeywords() {
+            const stored = localStorage.getItem("mtg_available_keywords");
+            if (stored) {
+                try {
+                    availableKeywords = JSON.parse(stored);
+                } catch(e) {
+                    availableKeywords = [...DEFAULT_KEYWORDS];
+                }
+            } else {
+                availableKeywords = [...DEFAULT_KEYWORDS];
+                saveAvailableKeywords();
+            }
+        }
+
+        function saveAvailableKeywords() {
+            localStorage.setItem("mtg_available_keywords", JSON.stringify(availableKeywords));
+        }
+
+        // DOM elements
+        const cardNameInput = document.getElementById("card-name-input");
+        const cardTypeSelect = document.getElementById("card-type-select");
+        const cardPowerInput = document.getElementById("card-power-input");
+        const cardToughnessInput = document.getElementById("card-toughness-input");
+        const cardTextInput = document.getElementById("card-text-input");
+        const creatureStatsRow = document.getElementById("creature-stats-row");
+        
+        const manaDisplayContainer = document.getElementById("mana-display-container");
+        const clearManaBtn = document.getElementById("clear-mana-btn");
+        const colorPresetBtns = document.querySelectorAll(".color-preset-btn");
+        
+        const cardArtDropzone = document.getElementById("card-art-dropzone");
+        const cardArtFile = document.getElementById("card-art-file");
+        const artFilenamePreview = document.getElementById("art-filename-preview");
+        const artFilename = document.getElementById("art-filename");
+        const removeArtBtn = document.getElementById("remove-art-btn");
+        
+        const artScaleSlider = document.getElementById("art-scale-slider");
+        const artScaleVal = document.getElementById("art-scale-val");
+        const artRotateSlider = document.getElementById("art-rotate-slider");
+        const artRotateVal = document.getElementById("art-rotate-val");
+        
+        const newCardBtn = document.getElementById("new-card-btn");
+        const deckNameInput = document.getElementById("deck-name-input");
+        
+        const downloadCardPng = document.getElementById("download-card-png");
+        const exportDeckBtn = document.getElementById("export-deck-btn");
+        const importDeckBtn = document.getElementById("import-deck-btn");
+        const importDeckFile = document.getElementById("import-deck-file");
+        const clearDeckBtn = document.getElementById("clear-deck-btn");
+        
+        // Card Preview DOM Elements
+        const cardPreviewFrame = document.getElementById("mtg-card-preview");
+        const cardPreviewTitle = document.getElementById("card-preview-title");
+        const cardPreviewMana = document.getElementById("card-preview-mana");
+        const cardPreviewArt = document.getElementById("card-preview-art");
+        const cardArtPlaceholder = document.getElementById("card-art-placeholder");
+        const cardPreviewType = document.getElementById("card-preview-type");
+        const cardPreviewRules = document.getElementById("card-preview-rules");
+        const cardPreviewPt = document.getElementById("card-preview-pt");
+        
+        // Deck DOM Elements
+        const deckCount = document.getElementById("deck-count");
+        const deckListContainer = document.getElementById("deck-list-container");
+        
+        // Toast DOM Elements
+        const toast = document.getElementById("toast");
+        const toastText = document.getElementById("toast-text");
+
+        // New DOM elements for keywords, modal, and abilities
+        const keywordBtnsContainer = document.getElementById("keyword-btns-container");
+        const manageKeywordsBtn = document.getElementById("manage-keywords-btn");
+        const keywordsModal = document.getElementById("keywords-modal");
+        const closeKeywordsModalBtn = document.getElementById("close-keywords-modal-btn");
+        const newKeywordInput = document.getElementById("new-keyword-input");
+        const addKeywordBtn = document.getElementById("add-keyword-btn");
+        const keywordsManagerList = document.getElementById("keywords-manager-list");
+        
+        const clearAbilityManaBtn = document.getElementById("clear-ability-mana-btn");
+        const abilityManaDisplay = document.getElementById("ability-mana-display");
+        const abilityDescInput = document.getElementById("ability-desc-input");
+        const addAbilityBtn = document.getElementById("add-ability-btn");
+        const abilitiesListContainer = document.getElementById("abilities-list-container");
+
+        // Dynamic Keyword rendering & management helper functions
+        function renderKeywordButtons() {
+            if (!keywordBtnsContainer) return;
+            keywordBtnsContainer.innerHTML = "";
+            availableKeywords.forEach(keyword => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "keyword-btn";
+                btn.dataset.keyword = keyword;
+                btn.textContent = keyword;
+                if (state.keywords && state.keywords.includes(keyword)) {
+                    btn.classList.add("active");
+                }
+                keywordBtnsContainer.appendChild(btn);
+            });
+        }
+
+        function renderKeywordsManagerList() {
+            if (!keywordsManagerList) return;
+            keywordsManagerList.innerHTML = "";
+            availableKeywords.forEach(keyword => {
+                const item = document.createElement("div");
+                item.className = "keyword-manager-item";
+                
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = keyword;
+                
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "delete-keyword-btn";
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.title = `Delete "${keyword}"`;
+                deleteBtn.addEventListener("click", () => {
+                    availableKeywords = availableKeywords.filter(k => k !== keyword);
+                    saveAvailableKeywords();
+                    
+                    // Deselect if currently active
+                    if (state.keywords) {
+                        state.keywords = state.keywords.filter(k => k !== keyword);
+                    }
+                    
+                    renderKeywordsManagerList();
+                    renderKeywordButtons();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+                
+                item.appendChild(nameSpan);
+                item.appendChild(deleteBtn);
+                keywordsManagerList.appendChild(item);
+            });
+        }
+
+        // Set default values from state on load
+        function initFormValues() {
+            cardNameInput.value = state.cardName;
+            cardTypeSelect.value = state.cardType;
+            cardTextInput.value = state.rulesText;
+            cardPowerInput.value = state.power;
+            cardToughnessInput.value = state.toughness;
+            
+            // Sync Illustration Sliders
+            artScaleSlider.value = Math.round((state.artScale || 1.0) * 100);
+            artScaleVal.textContent = `${Math.round((state.artScale || 1.0) * 100)}%`;
+            artRotateSlider.value = state.artRotation || 0;
+            artRotateVal.textContent = `${state.artRotation || 0}°`;
+            
+            // Sync keyword buttons
+            renderKeywordButtons();
+            
+            updateCreatureStatsVisibility();
+            updateManaDisplay();
+            renderAbilityManaDisplay();
+            renderActivatedAbilitiesList();
+            updateCardPreview();
+        }
+
+        // Initialize event listeners
+        function initEvents() {
+            // Deck Name event
+            deckNameInput.addEventListener("input", (e) => {
+                state.deckName = e.target.value;
+                saveDeckToStorage();
+            });
+
+            // Inputs change events
+            cardNameInput.addEventListener("input", (e) => {
+                state.cardName = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardTypeSelect.addEventListener("change", (e) => {
+                state.cardType = e.target.value;
+                updateCreatureStatsVisibility();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardPowerInput.addEventListener("input", (e) => {
+                state.power = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardToughnessInput.addEventListener("input", (e) => {
+                state.toughness = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardTextInput.addEventListener("input", (e) => {
+                state.rulesText = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Frame color button click handler
+            colorPresetBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    colorPresetBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    state.frameStyle = btn.dataset.style;
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+            });
+
+            // Mana builder buttons
+            document.querySelectorAll(".mana-btn:not(.mini-mana-btn)").forEach(btn => {
+                if (btn.id === "clear-mana-btn" || btn.id === "new-card-btn") return;
+                btn.addEventListener("click", () => {
+                    const symbol = btn.dataset.mana;
+                    state.manaCost.push(symbol);
+                    updateManaDisplay();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+            });
+
+            clearManaBtn.addEventListener("click", () => {
+                state.manaCost = [];
+                updateManaDisplay();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // File uploading for Card Art
+            cardArtDropzone.addEventListener("click", () => cardArtFile.click());
+            
+            cardArtFile.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    processArtFile(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop events for Art Dropzone
+            setupDragAndDrop(cardArtDropzone, (file) => {
+                processArtFile(file);
+            });
+
+            removeArtBtn.addEventListener("click", () => {
+                state.artImage = null;
+                state.artFilename = "";
+                cardArtFile.value = "";
+                artFilenamePreview.style.display = "none";
+                state.artScale = 1.0;
+                state.artRotation = 0;
+                state.artX = 0;
+                state.artY = 0;
+                initFormValues();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Scaling/Rotation Sliders for Card Illustration
+            artScaleSlider.addEventListener("input", (e) => {
+                state.artScale = parseInt(e.target.value) / 100;
+                artScaleVal.textContent = `${e.target.value}%`;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+            artRotateSlider.addEventListener("input", (e) => {
+                state.artRotation = parseInt(e.target.value);
+                artRotateVal.textContent = `${e.target.value}°`;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Increment/Decrement buttons for all sliders
+            document.querySelectorAll(".slider-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const targetId = btn.dataset.target;
+                    const slider = document.getElementById(targetId);
+                    if (!slider) return;
+                    
+                    const min = parseFloat(slider.min) || 0;
+                    const max = parseFloat(slider.max) || 100;
+                    const step = parseFloat(slider.step) || 1;
+                    let val = parseFloat(slider.value) || 0;
+                    
+                    if (btn.classList.contains("inc-btn")) {
+                        val = Math.min(max, val + step);
+                    } else {
+                        val = Math.max(min, val - step);
+                    }
+                    
+                    slider.value = val;
+                    // Dispatch input event to trigger slider update logic
+                    slider.dispatchEvent(new Event("input"));
+                });
+            });
+
+            // Card art drag interaction
+            const cardArtFrame = document.querySelector(".card-art-frame");
+            let isDraggingArt = false;
+            let startX = 0;
+            let startY = 0;
+            let startOffsetX = 0;
+            let startOffsetY = 0;
+
+            cardArtFrame.addEventListener("mousedown", (e) => {
+                if (e.button !== 0 || !state.artImage) return; // Left click only, and only if art exists
+                isDraggingArt = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startOffsetX = state.artX || 0;
+                startOffsetY = state.artY || 0;
+                cardArtFrame.style.cursor = "grabbing";
+                e.preventDefault();
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isDraggingArt) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                state.artX = startOffsetX + dx;
+                state.artY = startOffsetY + dy;
+                updateCardPreview();
+            });
+
+            window.addEventListener("mouseup", () => {
+                if (isDraggingArt) {
+                    isDraggingArt = false;
+                    cardArtFrame.style.cursor = "grab";
+                    autoSaveCurrentCard();
+                }
+            });
+
+            // Operations buttons
+            newCardBtn.addEventListener("click", resetForm);
+            
+            // Image downloads
+            downloadCardPng.addEventListener("click", () => downloadCardImage(false));
+            
+            // Deck operations
+            clearDeckBtn.addEventListener("click", clearDeck);
+            exportDeckBtn.addEventListener("click", exportDeckToJson);
+            importDeckBtn.addEventListener("click", () => importDeckFile.click());
+            importDeckFile.addEventListener("change", importDeckFromJson);
+
+            // Keyword buttons click handler (event delegation)
+            keywordBtnsContainer.addEventListener("click", (e) => {
+                const btn = e.target.closest(".keyword-btn");
+                if (!btn) return;
+                
+                const keyword = btn.dataset.keyword;
+                if (!state.keywords) state.keywords = [];
+                
+                if (state.keywords.includes(keyword)) {
+                    state.keywords = state.keywords.filter(k => k !== keyword);
+                    btn.classList.remove("active");
+                } else {
+                    state.keywords.push(keyword);
+                    btn.classList.add("active");
+                }
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Manage Keywords modal controls
+            manageKeywordsBtn.addEventListener("click", () => {
+                newKeywordInput.value = "";
+                renderKeywordsManagerList();
+                keywordsModal.classList.add("show");
+                newKeywordInput.focus();
+            });
+
+            closeKeywordsModalBtn.addEventListener("click", () => {
+                keywordsModal.classList.remove("show");
+            });
+
+            // Close modal when clicking outside the content area
+            keywordsModal.addEventListener("click", (e) => {
+                if (e.target === keywordsModal) {
+                    keywordsModal.classList.remove("show");
+                }
+            });
+
+            // Function to handle adding keyword
+            const handleAddKeyword = () => {
+                const keyword = newKeywordInput.value.trim();
+                if (!keyword) return;
+                
+                // Format: Capitalize each word (e.g. "double strike" -> "Double Strike")
+                const formattedKeyword = keyword.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                
+                if (availableKeywords.includes(formattedKeyword)) {
+                    alert("This keyword already exists.");
+                    return;
+                }
+                
+                availableKeywords.push(formattedKeyword);
+                saveAvailableKeywords();
+                
+                newKeywordInput.value = "";
+                renderKeywordsManagerList();
+                renderKeywordButtons();
+            };
+
+            addKeywordBtn.addEventListener("click", handleAddKeyword);
+
+            newKeywordInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddKeyword();
+                }
+            });
+
+            // Mini mana buttons click handler for activated abilities
+            document.querySelectorAll(".mini-mana-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const symbol = btn.dataset.mana;
+                    if (!state.tempAbilityManaCost) state.tempAbilityManaCost = [];
+                    state.tempAbilityManaCost.push(symbol);
+                    renderAbilityManaDisplay();
+                });
+            });
+
+            // Clear ability mana cost
+            clearAbilityManaBtn.addEventListener("click", () => {
+                state.tempAbilityManaCost = [];
+                renderAbilityManaDisplay();
+            });
+
+            // Add activated ability
+            addAbilityBtn.addEventListener("click", () => {
+                const text = abilityDescInput.value.trim();
+                if (!text) {
+                    alert("Please enter an ability description.");
+                    return;
+                }
+                
+                if (!state.activatedAbilities) state.activatedAbilities = [];
+                if (!state.tempAbilityManaCost) state.tempAbilityManaCost = [];
+                
+                state.activatedAbilities.push({
+                    cost: [...state.tempAbilityManaCost],
+                    text: text
+                });
+                
+                // Clear inputs
+                state.tempAbilityManaCost = [];
+                abilityDescInput.value = "";
+                
+                renderAbilityManaDisplay();
+                renderActivatedAbilitiesList();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Panel Reset buttons click handlers
+            document.getElementById("reset-identity-btn").addEventListener("click", () => {
+                state.cardName = "";
+                cardNameInput.value = "";
+                state.frameStyle = "red";
+                colorPresetBtns.forEach(b => b.classList.remove("active"));
+                const redPreset = document.querySelector('.color-preset-btn[data-style="red"]');
+                if (redPreset) redPreset.classList.add("active");
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-mana-btn").addEventListener("click", () => {
+                state.manaCost = [];
+                updateManaDisplay();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-type-stats-btn").addEventListener("click", () => {
+                state.cardType = "Creature";
+                cardTypeSelect.value = "Creature";
+                state.power = "1";
+                cardPowerInput.value = "1";
+                state.toughness = "1";
+                cardToughnessInput.value = "1";
+                updateCreatureStatsVisibility();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-illustration-btn").addEventListener("click", () => {
+                state.artImage = null;
+                state.artFilename = "";
+                cardArtFile.value = "";
+                artFilenamePreview.style.display = "none";
+                state.artScale = 1.0;
+                state.artRotation = 0;
+                state.artX = 0;
+                state.artY = 0;
+                initFormValues();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-keywords-btn").addEventListener("click", () => {
+                state.keywords = [];
+                renderKeywordButtons();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-activated-btn").addEventListener("click", () => {
+                state.activatedAbilities = [];
+                state.tempAbilityManaCost = [];
+                abilityDescInput.value = "";
+                renderAbilityManaDisplay();
+                renderActivatedAbilitiesList();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-custom-rules-btn").addEventListener("click", () => {
+                state.rulesText = "";
+                cardTextInput.value = "";
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+        }
+
+        // Setup Drag & Drop helpers
+        function setupDragAndDrop(el, callback) {
+            ["dragenter", "dragover"].forEach(eventName => {
+                el.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    el.classList.add("dragover");
+                }, false);
+            });
+
+            ["dragleave", "drop"].forEach(eventName => {
+                el.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    el.classList.remove("dragover");
+                }, false);
+            });
+
+            el.addEventListener("drop", (e) => {
+                if (e.dataTransfer.files.length > 0) {
+                    callback(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        // Process dropped/selected card art
+        function processArtFile(file) {
+            if (!file || !file.type.startsWith("image/")) {
+                alert("Please drop a valid image file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.artImage = img;
+                    state.artFilename = file.name;
+                    artFilename.textContent = file.name;
+                    artFilenamePreview.style.display = "flex";
+                    
+                    // Reset offsets when new image is loaded
+                    state.artScale = 1.0;
+                    state.artRotation = 0;
+                    state.artX = 0;
+                    state.artY = 0;
+                    
+                    // Set width/height style of cardPreviewArt to match "cover" without clipping
+                    const frameW = 347; // standard preview width
+                    const frameH = 220; // standard preview height
+                    const imgW = img.width;
+                    const imgH = img.height;
+                    const aspectFrame = frameW / frameH;
+                    const aspectImg = imgW / imgH;
+                    
+                    if (aspectImg > aspectFrame) {
+                        cardPreviewArt.style.height = "100%";
+                        cardPreviewArt.style.width = "auto";
+                    } else {
+                        cardPreviewArt.style.width = "100%";
+                        cardPreviewArt.style.height = "auto";
+                    }
+                    
+                    initFormValues();
+                    autoSaveCurrentCard();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Toggle P/T input visibility
+        function updateCreatureStatsVisibility() {
+            if (state.cardType === "Creature") {
+                creatureStatsRow.style.display = "flex";
+            } else {
+                creatureStatsRow.style.display = "none";
+            }
+        }
+
+        // Update the Mana displays in the left builder
+        function updateManaDisplay() {
+            manaDisplayContainer.innerHTML = "";
+            state.manaCost.forEach(symbol => {
+                const span = document.createElement("span");
+                span.className = "mana-item";
+                span.appendChild(createManaSvg(symbol));
+                manaDisplayContainer.appendChild(span);
+            });
+        }
+
+        // Helper to generate Svg DOM nodes based on symbol name
+        function createManaSvg(symbol) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "mana-icon-svg");
+            svg.setAttribute("viewBox", "0 0 18 18");
+            
+            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            if (symbol.startsWith("C")) {
+                const number = symbol.substring(1);
+                use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#mana-c");
+                svg.appendChild(use);
+                
+                // Add colorless value text inside SVG
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", "9");
+                text.setAttribute("y", "13");
+                text.setAttribute("font-family", "sans-serif");
+                text.setAttribute("font-weight", "700");
+                text.setAttribute("font-size", "11");
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("fill", "#111111");
+                text.textContent = number || "C";
+                svg.appendChild(text);
+            } else {
+                use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#mana-${symbol.toLowerCase()}`);
+                svg.appendChild(use);
+            }
+            return svg;
+        }
+
+        // Helper to get combined rules text from keywords, activated abilities, and custom rules text
+        function getFullRulesText() {
+            const parts = [];
+            
+            // 1. Keywords
+            if (state.keywords && state.keywords.length > 0) {
+                const keywordsStr = state.keywords.join(", ") + ".";
+                parts.push(keywordsStr);
+            }
+            
+            // 2. Activated Abilities
+            if (state.activatedAbilities && state.activatedAbilities.length > 0) {
+                state.activatedAbilities.forEach(ability => {
+                    const costStr = ability.cost.map(sym => {
+                        if (sym.startsWith("C")) {
+                            return `{${sym.substring(1)}}`;
+                        }
+                        return `{${sym}}`;
+                    }).join("");
+                    
+                    parts.push(ability.cost.length > 0 ? `${costStr}: ${ability.text}` : ability.text);
+                });
+            }
+            
+            // 3. Custom rules text
+            if (state.rulesText && state.rulesText.trim()) {
+                parts.push(state.rulesText.trim());
+            }
+            
+            return parts.join("\n\n");
+        }
+
+        // Format raw bracketed rules text (e.g. "{2}{R}: text") into HTML with SVGs
+        function formatRulesTextForHTML(text) {
+            if (!text) return "";
+            // Escape HTML first to prevent injection
+            let escaped = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, "<br>");
+            
+            // Replace {W}, {U}, {B}, {R}, {G}
+            escaped = escaped.replace(/\{([WUBRGwubrg])\}/g, (match, p1) => {
+                return getManaSvgHTML(p1.toUpperCase());
+            });
+            
+            // Replace {number} (colorless)
+            escaped = escaped.replace(/\{(\d+)\}/g, (match, p1) => {
+                return getManaSvgHTML("C" + p1);
+            });
+            
+            return escaped;
+        }
+
+        // Serializes a mana SVG to HTML string
+        function getManaSvgHTML(symbol) {
+            const svg = createManaSvg(symbol);
+            return svg.outerHTML;
+        }
+
+        function renderAbilityManaDisplay() {
+            abilityManaDisplay.innerHTML = "";
+            if (!state.tempAbilityManaCost) state.tempAbilityManaCost = [];
+            state.tempAbilityManaCost.forEach(symbol => {
+                const span = document.createElement("span");
+                span.className = "mana-item";
+                span.appendChild(createManaSvg(symbol));
+                abilityManaDisplay.appendChild(span);
+            });
+        }
+
+        function renderActivatedAbilitiesList() {
+            abilitiesListContainer.innerHTML = "";
+            if (!state.activatedAbilities) state.activatedAbilities = [];
+            
+            state.activatedAbilities.forEach((ability, idx) => {
+                const item = document.createElement("div");
+                item.className = "ability-item";
+                
+                const details = document.createElement("div");
+                details.className = "ability-item-details";
+                
+                const manaDiv = document.createElement("div");
+                manaDiv.className = "ability-item-mana";
+                ability.cost.forEach(sym => {
+                    manaDiv.appendChild(createManaSvg(sym));
+                });
+                
+                const textSpan = document.createElement("span");
+                textSpan.className = "ability-item-text";
+                textSpan.textContent = ability.cost.length > 0 ? `: ${ability.text}` : ability.text;
+                
+                details.appendChild(manaDiv);
+                details.appendChild(textSpan);
+                
+                const deleteBtn = document.createElement("button");
+                deleteBtn.className = "ability-item-delete-btn";
+                deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                deleteBtn.title = "Delete ability";
+                deleteBtn.addEventListener("click", () => {
+                    state.activatedAbilities.splice(idx, 1);
+                    renderActivatedAbilitiesList();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+                
+                item.appendChild(details);
+                item.appendChild(deleteBtn);
+                abilitiesListContainer.appendChild(item);
+            });
+        }
+
+        // Update the Center Card Preview Layout
+        function updateCardPreview() {
+            // Card title
+            cardPreviewTitle.textContent = state.cardName || "Unnamed Card";
+            
+            // Frame styling classes
+            cardPreviewFrame.className = `mtg-card-frame style-${state.frameStyle}`;
+            
+            // Rules Text
+            const fullRules = getFullRulesText();
+            cardPreviewRules.innerHTML = formatRulesTextForHTML(fullRules);
+            
+            // Type Box
+            cardPreviewType.textContent = state.cardType;
+            
+            // P/T Box
+            if (state.cardType === "Creature") {
+                cardPreviewPt.style.display = "block";
+                cardPreviewPt.textContent = `${state.power || "0"}/${state.toughness || "0"}`;
+            } else {
+                cardPreviewPt.style.display = "none";
+            }
+            
+            // Card Art Image
+            if (state.artImage) {
+                cardPreviewArt.src = state.artImage.src;
+                cardPreviewArt.style.display = "block";
+                cardArtPlaceholder.style.display = "none";
+                cardPreviewArt.style.transform = `translate(-50%, -50%) translate(${state.artX || 0}px, ${state.artY || 0}px) rotate(${state.artRotation || 0}deg) scale(${state.artScale || 1.0})`;
+                document.querySelector(".card-art-frame").style.cursor = "grab";
+            } else {
+                cardPreviewArt.src = "";
+                cardPreviewArt.style.display = "none";
+                cardArtPlaceholder.style.display = "flex";
+                cardPreviewArt.style.transform = "none";
+                document.querySelector(".card-art-frame").style.cursor = "default";
+            }
+            
+            // Mana icons
+            cardPreviewMana.innerHTML = "";
+            state.manaCost.forEach(symbol => {
+                cardPreviewMana.appendChild(createManaSvg(symbol));
+            });
+        }
+
+        // Reset inputs and properties
+        function resetForm() {
+            state.cardName = "";
+            state.frameStyle = "red";
+            state.manaCost = [];
+            state.cardType = "Creature";
+            state.rulesText = "";
+            state.power = "1";
+            state.toughness = "1";
+            state.artImage = null;
+            state.artFilename = "";
+            state.artScale = 1.0;
+            state.artRotation = 0;
+            state.artX = 0;
+            state.artY = 0;
+            state.selectedCardId = null;
+            
+            state.keywords = [];
+            state.activatedAbilities = [];
+            state.tempAbilityManaCost = [];
+            abilityDescInput.value = "";
+            
+            cardArtFile.value = "";
+            artFilenamePreview.style.display = "none";
+            
+            colorPresetBtns.forEach(b => b.classList.remove("active"));
+            const redPreset = document.querySelector('.color-preset-btn[data-style="red"]');
+            if (redPreset) redPreset.classList.add("active");
+            
+            initFormValues();
+            updateCardPreview();
+            renderDeckList();
+            showToast("Form reset. Start typing a Card Name to create a new card!");
+        }
+
+        // Auto-save card to Local Deck Database
+        function autoSaveCurrentCard() {
+            // If we are creating a new card and have no name yet, don't save.
+            if (!state.selectedCardId && (!state.cardName || !state.cardName.trim())) {
+                return;
+            }
+
+            if (!state.selectedCardId) {
+                state.selectedCardId = 'card_' + Date.now();
+            }
+
+            const cardData = {
+                id: state.selectedCardId,
+                cardName: state.cardName.trim() || "Unnamed Card",
+                frameStyle: state.frameStyle,
+                manaCost: [...state.manaCost],
+                cardType: state.cardType,
+                rulesText: state.rulesText || "",
+                power: state.power || "1",
+                toughness: state.toughness || "1",
+                artBase64: state.artImage ? state.artImage.src : "",
+                artScale: state.artScale !== undefined ? state.artScale : 1.0,
+                artRotation: state.artRotation !== undefined ? state.artRotation : 0,
+                artX: state.artX !== undefined ? state.artX : 0,
+                artY: state.artY !== undefined ? state.artY : 0,
+                keywords: [...(state.keywords || [])],
+                activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || []))
+            };
+
+            const idx = state.deck.findIndex(c => c.id === state.selectedCardId);
+            if (idx !== -1) {
+                state.deck[idx] = cardData;
+            } else {
+                state.deck.push(cardData);
+            }
+
+            saveDeckToStorage();
+            renderDeckList();
+        }
+
+        // Delete card from deck
+        function deleteCard(id, e) {
+            e.stopPropagation(); // Avoid loading card on row click
+            if (!confirm("Are you sure you want to delete this card from the deck?")) return;
+            
+            state.deck = state.deck.filter(c => c.id !== id);
+            
+            if (state.selectedCardId === id) {
+                resetForm();
+            }
+            
+            saveDeckToStorage();
+            renderDeckList();
+            showToast("Card deleted from deck.");
+        }
+
+        // Load card details from deck item click
+        function loadCardDetails(id) {
+            const card = state.deck.find(c => c.id === id);
+            if (!card) return;
+            
+            state.selectedCardId = card.id;
+            state.cardName = card.cardName;
+            state.frameStyle = card.frameStyle;
+            state.manaCost = [...card.manaCost];
+            state.cardType = card.cardType;
+            state.rulesText = card.rulesText || "";
+            state.power = card.power;
+            state.toughness = card.toughness;
+            state.keywords = [...(card.keywords || [])];
+            state.activatedAbilities = JSON.parse(JSON.stringify(card.activatedAbilities || []));
+            state.tempAbilityManaCost = [];
+            abilityDescInput.value = "";
+            state.artScale = card.artScale !== undefined ? card.artScale : 1.0;
+            state.artRotation = card.artRotation !== undefined ? card.artRotation : 0;
+            state.artX = card.artX !== undefined ? card.artX : 0;
+            state.artY = card.artY !== undefined ? card.artY : 0;
+            
+            // Load art image
+            if (card.artBase64) {
+                const img = new Image();
+                img.onload = () => {
+                    state.artImage = img;
+                    state.artFilename = "Loaded Art";
+                    artFilename.textContent = "Loaded Art";
+                    artFilenamePreview.style.display = "flex";
+                    
+                    // Set width/height style of cardPreviewArt to match "cover" without clipping
+                    const frameW = 347;
+                    const frameH = 220;
+                    const aspectFrame = frameW / frameH;
+                    const aspectImg = img.width / img.height;
+                    
+                    if (aspectImg > aspectFrame) {
+                        cardPreviewArt.style.height = "100%";
+                        cardPreviewArt.style.width = "auto";
+                    } else {
+                        cardPreviewArt.style.width = "100%";
+                        cardPreviewArt.style.height = "auto";
+                    }
+                    
+                    updateCardPreview();
+                };
+                img.src = card.artBase64;
+            } else {
+                state.artImage = null;
+                state.artFilename = "";
+                artFilenamePreview.style.display = "none";
+            }
+
+            // (Real-time auto-saving active)
+            
+            // Select active style button
+            colorPresetBtns.forEach(b => {
+                b.classList.remove("active");
+                if (b.dataset.style === card.frameStyle) {
+                    b.classList.add("active");
+                }
+            });
+
+            // Update inputs
+            initFormValues();
+            renderDeckList();
+            showToast("Loaded card for editing!");
+        }
+
+        // IndexedDB Manager setup
+        const DB_NAME = "WizardsCardCreatorDB";
+        const DB_VERSION = 1;
+        const STORE_NAME = "deckStore";
+        let db = null;
+
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = (e) => {
+                    console.error("IndexedDB failed to open:", e);
+                    reject(e);
+                };
+                
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: "id" });
+                    }
+                };
+            });
+        }
+
+        // Persist to IndexedDB
+        function saveDeckToStorage() {
+            if (!db) {
+                console.error("Database not initialized");
+                return;
+            }
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put({ 
+                id: "current_deck", 
+                cards: state.deck,
+                name: state.deckName || "Wizards Deck"
+            });
+            
+            request.onsuccess = () => {
+                console.log("Deck successfully saved to IndexedDB.");
+            };
+            
+            request.onerror = (e) => {
+                console.error("Failed to save deck to IndexedDB:", e);
+                alert("Failed to save deck to database: " + e.target.error);
+            };
+        }
+
+        // Load from IndexedDB (with transparent localStorage migration)
+        function loadDeckFromStorage() {
+            return new Promise((resolve) => {
+                const loadDefaultDeck = () => {
+                    state.deck = [
+                        {
+                            id: "default_volcano",
+                            cardName: "Volcano Elemental",
+                            frameStyle: "red",
+                            manaCost: ["C2", "R", "R"],
+                            cardType: "Creature",
+                            rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
+                            power: "4",
+                            toughness: "5",
+                            artBase64: "",
+                            keywords: ["Trample"],
+                            activatedAbilities: []
+                        }
+                    ];
+                    saveDeckToStorage();
+                    renderDeckList();
+                    resolve();
+                };
+
+                if (!db) {
+                    loadDefaultDeck();
+                    return;
+                }
+
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get("current_deck");
+
+                request.onsuccess = (e) => {
+                    const result = e.target.result;
+                    if (result && result.cards) {
+                        state.deck = result.cards;
+                        state.deckName = result.name || "Wizards Deck";
+                        deckNameInput.value = state.deckName;
+                        renderDeckList();
+                        resolve();
+                    } else {
+                        // Check if there is legacy data in localStorage to migrate!
+                        const legacyData = localStorage.getItem("wizards_deck");
+                        if (legacyData) {
+                            try {
+                                state.deck = JSON.parse(legacyData);
+                                saveDeckToStorage(); // Save to IndexedDB
+                                localStorage.removeItem("wizards_deck"); // Clean up legacy localStorage
+                                console.log("Successfully migrated legacy deck from localStorage to IndexedDB.");
+                                renderDeckList();
+                                resolve();
+                                return;
+                            } catch(err) {
+                                console.error("Failed to migrate legacy deck:", err);
+                            }
+                        }
+                        
+                        loadDefaultDeck();
+                    }
+                };
+
+                request.onerror = (e) => {
+                    console.error("Error reading from IndexedDB:", e);
+                    loadDefaultDeck();
+                };
+            });
+        }
+
+        // Deck Filter states
+        const activeManaFilters = new Set();
+        const activeTypeFilters = new Set();
+
+        // Helper to check if card matches active filters
+        function cardMatchesFilters(card) {
+            // 1. Mana/Color filtering
+            if (activeManaFilters.size > 0) {
+                let cardHasMatchingColor = false;
+                const cardColors = new Set();
+                let hasColoredMana = false;
+                let hasColorlessMana = false;
+                
+                card.manaCost.forEach(sym => {
+                    if (["W", "U", "B", "R", "G"].includes(sym)) {
+                        cardColors.add(sym);
+                        hasColoredMana = true;
+                    } else if (sym && (sym.toString().startsWith("C") || !isNaN(sym))) {
+                        cardColors.add("C");
+                        hasColorlessMana = true;
+                    }
+                });
+                if (!hasColoredMana && !hasColorlessMana) {
+                    cardColors.add("C");
+                }
+                
+                for (const col of activeManaFilters) {
+                    if (cardColors.has(col)) {
+                        cardHasMatchingColor = true;
+                        break;
+                    }
+                }
+                
+                if (!cardHasMatchingColor) return false;
+            }
+            
+            // 2. Type filtering
+            if (activeTypeFilters.size > 0) {
+                if (!activeTypeFilters.has(card.cardType)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Initialize filter buttons and handlers
+        function initFilters() {
+            // Populate mana icons in filter buttons
+            document.querySelectorAll(".mana-filter-btn").forEach(btn => {
+                const color = btn.dataset.color;
+                const svg = createManaSvg(color);
+                svg.setAttribute("class", "mana-icon-svg");
+                btn.appendChild(svg);
+                
+                btn.addEventListener("click", () => {
+                    if (activeManaFilters.has(color)) {
+                        activeManaFilters.delete(color);
+                        btn.classList.remove("active");
+                    } else {
+                        activeManaFilters.add(color);
+                        btn.classList.add("active");
+                    }
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            });
+
+            document.querySelectorAll(".type-filter-btn").forEach(btn => {
+                const type = btn.dataset.type;
+                btn.addEventListener("click", () => {
+                    if (activeTypeFilters.has(type)) {
+                        activeTypeFilters.delete(type);
+                        btn.classList.remove("active");
+                    } else {
+                        activeTypeFilters.add(type);
+                        btn.classList.add("active");
+                    }
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            });
+
+            document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
+                activeManaFilters.clear();
+                document.querySelectorAll(".mana-filter-btn").forEach(btn => btn.classList.remove("active"));
+                updateClearFilterButtonsVisibility();
+                renderDeckList();
+            });
+
+            document.getElementById("clear-type-filters-btn").addEventListener("click", () => {
+                activeTypeFilters.clear();
+                document.querySelectorAll(".type-filter-btn").forEach(btn => btn.classList.remove("active"));
+                updateClearFilterButtonsVisibility();
+                renderDeckList();
+            });
+        }
+
+        function updateClearFilterButtonsVisibility() {
+            const clearManaBtn = document.getElementById("clear-mana-filters-btn");
+            const clearTypeBtn = document.getElementById("clear-type-filters-btn");
+            const firstManaBtn = document.querySelector(".mana-filter-btn");
+            const firstTypeBtn = document.querySelector(".type-filter-btn");
+            
+            if (activeManaFilters.size > 0) {
+                clearManaBtn.style.display = "inline-block";
+                if (firstManaBtn) firstManaBtn.parentElement.classList.add("has-active");
+            } else {
+                clearManaBtn.style.display = "none";
+                if (firstManaBtn) firstManaBtn.parentElement.classList.remove("has-active");
+            }
+
+            if (activeTypeFilters.size > 0) {
+                clearTypeBtn.style.display = "inline-block";
+                if (firstTypeBtn) firstTypeBtn.parentElement.classList.add("has-active");
+            } else {
+                clearTypeBtn.style.display = "none";
+                if (firstTypeBtn) firstTypeBtn.parentElement.classList.remove("has-active");
+            }
+        }
+
+        // Render the deck manager list
+        function renderDeckList() {
+            deckListContainer.innerHTML = "";
+
+            if (state.deck.length === 0) {
+                deckCount.textContent = "0 Cards in Deck";
+                deckListContainer.innerHTML = `
+                    <div class="deck-empty-placeholder">
+                        <i class="fa-solid fa-box-open"></i>
+                        No cards in deck yet.<br>Type a Card Name to auto-create a card!
+                    </div>
+                `;
+                return;
+            }
+
+            // Filter deck
+            const filteredDeck = state.deck.filter(cardMatchesFilters);
+
+            // Update deck count text
+            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0) {
+                deckCount.textContent = `${filteredDeck.length} of ${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} shown`;
+            } else {
+                deckCount.textContent = `${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} in Deck`;
+            }
+
+            if (filteredDeck.length === 0) {
+                deckListContainer.innerHTML = `
+                    <div class="deck-empty-placeholder">
+                        <i class="fa-solid fa-filter"></i>
+                        No cards match active filters.
+                    </div>
+                `;
+                return;
+            }
+
+            filteredDeck.forEach(card => {
+                const row = document.createElement("div");
+                row.className = "deck-card-row" + (state.selectedCardId === card.id ? " selected" : "");
+                row.addEventListener("click", () => loadCardDetails(card.id));
+
+                const info = document.createElement("div");
+                info.className = "deck-card-info";
+
+                const nameSpan = document.createElement("span");
+                nameSpan.className = "deck-card-name";
+                nameSpan.textContent = card.cardName;
+
+                const meta = document.createElement("div");
+                meta.className = "deck-card-meta";
+
+                const typeSpan = document.createElement("span");
+                typeSpan.className = "deck-card-type";
+                typeSpan.textContent = card.cardType;
+
+                const manaDiv = document.createElement("div");
+                manaDiv.className = "deck-card-mana";
+                card.manaCost.forEach(sym => {
+                    manaDiv.appendChild(createManaSvg(sym));
+                });
+
+                meta.appendChild(typeSpan);
+                meta.appendChild(manaDiv);
+                info.appendChild(nameSpan);
+                info.appendChild(meta);
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.className = "deck-card-delete-btn";
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.title = "Delete card";
+                deleteBtn.addEventListener("click", (e) => deleteCard(card.id, e));
+
+                row.appendChild(info);
+                row.appendChild(deleteBtn);
+                deckListContainer.appendChild(row);
+            });
+        }
+
+        // Clear entire deck list
+        function clearDeck() {
+            if (!confirm("Are you sure you want to clear the entire deck? This cannot be undone.")) return;
+            state.deck = [];
+            saveDeckToStorage();
+            renderDeckList();
+            resetForm();
+            showToast("Deck cleared!");
+        }
+
+        // Export Deck database to a JSON file download
+        function exportDeckToJson() {
+            if (state.deck.length === 0) {
+                alert("There are no cards in the deck to export.");
+                return;
+            }
+            const exportData = {
+                deckName: state.deckName || "Wizards Deck",
+                cards: state.deck
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement("a");
+            downloadAnchor.setAttribute("href", dataStr);
+            
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            
+            const sanitizedDeckName = (state.deckName || "wizards_deck").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+            downloadAnchor.setAttribute("download", `${sanitizedDeckName}_${today}.json`);
+            
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.removeChild(downloadAnchor);
+            showToast("Exported deck config JSON!");
+        }
+
+        // Import Deck database from a uploaded JSON file
+        function importDeckFromJson(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (Array.isArray(imported)) {
+                        state.deck = imported;
+                        state.deckName = "Imported Deck";
+                        deckNameInput.value = state.deckName;
+                        saveDeckToStorage();
+                        renderDeckList();
+                        resetForm();
+                        showToast("Deck imported successfully!");
+                    } else if (imported && Array.isArray(imported.cards)) {
+                        state.deck = imported.cards;
+                        state.deckName = imported.deckName || "Imported Deck";
+                        deckNameInput.value = state.deckName;
+                        saveDeckToStorage();
+                        renderDeckList();
+                        resetForm();
+                        showToast("Deck imported successfully!");
+                    } else {
+                        alert("Invalid deck configuration format.");
+                    }
+                } catch(err) {
+                    alert("Failed to parse deck JSON file.");
+                }
+            };
+            reader.readAsText(file);
+            importDeckFile.value = ""; // Reset file selector
+        }
+
+        // Canvas Drawing Engine for Card Downloads
+        function renderCardToCanvas(tempCtx, targetW, targetH) {
+            const scale = targetW / 375; // Ratio to scale card contents
+            
+            tempCtx.save(); // Save caller state
+            
+            // Clip to outer card rounded corners (matching CSS border-radius: 18px)
+            tempCtx.beginPath();
+            tempCtx.roundRect(0, 0, targetW, targetH, 18 * scale);
+            tempCtx.clip();
+            
+            // 1. Draw frame borders and background texture gradient
+            tempCtx.fillStyle = "#0c0d0c";
+            tempCtx.fillRect(0, 0, targetW, targetH); // Bold outer black frame
+            
+            // Draw curved interior bounding box (matching 10px border + 10px padding from CSS)
+            const innerMargin = 20 * scale;
+            const innerW = targetW - (innerMargin * 2);
+            const innerH = targetH - (innerMargin * 2);
+            const cornerRad = 8 * scale; // matching 8px border-radius from CSS
+            
+            // Frame style-specific gradient colors
+            let gradColors = ["#ae3d24", "#6e1c0d"]; // Red default
+            if (state.frameStyle === "green") gradColors = ["#275924", "#112d0e"];
+            else if (state.frameStyle === "black") gradColors = ["#37333d", "#151119"];
+            else if (state.frameStyle === "white") gradColors = ["#e7ddc4", "#a49673"];
+            else if (state.frameStyle === "blue") gradColors = ["#2c5c8e", "#122846"];
+            else if (state.frameStyle === "gold") gradColors = ["#cb9b3c", "#7d591b"];
+            else if (state.frameStyle === "artifact") gradColors = ["#8d9299", "#4b4e54"];
+            
+            const gradient = tempCtx.createLinearGradient(0, 0, targetW, targetH);
+            gradient.addColorStop(0, gradColors[0]);
+            gradient.addColorStop(1, gradColors[1]);
+            tempCtx.fillStyle = gradient;
+            
+            // Fill curved interior bounding box
+            tempCtx.beginPath();
+            tempCtx.roundRect(innerMargin, innerMargin, innerW, innerH, cornerRad);
+            tempCtx.fill();
+            
+            // Draw double black pinstripe borders
+            tempCtx.strokeStyle = "rgba(0,0,0,0.5)";
+            tempCtx.lineWidth = 2 * scale;
+            tempCtx.beginPath();
+            tempCtx.roundRect(innerMargin + 2*scale, innerMargin + 2*scale, innerW - 4*scale, innerH - 4*scale, cornerRad - 2*scale);
+            tempCtx.stroke();
+            
+            // 2. Draw Header Title Bar
+            const headerY = innerMargin + 4*scale;
+            const headerH = 30 * scale;
+            const headerW = innerW - 8*scale;
+            const headerX = innerMargin + 4*scale;
+            
+            // Header backdrop colors matching style selection
+            let barFill = "#dfc4b9"; // Red
+            if (state.frameStyle === "green") barFill = "#c6dfc3";
+            else if (state.frameStyle === "black") barFill = "#cbc5d0";
+            else if (state.frameStyle === "white") barFill = "#fdfaf2";
+            else if (state.frameStyle === "blue") barFill = "#c7dcef";
+            else if (state.frameStyle === "gold") barFill = "#eae1c9";
+            else if (state.frameStyle === "artifact") barFill = "#dcdfe3";
+            
+            tempCtx.fillStyle = barFill;
+            tempCtx.beginPath();
+            tempCtx.roundRect(headerX, headerY, headerW, headerH, 5 * scale);
+            tempCtx.fill();
+            tempCtx.strokeStyle = "#332b1d";
+            tempCtx.lineWidth = 1.8 * scale;
+            tempCtx.stroke();
+            
+            // Text values inside title bar
+            tempCtx.fillStyle = "#111111";
+            tempCtx.font = `bold ${Math.round(15 * scale)}px "EB Garamond", serif`;
+            tempCtx.textBaseline = "middle";
+            tempCtx.fillText(state.cardName || "Unnamed Card", headerX + 8*scale, headerY + (headerH/2));
+
+            // Draw Mana Cost symbols inside Header Bar
+            const manaSpacing = 18 * scale;
+            let manaStartX = headerX + headerW - 8*scale;
+            
+            state.manaCost.forEach((symbol, index) => {
+                // Count backwards to align icons to the right
+                const revIndex = state.manaCost.length - 1 - index;
+                const sym = state.manaCost[revIndex];
+                const cx = manaStartX - (index * manaSpacing) - (8 * scale);
+                const cy = headerY + (headerH / 2);
+                
+                drawManaSymbolOnCanvas(tempCtx, sym, cx, cy, 8.5 * scale);
+            });
+            
+            // 3. Draw Card Illustration (Art)
+            const artY = headerY + headerH + 4*scale;
+            const artH = 220 * scale;
+            const artW = headerW;
+            const artX = headerX;
+            tempCtx.strokeStyle = "#332b1d";
+            tempCtx.lineWidth = 2 * scale;
+            tempCtx.strokeRect(artX, artY, artW, artH);
+
+            if (state.artImage) {
+                tempCtx.save();
+                tempCtx.beginPath();
+                tempCtx.rect(artX, artY, artW, artH);
+                tempCtx.clip();
+                
+                // Base fit dimensions (equivalent to object-fit: cover)
+                const imgW = state.artImage.width;
+                const imgH = state.artImage.height;
+                const scaleW = artW / imgW;
+                const scaleH = artH / imgH;
+                const fitScale = Math.max(scaleW, scaleH);
+                
+                const drawW = imgW * fitScale;
+                const drawH = imgH * fitScale;
+                
+                // Translate to center of the art box
+                const centerX = artX + artW / 2;
+                const centerY = artY + artH / 2;
+                tempCtx.translate(centerX, centerY);
+                
+                // Apply drag offsets (scaled according to canvas resolution)
+                tempCtx.translate((state.artX || 0) * scale, (state.artY || 0) * scale);
+                
+                // Apply rotation
+                tempCtx.rotate((state.artRotation || 0) * Math.PI / 180);
+                
+                // Apply scale
+                const customScale = state.artScale || 1.0;
+                tempCtx.scale(customScale, customScale);
+                
+                // Draw centered at the origin
+                tempCtx.drawImage(state.artImage, -drawW / 2, -drawH / 2, drawW, drawH);
+                tempCtx.restore();
+            } else {
+                // Placeholder illustration drawing
+                tempCtx.fillStyle = "#3a4058";
+                tempCtx.font = `italic ${Math.round(12 * scale)}px "Inter", sans-serif`;
+                tempCtx.textAlign = "center";
+                tempCtx.textBaseline = "middle";
+                tempCtx.fillText("No Illustration Selected", artX + (artW/2), artY + (artH/2));
+            }
+            
+            // 4. Draw Card Type Bar
+            const typeY = artY + artH + 4*scale;
+            const typeH = 26 * scale;
+            
+            tempCtx.fillStyle = barFill;
+            tempCtx.beginPath();
+            tempCtx.roundRect(artX, typeY, artW, typeH, 5 * scale);
+            tempCtx.fill();
+            tempCtx.strokeStyle = "#332b1d";
+            tempCtx.lineWidth = 1.8 * scale;
+            tempCtx.stroke();
+            
+            tempCtx.fillStyle = "#111111";
+            tempCtx.textAlign = "left";
+            tempCtx.textBaseline = "middle";
+            tempCtx.font = `bold ${Math.round(13 * scale)}px "EB Garamond", serif`;
+            tempCtx.fillText(state.cardType, artX + 8*scale, typeY + (typeH/2));
+            
+            // 5. Draw Rules Text Box
+            const textBoxY = typeY + typeH + 4*scale;
+            const textBoxH = innerH - (textBoxY - innerMargin) - (18 * scale);
+            
+            tempCtx.fillStyle = "rgba(234, 230, 222, 0.96)"; // Parchment body fill
+            tempCtx.beginPath();
+            tempCtx.roundRect(artX, textBoxY, artW, textBoxH, 4 * scale);
+            tempCtx.fill();
+            tempCtx.strokeStyle = "#332b1d";
+            tempCtx.lineWidth = 2 * scale;
+            tempCtx.stroke();
+            
+            // Draw card texts line by line inside box
+            tempCtx.fillStyle = "#0c0b0b";
+            tempCtx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
+            
+            const fullRules = getFullRulesText();
+            const textLines = fullRules.split('\n');
+            let textY = textBoxY + 14 * scale;
+            const lineSpacing = 16 * scale;
+            
+            tempCtx.textAlign = "left";
+            tempCtx.textBaseline = "top";
+            
+            textLines.forEach(line => {
+                // Basic text wrapping utility
+                const words = line.split(' ');
+                let currentLine = '';
+                const maxTextWidth = artW - (20 * scale);
+                
+                for(let i = 0; i < words.length; i++) {
+                    const testLine = currentLine + words[i] + ' ';
+                    const lineWidth = measureLineWithSymbols(tempCtx, testLine, scale);
+                    if(lineWidth > maxTextWidth && i > 0) {
+                        drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
+                        currentLine = words[i] + ' ';
+                        textY += lineSpacing;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
+                textY += lineSpacing;
+            });
+            
+            // 6. Draw Power / Toughness badge in corner (if Creature)
+            if (state.cardType === "Creature") {
+                const ptBadgeW = 50 * scale;
+                const ptBadgeH = 22 * scale;
+                const ptBadgeX = artX + artW - ptBadgeW - (8 * scale);
+                const ptBadgeY = textBoxY + textBoxH - (ptBadgeH / 2);
+                
+                tempCtx.fillStyle = "#eae1c9";
+                tempCtx.beginPath();
+                tempCtx.roundRect(ptBadgeX, ptBadgeY, ptBadgeW, ptBadgeH, 4 * scale);
+                tempCtx.fill();
+                tempCtx.strokeStyle = "#332b1d";
+                tempCtx.lineWidth = 1.8 * scale;
+                tempCtx.stroke();
+                
+                tempCtx.fillStyle = "#111111";
+                tempCtx.textAlign = "center";
+                tempCtx.textBaseline = "middle";
+                tempCtx.font = `bold ${Math.round(14 * scale)}px "EB Garamond", serif`;
+                tempCtx.fillText(`${state.power || "0"}/${state.toughness || "0"}`, ptBadgeX + (ptBadgeW/2), ptBadgeY + (ptBadgeH/2));
+            }
+            
+            // 7. Footer details print
+            const footerY = targetH - (12 * scale);
+            tempCtx.fillStyle = "rgba(255,255,255,0.7)";
+            tempCtx.font = `${Math.round(7.5 * scale)}px sans-serif`;
+            tempCtx.textAlign = "left";
+            tempCtx.fillText("001/015 M", innerMargin + 4*scale, footerY);
+            tempCtx.textAlign = "right";
+            tempCtx.fillText("© 2026 Wizards of the North", targetW - innerMargin - 4*scale, footerY);
+            
+            tempCtx.restore(); // Clear clipping
+        }
+
+        // Draw individual Mana symbols in Canvas exports
+        function drawManaSymbolOnCanvas(ctx, symbol, cx, cy, radius) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            
+            // Set circle fill based on color type
+            if (symbol === "W") ctx.fillStyle = "#fdfbe6";
+            else if (symbol === "U") ctx.fillStyle = "#cbdcf0";
+            else if (symbol === "B") ctx.fillStyle = "#cbc5d0";
+            else if (symbol === "R") ctx.fillStyle = "#f8a790";
+            else if (symbol === "G") ctx.fillStyle = "#99d1ad";
+            else ctx.fillStyle = "#cccccc"; // Colorless
+            
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.5)";
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+            
+            // Draw symbol graphics inside circle
+            ctx.fillStyle = "#111111";
+            if (symbol === "W") { // Sun icon
+                ctx.fillStyle = "#e2b127";
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 0.4, 0, 2 * Math.PI);
+                ctx.fill();
+                // Sun rays
+                ctx.strokeStyle = "#e2b127";
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i * Math.PI) / 4;
+                    const x1 = cx + Math.cos(angle) * (radius * 0.45);
+                    const y1 = cy + Math.sin(angle) * (radius * 0.45);
+                    const x2 = cx + Math.cos(angle) * (radius * 0.75);
+                    const y2 = cy + Math.sin(angle) * (radius * 0.75);
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            } else if (symbol === "U") { // Droplet icon
+                ctx.fillStyle = "#135292";
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - radius*0.6);
+                ctx.bezierCurveTo(cx - radius*0.4, cy, cx - radius*0.5, cy + radius*0.5, cx, cy + radius*0.5);
+                ctx.bezierCurveTo(cx + radius*0.5, cy + radius*0.5, cx + radius*0.4, cy, cx, cy - radius*0.6);
+                ctx.fill();
+            } else if (symbol === "B") { // Skull icon
+                ctx.fillStyle = "#1a121d";
+                ctx.beginPath();
+                ctx.arc(cx, cy - radius*0.1, radius*0.4, Math.PI, 0);
+                ctx.lineTo(cx + radius*0.3, cy + radius*0.4);
+                ctx.lineTo(cx - radius*0.3, cy + radius*0.4);
+                ctx.closePath();
+                ctx.fill();
+                // Eyes
+                ctx.fillStyle = "#cbc5d0";
+                ctx.beginPath();
+                ctx.arc(cx - radius*0.15, cy - radius*0.1, radius*0.1, 0, 2*Math.PI);
+                ctx.arc(cx + radius*0.15, cy - radius*0.1, radius*0.1, 0, 2*Math.PI);
+                ctx.fill();
+            } else if (symbol === "R") { // Fire icon
+                ctx.fillStyle = "#b12d14";
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - radius*0.7);
+                ctx.bezierCurveTo(cx + radius*0.5, cy - radius*0.2, cx + radius*0.4, cy + radius*0.5, cx, cy + radius*0.6);
+                ctx.bezierCurveTo(cx - radius*0.5, cy + radius*0.5, cx - radius*0.4, cy - radius*0.1, cx + radius*0.1, cy - radius*0.1);
+                ctx.bezierCurveTo(cx - radius*0.1, cy - radius*0.4, cx, cy - radius*0.7, cx, cy - radius*0.7);
+                ctx.fill();
+            } else if (symbol === "G") { // Tree icon
+                ctx.fillStyle = "#0f4a1f";
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - radius*0.6);
+                ctx.lineTo(cx + radius*0.4, cy + radius*0.2);
+                ctx.lineTo(cx + radius*0.2, cy + radius*0.2);
+                ctx.lineTo(cx + radius*0.5, cy + radius*0.6);
+                ctx.lineTo(cx - radius*0.5, cy + radius*0.6);
+                ctx.lineTo(cx - radius*0.2, cy + radius*0.2);
+                ctx.lineTo(cx - radius*0.4, cy + radius*0.2);
+                ctx.closePath();
+                ctx.fill();
+                // Trunk
+                ctx.fillRect(cx - radius*0.1, cy + radius*0.6, radius*0.2, radius*0.2);
+            } else if (symbol.startsWith("C")) { // Colorless text number
+                const number = symbol.substring(1);
+                ctx.fillStyle = "#111111";
+                ctx.font = `bold ${Math.round(radius * 1.25)}px sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(number, cx, cy + 0.5);
+            }
+            ctx.restore();
+        }
+
+        // Helper to measure text width considering inline mana symbols
+        function measureTextWithSymbols(ctx, word, scale) {
+            if (!word) return 0;
+            const parts = word.split(/(\{.+?\})/g);
+            let width = 0;
+            const diameter = 13 * scale;
+            
+            parts.forEach(part => {
+                if (part.startsWith("{") && part.endsWith("}")) {
+                    const symbol = part.slice(1, -1);
+                    const isMana = /^[WUBRG]$/i.test(symbol);
+                    const isNumber = /^\d+$/.test(symbol);
+                    if (isMana || isNumber) {
+                        width += diameter + (2 * scale);
+                        return;
+                    }
+                }
+                width += ctx.measureText(part).width;
+            });
+            return width;
+        }
+
+        // Helper to measure line width
+        function measureLineWithSymbols(ctx, line, scale) {
+            return measureTextWithSymbols(ctx, line, scale);
+        }
+
+        // Helper to draw a line with inline mana symbols
+        function drawLineWithSymbols(ctx, line, x, y, scale) {
+            if (!line) return;
+            const parts = line.split(/(\{.+?\})/g);
+            let currentX = x;
+            const radius = 6.5 * scale; // slightly smaller than header mana cost
+            const diameter = radius * 2;
+            
+            ctx.save();
+            ctx.textBaseline = "top";
+            
+            parts.forEach(part => {
+                if (part.startsWith("{") && part.endsWith("}")) {
+                    const symbol = part.slice(1, -1); // e.g. "R" or "2" or "W"
+                    const isMana = /^[WUBRG]$/i.test(symbol);
+                    const isNumber = /^\d+$/.test(symbol);
+                    
+                    if (isMana || isNumber) {
+                        const sym = isNumber ? "C" + symbol : symbol.toUpperCase();
+                        const cx = currentX + radius;
+                        const cy = y + (7 * scale); 
+                        drawManaSymbolOnCanvas(ctx, sym, cx, cy, radius);
+                        currentX += diameter + (2 * scale);
+                        return;
+                    }
+                }
+                
+                ctx.fillStyle = "#0c0b0b";
+                ctx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
+                ctx.textAlign = "left";
+                ctx.fillText(part, currentX, y);
+                currentX += ctx.measureText(part).width;
+            });
+            
+            ctx.restore();
+        }
+
+        // Trigger file download (Uses High-Quality Step-down Downsampling)
+        function downloadCardImage() {
+            // High-res source canvas
+            const srcCanvas = document.createElement("canvas");
+            srcCanvas.width = 750;
+            srcCanvas.height = 1046;
+            const srcCtx = srcCanvas.getContext("2d");
+            
+            // Draw full quality composition
+            renderCardToCanvas(srcCtx, 750, 1046);
+            
+            // Use multi-pass step-down resizer to produce clean 375x523 PNG
+            const finalCanvas = downsampleCanvas(srcCanvas, 375, 523);
+            
+            const dataUrl = finalCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            
+            // File download naming
+            const name = state.cardName ? state.cardName.replace(/\s+/g, '_') : 'card';
+            link.download = `${name}.png`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Card image downloaded!");
+        }
+
+        // Helper: Multi-pass step-down resizer for clean image results
+        function downsampleCanvas(sourceCanvas, targetW, targetH) {
+            let currentCanvas = sourceCanvas;
+            let currentW = sourceCanvas.width;
+            let currentH = sourceCanvas.height;
+
+            while (currentW > targetW * 2 && currentH > targetH * 2) {
+                currentW = Math.round(currentW / 2);
+                currentH = Math.round(currentH / 2);
+
+                const nextCanvas = document.createElement("canvas");
+                nextCanvas.width = currentW;
+                nextCanvas.height = currentH;
+                const nextCtx = nextCanvas.getContext("2d");
+                
+                nextCtx.imageSmoothingEnabled = true;
+                nextCtx.imageSmoothingQuality = "high";
+                nextCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, currentW, currentH);
+                
+                currentCanvas = nextCanvas;
+            }
+
+            const finalCanvas = document.createElement("canvas");
+            finalCanvas.width = targetW;
+            finalCanvas.height = targetH;
+            const finalCtx = finalCanvas.getContext("2d");
+            
+            finalCtx.imageSmoothingEnabled = true;
+            finalCtx.imageSmoothingQuality = "high";
+            finalCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, targetW, targetH);
+
+            return finalCanvas;
+        }
+
+        // Setup SVGs inside all mana buttons
+        function setupManaButtonIcons() {
+            document.querySelectorAll(".mana-btn[data-mana]").forEach(btn => {
+                const symbol = btn.dataset.mana;
+                btn.innerHTML = "";
+                btn.appendChild(createManaSvg(symbol));
+            });
+        }
+
+        // Toast feedback notifier
+        function showToast(message) {
+            toastText.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // DOM Loaded Init
+        document.addEventListener("DOMContentLoaded", () => {
+            setupManaButtonIcons();
+            loadAvailableKeywords();
+            initFormValues();
+            initEvents();
+            initFilters();
+            
+            initIndexedDB()
+                .then(() => loadDeckFromStorage())
+                .catch((err) => {
+                    console.error("IndexedDB initialization failed, trying load without DB:", err);
+                    loadDeckFromStorage();
+                });
+        });
+    </script>
+</body>
+</html>

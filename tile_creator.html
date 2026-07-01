@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hex Tile Creator - Wizards of the North</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS styling aligned with Wizards of the North dark fantasy aesthetic */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #07080f 0%, #111424 100%);
+            --panel-bg: rgba(13, 17, 33, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --panel-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            
+            --primary-color: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.45);
+            --accent-gold: #e2b747;
+            --gold-glow: rgba(226, 183, 71, 0.3);
+            --danger-color: #ef4444;
+            
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dark: #4b5563;
+            
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Panel Template */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--panel-glow);
+            border-radius: 16px;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 360px;
+            height: calc(100vh - 24px);
+            margin: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 15px var(--gold-glow);
+            margin-bottom: 6px;
+        }
+
+        .sidebar-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-header p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        .control-sections {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .control-sections::-webkit-scrollbar {
+            width: 4px;
+        }
+        .control-sections::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .control-sections::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .control-group h3 {
+            font-family: var(--font-heading);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group h3 i {
+            font-size: 0.8rem;
+        }
+
+        /* Sliders */
+        .slider-container {
+            margin-bottom: 12px;
+        }
+
+        .slider-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .slider-control-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .slider-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            font-size: 0.7rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 8px var(--gold-glow);
+        }
+
+        .slider-btn:active {
+            transform: scale(0.9);
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .slider-header span.val-display {
+            color: var(--accent-gold);
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            box-shadow: 0 0 6px var(--gold-glow);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Drop Zones */
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: rgba(0, 0, 0, 0.15);
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.05);
+        }
+
+        .dropzone i {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            transition: color 0.2s;
+        }
+
+        .dropzone:hover i {
+            color: var(--accent-gold);
+        }
+
+        .dropzone p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .dropzone input[type="file"] {
+            display: none;
+        }
+
+        .layer-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-top: -6px;
+            margin-bottom: 12px;
+            font-size: 0.75rem;
+        }
+
+        .layer-preview span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 180px;
+            color: var(--text-main);
+        }
+
+        /* Presets Button Grid */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 6px 2px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.05);
+        }
+
+        .preset-btn.active {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: #07080f;
+            font-weight: 600;
+        }
+
+        /* Input Controls */
+        .input-container {
+            margin-bottom: 12px;
+        }
+
+        .input-container label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-gold);
+        }
+
+        /* Border Custom Color Picker Row */
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .color-picker-row span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Buttons styles */
+        .button-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        button {
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 0.8rem;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .primary-btn {
+            background: var(--accent-gold);
+            color: #07080f;
+            font-weight: 600;
+        }
+
+        .primary-btn:hover {
+            background: #eed27c;
+            box-shadow: 0 0 12px var(--gold-glow);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .danger-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .danger-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            border-radius: 4px;
+        }
+
+        /* Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 12px;
+        }
+
+        /* Viewport Area */
+        .viewport {
+            flex: 1;
+            height: 100vh;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .viewport-header {
+            height: 54px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 5;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .tool-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mode-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        /* Canvas Segment Control */
+        .segment-control {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 2px;
+            border-radius: 8px;
+        }
+
+        .segment-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .segment-btn.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Checkerboard background for transparency preview */
+        .canvas-wrapper {
+            flex: 1;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0b0c16;
+            transition: background 0.3s;
+        }
+
+        .canvas-wrapper.checkerboard {
+            background-image: 
+                linear-gradient(45deg, #111424 25%, transparent 25%), 
+                linear-gradient(-45deg, #111424 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #111424 75%), 
+                linear-gradient(-45deg, transparent 75%, #111424 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .canvas-wrapper canvas {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            cursor: grab;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .canvas-wrapper canvas:active {
+            cursor: grabbing;
+        }
+
+        .viewport-footer {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            padding: 0 8px;
+        }
+
+        .viewport-footer kbd {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 4px;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(13, 17, 33, 0.95);
+            border: 1px solid var(--accent-gold);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            box-shadow: var(--panel-glow), 0 0 15px var(--gold-glow);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast i {
+            color: var(--accent-gold);
+        }
+
+        /* Panel Headers and Buttons */
+        .control-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .control-header-row h3 {
+            margin-bottom: 0 !important;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 8px var(--gold-glow);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                <h2>Wizards of the North</h2>
+                <p>Hex Tile Creator</p>
+            </div>
+            
+            <div class="control-sections">
+                <!-- General Info Group -->
+                <div class="control-group">
+                    <h3><i class="fa-solid fa-tag"></i> Tile Details</h3>
+                    <div class="input-container">
+                        <label for="tile-name">Tile Name</label>
+                        <input type="text" id="tile-name" placeholder="e.g. Volcano Tower" value="Volcano Tower">
+                    </div>
+                    <div class="input-container">
+                        <label for="tile-id">Tile ID</label>
+                        <input type="text" id="tile-id" placeholder="e.g. Volcano_Tower" value="Volcano_Tower">
+                    </div>
+                    <div class="input-container">
+                        <label>Tile Shape</label>
+                        <div class="segment-control" style="width: 100%;">
+                            <button class="segment-btn active" id="shape-hexagon" style="flex: 1;"><i class="fa-solid fa-draw-polygon"></i> Hexagon</button>
+                            <button class="segment-btn" id="shape-circle" style="flex: 1;"><i class="fa-solid fa-circle"></i> Circle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Terrain Layer -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-layer-group"></i> Background (Terrain)</h3>
+                        <button class="icon-btn panel-reset-btn" data-panel="bg" title="Reset Background Sliders"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                    
+                    <!-- Upload Zone -->
+                    <div class="dropzone" id="bg-dropzone">
+                        <i class="fa-solid fa-image"></i>
+                        <p>Drag background or <strong>Browse</strong></p>
+                        <input type="file" id="bg-file-input" accept="image/*">
+                    </div>
+
+                    <div class="layer-preview" id="bg-preview" style="display: none;">
+                        <span id="bg-filename">filename.png</span>
+                        <button class="danger-btn btn-sm" id="bg-remove-btn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <!-- Sliders -->
+                    <div class="slider-container" id="bg-scale-container">
+                        <div class="slider-header">
+                            <span>Background Scale</span>
+                            <span class="val-display" id="bg-scale-val">100%</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="bg-scale" title="Decrease Scale"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="bg-scale" min="10" max="400" value="100">
+                            <button class="slider-btn inc-btn" data-target="bg-scale" title="Increase Scale"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="slider-container" id="bg-rotate-container">
+                        <div class="slider-header">
+                            <span>Background Rotation</span>
+                            <span class="val-display" id="bg-rotate-val">0°</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="bg-rotate" title="Decrease Rotation"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="bg-rotate" min="0" max="360" value="0">
+                            <button class="slider-btn inc-btn" data-target="bg-rotate" title="Increase Rotation"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Foreground Creature/Object Layer -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-dragon"></i> Foreground (Creature)</h3>
+                        <button class="icon-btn panel-reset-btn" data-panel="fg" title="Reset Foreground Sliders"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                    
+                    <div class="dropzone" id="fg-dropzone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p>Drag creature PNG or <strong>Browse</strong></p>
+                        <input type="file" id="fg-file-input" accept="image/*">
+                    </div>
+
+                    <div class="layer-preview" id="fg-preview" style="display: none;">
+                        <span id="fg-filename">filename.png</span>
+                        <button class="danger-btn btn-sm" id="fg-remove-btn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Creature Scale</span>
+                            <span class="val-display" id="fg-scale-val">100%</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="fg-scale" title="Decrease Scale"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="fg-scale" min="10" max="400" value="100">
+                            <button class="slider-btn inc-btn" data-target="fg-scale" title="Increase Scale"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Creature Rotation</span>
+                            <span class="val-display" id="fg-rotate-val">0°</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="fg-rotate" title="Decrease Rotation"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="fg-rotate" min="0" max="360" value="0">
+                            <button class="slider-btn inc-btn" data-target="fg-rotate" title="Increase Rotation"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inside Border Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-border-none"></i> Inside Border</h3>
+                        <button class="icon-btn panel-reset-btn" data-panel="border" title="Reset Border Sliders"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                    
+                    <div class="preset-grid">
+                        <button class="preset-btn active" data-border="none">None</button>
+                        <button class="preset-btn" data-border="#2ecc71">Forest</button>
+                        <button class="preset-btn" data-border="#ff3333">Mountain</button>
+                        <button class="preset-btn" data-border="#ffffff">Plain</button>
+                        <button class="preset-btn" data-border="#000000">Swamp</button>
+                        <button class="preset-btn" id="custom-border-btn" data-border="custom">Custom</button>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Border Width</span>
+                            <span class="val-display" id="border-width-val">3.0px</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="border-width-slider" title="Decrease Width"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="border-width-slider" min="10" max="100" value="30">
+                            <button class="slider-btn inc-btn" data-target="border-width-slider" title="Increase Width"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Border Inset</span>
+                            <span class="val-display" id="border-inset-val">1.5px</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="border-inset-slider" title="Decrease Inset"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="border-inset-slider" min="0" max="100" value="15">
+                            <button class="slider-btn inc-btn" data-target="border-inset-slider" title="Increase Inset"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="color-picker-row" id="custom-border-color-row" style="display: none;">
+                        <span>Border Color:</span>
+                        <input type="color" id="border-color-picker" value="#e2b747">
+                        <span id="border-color-hex" style="font-family: monospace;">#E2B747</span>
+                    </div>
+                </div>
+
+                <!-- Export Group -->
+                <div class="control-group">
+                    <h3><i class="fa-solid fa-download"></i> Generate & Save</h3>
+                    <div class="button-column">
+                        <button class="primary-btn" id="download-std-btn">
+                            <i class="fa-solid fa-file-arrow-down"></i> Save Standard (128x110 px)
+                        </button>
+                        <button class="secondary-btn" id="download-hires-btn">
+                            <i class="fa-solid fa-file-image"></i> Save High-Res (512x443 px)
+                        </button>
+                        <button class="secondary-btn" id="copy-base64-btn">
+                            <i class="fa-solid fa-copy"></i> Copy Base64 String
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="secondary-btn" style="width: 100%;" onclick="window.location.href='index.html'">
+                    <i class="fa-solid fa-circle-arrow-left"></i> Return to Map Generator
+                </button>
+                <button class="secondary-btn" style="width: 100%;" onclick="window.location.href='card_generator.html'">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Open Card Creator
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Viewport containing the Interactive Canvas -->
+        <main class="viewport">
+            <div class="viewport-header glass-panel">
+                <div class="tool-status">
+                    <span class="mode-badge"><i class="fa-solid fa-cube"></i> Tile Composition</span>
+                    <div class="segment-control">
+                        <button class="segment-btn active" id="drag-mode-fg">Drag Creature</button>
+                        <button class="segment-btn" id="drag-mode-bg">Drag Background</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="secondary-btn btn-sm" id="toggle-grid-bg" title="Toggle background transparency grid">
+                        <i class="fa-solid fa-circle-half-stroke"></i> Toggle Grid Pattern
+                    </button>
+                    <button class="danger-btn btn-sm" id="reset-composition-btn" title="Reset positions and scale">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Wrapper with checkerboard transparent overlay options -->
+            <div class="canvas-wrapper checkerboard" id="canvas-wrapper">
+                <canvas id="preview-canvas" width="512" height="443"></canvas>
+            </div>
+
+            <div class="viewport-footer">
+                <div>
+                    <span><kbd>Left Click + Drag</kbd> to pan active layer</span>
+                    <span><kbd>Scroll Wheel</kbd> to zoom active layer</span>
+                </div>
+                <div>
+                    <span id="canvas-size-info">Composition Scale: 1:1 (512x443)</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">Base64 string copied to clipboard!</span>
+    </div>
+
+    <script>
+        // State variables for compositing
+        const state = {
+            tileName: "Volcano Tower",
+            tileId: "Volcano_Tower",
+            tileShape: "hexagon", // "hexagon" or "circle"
+            
+            // Background properties
+            bgType: "image", // Only image is supported now
+            bgColor: "transparent",
+            bgImage: null,
+            bgFilename: "",
+            bgScale: 1.0,
+            bgRotation: 0,
+            bgX: 0,
+            bgY: 0,
+            
+            // Foreground properties
+            fgImage: null,
+            fgFilename: "",
+            fgScale: 1.0,
+            fgRotation: 0,
+            fgX: 0,
+            fgY: 0,
+            
+            // Border properties
+            borderStyle: "none", // "#2ecc71" (Forest), "#ff3333" (Mountain), "#ffffff" (Plain), "#000000" (Swamp), "custom", or "none"
+            borderColorCustom: "#e2b747",
+            borderWidth: 3.0,
+            borderInset: 1.5,
+            
+            // Interaction properties
+            dragMode: "fg", // "fg" or "bg"
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            startOffsetX: 0,
+            startOffsetY: 0
+        };
+
+        // DOM elements
+        const previewCanvas = document.getElementById("preview-canvas");
+        const ctx = previewCanvas.getContext("2d");
+        const canvasWrapper = document.getElementById("canvas-wrapper");
+        const tileNameInput = document.getElementById("tile-name");
+        const tileIdInput = document.getElementById("tile-id");
+        
+        // Background elements
+        const bgDropzone = document.getElementById("bg-dropzone");
+        const bgFileInput = document.getElementById("bg-file-input");
+        const bgPreview = document.getElementById("bg-preview");
+        const bgFilename = document.getElementById("bg-filename");
+        const bgRemoveBtn = document.getElementById("bg-remove-btn");
+        const bgScaleSlider = document.getElementById("bg-scale");
+        const bgScaleVal = document.getElementById("bg-scale-val");
+        const bgRotateSlider = document.getElementById("bg-rotate");
+        const bgRotateVal = document.getElementById("bg-rotate-val");
+        
+        const bgScaleContainer = document.getElementById("bg-scale-container");
+        const bgRotateContainer = document.getElementById("bg-rotate-container");
+        
+        // Foreground elements
+        const fgDropzone = document.getElementById("fg-dropzone");
+        const fgFileInput = document.getElementById("fg-file-input");
+        const fgPreview = document.getElementById("fg-preview");
+        const fgFilename = document.getElementById("fg-filename");
+        const fgRemoveBtn = document.getElementById("fg-remove-btn");
+        const fgScaleSlider = document.getElementById("fg-scale");
+        const fgScaleVal = document.getElementById("fg-scale-val");
+        const fgRotateSlider = document.getElementById("fg-rotate");
+        const fgRotateVal = document.getElementById("fg-rotate-val");
+        
+        // Border elements
+        const borderWidthSlider = document.getElementById("border-width-slider");
+        const borderWidthVal = document.getElementById("border-width-val");
+        const borderInsetSlider = document.getElementById("border-inset-slider");
+        const borderInsetVal = document.getElementById("border-inset-val");
+        const customBorderColorRow = document.getElementById("custom-border-color-row");
+        const borderColorPicker = document.getElementById("border-color-picker");
+        const borderColorHex = document.getElementById("border-color-hex");
+
+        // General Control buttons
+        const dragModeFg = document.getElementById("drag-mode-fg");
+        const dragModeBg = document.getElementById("drag-mode-bg");
+        const toggleGridBg = document.getElementById("toggle-grid-bg");
+        const resetBtn = document.getElementById("reset-composition-btn");
+        const downloadStdBtn = document.getElementById("download-std-btn");
+        const downloadHiresBtn = document.getElementById("download-hires-btn");
+        const copyBase64Btn = document.getElementById("copy-base64-btn");
+        
+        const toast = document.getElementById("toast");
+        const toastText = document.getElementById("toast-text");
+
+        // Helper to update slug/ID
+        tileNameInput.addEventListener("input", (e) => {
+            const val = e.target.value;
+            state.tileName = val;
+            
+            // Auto slugify Name into ID
+            const slug = val
+                .trim()
+                .replace(/\s+/g, '_')         // Replace spaces with underscores
+                .replace(/[^a-zA-Z0-9_]/g, ''); // Remove special characters
+            
+            tileIdInput.value = slug;
+            state.tileId = slug;
+        });
+
+        tileIdInput.addEventListener("input", (e) => {
+            state.tileId = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+            tileIdInput.value = state.tileId;
+        });
+
+        // Initialize drag-and-drop & preset handlers
+        function initEvents() {
+            // Shape selector clicks
+            const hexBtn = document.getElementById("shape-hexagon");
+            const circleBtn = document.getElementById("shape-circle");
+            if (hexBtn && circleBtn) {
+                hexBtn.addEventListener("click", () => {
+                    hexBtn.classList.add("active");
+                    circleBtn.classList.remove("active");
+                    updateShapeUI("hexagon");
+                    redraw();
+                });
+                circleBtn.addEventListener("click", () => {
+                    circleBtn.classList.add("active");
+                    hexBtn.classList.remove("active");
+                    updateShapeUI("circle");
+                    redraw();
+                });
+            }
+
+            // Border preset clicks
+            document.querySelectorAll(".control-group:nth-of-type(4) .preset-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".control-group:nth-of-type(4) .preset-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    
+                    const border = btn.dataset.border;
+                    state.borderStyle = border;
+                    
+                    if (border === "custom") {
+                        customBorderColorRow.style.display = "flex";
+                    } else {
+                        customBorderColorRow.style.display = "none";
+                    }
+                    redraw();
+                });
+            });
+
+            // Border custom color picker
+            borderColorPicker.addEventListener("input", (e) => {
+                state.borderColorCustom = e.target.value;
+                borderColorHex.textContent = e.target.value.toUpperCase();
+                redraw();
+            });
+
+            // Sliders for Borders
+            borderWidthSlider.addEventListener("input", (e) => {
+                const val = (e.target.value / 10).toFixed(1);
+                state.borderWidth = parseFloat(val);
+                borderWidthVal.textContent = `${val}px`;
+                redraw();
+            });
+
+            borderInsetSlider.addEventListener("input", (e) => {
+                const val = (e.target.value / 10).toFixed(1);
+                state.borderInset = parseFloat(val);
+                borderInsetVal.textContent = `${val}px`;
+                redraw();
+            });
+
+            // Segment drag toggling
+            dragModeFg.addEventListener("click", () => {
+                dragModeFg.classList.add("active");
+                dragModeBg.classList.remove("active");
+                state.dragMode = "fg";
+            });
+            dragModeBg.addEventListener("click", () => {
+                dragModeBg.classList.add("active");
+                dragModeFg.classList.remove("active");
+                state.dragMode = "bg";
+            });
+
+            // Toggle background checkerboard grid
+            toggleGridBg.addEventListener("click", () => {
+                canvasWrapper.classList.toggle("checkerboard");
+            });
+
+            // Reset composition button
+            resetBtn.addEventListener("click", () => {
+                state.bgScale = 1.0;
+                state.bgRotation = 0;
+                state.bgX = 0;
+                state.bgY = 0;
+                
+                state.fgScale = 1.0;
+                state.fgRotation = 0;
+                state.fgX = 0;
+                state.fgY = 0;
+                
+                // Sync sliders
+                bgScaleSlider.value = 100;
+                bgScaleVal.textContent = "100%";
+                bgRotateSlider.value = 0;
+                bgRotateVal.textContent = "0°";
+                
+                fgScaleSlider.value = 100;
+                fgScaleVal.textContent = "100%";
+                fgRotateSlider.value = 0;
+                fgRotateVal.textContent = "0°";
+                
+                // Reset shape
+                updateShapeUI("hexagon");
+                const hexBtn = document.getElementById("shape-hexagon");
+                const circleBtn = document.getElementById("shape-circle");
+                if (hexBtn && circleBtn) {
+                    hexBtn.classList.add("active");
+                    circleBtn.classList.remove("active");
+                }
+                
+                redraw();
+                showToast("Composition reset!");
+            });
+
+            // File uploading for Background Image
+            bgDropzone.addEventListener("click", () => bgFileInput.click());
+            bgFileInput.addEventListener("change", (e) => handleFileSelect(e.target.files[0], "bg"));
+            
+            // File uploading for Foreground Image
+            fgDropzone.addEventListener("click", () => fgFileInput.click());
+            fgFileInput.addEventListener("change", (e) => handleFileSelect(e.target.files[0], "fg"));
+
+            // Drag over effects for dropzones
+            setupDropzoneDrag("bg-dropzone", (file) => handleFileSelect(file, "bg"));
+            setupDropzoneDrag("fg-dropzone", (file) => handleFileSelect(file, "fg"));
+
+            // Remove buttons
+            bgRemoveBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                state.bgImage = null;
+                state.bgFilename = "";
+                bgPreview.style.display = "none";
+                bgFileInput.value = "";
+                redraw();
+            });
+
+            fgRemoveBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                state.fgImage = null;
+                state.fgFilename = "";
+                fgPreview.style.display = "none";
+                fgFileInput.value = "";
+                redraw();
+            });
+
+            // Scaling/Rotation Sliders for Background
+            bgScaleSlider.addEventListener("input", (e) => {
+                state.bgScale = parseInt(e.target.value) / 100;
+                bgScaleVal.textContent = `${e.target.value}%`;
+                redraw();
+            });
+            bgRotateSlider.addEventListener("input", (e) => {
+                state.bgRotation = parseInt(e.target.value);
+                bgRotateVal.textContent = `${e.target.value}°`;
+                redraw();
+            });
+
+            // Scaling/Rotation Sliders for Foreground
+            fgScaleSlider.addEventListener("input", (e) => {
+                state.fgScale = parseInt(e.target.value) / 100;
+                fgScaleVal.textContent = `${e.target.value}%`;
+                redraw();
+            });
+            fgRotateSlider.addEventListener("input", (e) => {
+                state.fgRotation = parseInt(e.target.value);
+                fgRotateVal.textContent = `${e.target.value}°`;
+                redraw();
+            });
+
+            // Canvas drag interaction
+            previewCanvas.addEventListener("mousedown", startDrag);
+            window.addEventListener("mousemove", handleDrag);
+            window.addEventListener("mouseup", stopDrag);
+            
+            // Canvas scroll-wheel zoom interaction
+            previewCanvas.addEventListener("wheel", (e) => {
+                e.preventDefault();
+                const zoomDelta = e.deltaY < 0 ? 0.05 : -0.05;
+                if (state.dragMode === "fg") {
+                    state.fgScale = Math.max(0.1, Math.min(4.0, state.fgScale + zoomDelta));
+                    const percent = Math.round(state.fgScale * 100);
+                    fgScaleSlider.value = percent;
+                    fgScaleVal.textContent = `${percent}%`;
+                } else {
+                    if (state.bgType === "image") {
+                        state.bgScale = Math.max(0.1, Math.min(4.0, state.bgScale + zoomDelta));
+                        const percent = Math.round(state.bgScale * 100);
+                        bgScaleSlider.value = percent;
+                        bgScaleVal.textContent = `${percent}%`;
+                    }
+                }
+                redraw();
+            });
+
+            // Export Actions
+            downloadStdBtn.addEventListener("click", () => {
+                if (state.tileShape === "circle") {
+                    exportPngFile(51, 51, false);
+                } else {
+                    exportPngFile(128, 110, false);
+                }
+            });
+            downloadHiresBtn.addEventListener("click", () => {
+                if (state.tileShape === "circle") {
+                    exportPngFile(512, 512, true);
+                } else {
+                    exportPngFile(512, 443, true);
+                }
+            });
+            copyBase64Btn.addEventListener("click", copyBase64String);
+
+            // Increment/Decrement buttons for all sliders
+            document.querySelectorAll(".slider-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const targetId = btn.dataset.target;
+                    const slider = document.getElementById(targetId);
+                    if (!slider) return;
+                    
+                    const min = parseFloat(slider.min) || 0;
+                    const max = parseFloat(slider.max) || 100;
+                    const step = parseFloat(slider.step) || 1;
+                    let val = parseFloat(slider.value) || 0;
+                    
+                    if (btn.classList.contains("inc-btn")) {
+                        val = Math.min(max, val + step);
+                    } else {
+                        val = Math.max(min, val - step);
+                    }
+                    
+                    slider.value = val;
+                    // Dispatch input event to trigger slider update logic
+                    slider.dispatchEvent(new Event("input"));
+                });
+            });
+
+            // Panel reset clicks
+            document.querySelectorAll(".panel-reset-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const panel = btn.dataset.panel;
+                    if (panel === "bg") {
+                        state.bgScale = 1.0;
+                        state.bgRotation = 0;
+                        bgScaleSlider.value = 100;
+                        bgScaleVal.textContent = "100%";
+                        bgRotateSlider.value = 0;
+                        bgRotateVal.textContent = "0°";
+                        showToast("Background sliders reset!");
+                    } else if (panel === "fg") {
+                        state.fgScale = 1.0;
+                        state.fgRotation = 0;
+                        fgScaleSlider.value = 100;
+                        fgScaleVal.textContent = "100%";
+                        fgRotateSlider.value = 0;
+                        fgRotateVal.textContent = "0°";
+                        showToast("Foreground sliders reset!");
+                    } else if (panel === "border") {
+                        state.borderWidth = 3.0;
+                        state.borderInset = 1.5;
+                        borderWidthSlider.value = 30;
+                        borderWidthVal.textContent = "3.0px";
+                        borderInsetSlider.value = 15;
+                        borderInsetVal.textContent = "1.5px";
+                        
+                        // Reset border presets selection
+                        state.borderStyle = "none";
+                        document.querySelectorAll(".control-group:nth-of-type(4) .preset-btn").forEach(b => b.classList.remove("active"));
+                        const noneBtn = document.querySelector(".control-group:nth-of-type(4) .preset-btn[data-border='none']");
+                        if (noneBtn) {
+                            noneBtn.classList.add("active");
+                        }
+                        if (customBorderColorRow) {
+                            customBorderColorRow.style.display = "none";
+                        }
+                        
+                        showToast("Border settings reset!");
+                    }
+                    redraw();
+                });
+            });
+        }
+
+        // Setup dropzone file dragging highlights
+        function setupDropzoneDrag(id, callback) {
+            const el = document.getElementById(id);
+            el.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                el.classList.add("dragover");
+            });
+            el.addEventListener("dragleave", () => {
+                el.classList.remove("dragover");
+            });
+            el.addEventListener("drop", (e) => {
+                e.preventDefault();
+                el.classList.remove("dragover");
+                if (e.dataTransfer.files.length > 0) {
+                    callback(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        // Process dropped or selected image files
+        function handleFileSelect(file, target) {
+            if (!file || !file.type.startsWith("image/")) {
+                alert("Please select a valid image file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (target === "bg") {
+                        state.bgImage = img;
+                        state.bgFilename = file.name;
+                        bgFilename.textContent = file.name;
+                        bgPreview.style.display = "flex";
+                        redraw();
+                    } else {
+                        state.fgImage = img;
+                        state.fgFilename = file.name;
+                        fgFilename.textContent = file.name;
+                        fgPreview.style.display = "flex";
+                        
+                        // Switch to circle shape for creature/game tiles
+                        updateShapeUI("circle");
+                        const circleBtn = document.getElementById("shape-circle");
+                        const hexBtn = document.getElementById("shape-hexagon");
+                        if (circleBtn && hexBtn) {
+                            hexBtn.classList.remove("active");
+                            circleBtn.classList.add("active");
+                        }
+                        
+                        redraw();
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Drag handlers
+        function startDrag(e) {
+            if (e.button !== 0) return; // Left click only
+            state.isDragging = true;
+            state.startX = e.clientX;
+            state.startY = e.clientY;
+            
+            if (state.dragMode === "fg") {
+                state.startOffsetX = state.fgX;
+                state.startOffsetY = state.fgY;
+            } else {
+                state.startOffsetX = state.bgX;
+                state.startOffsetY = state.bgY;
+            }
+        }
+
+        function handleDrag(e) {
+            if (!state.isDragging) return;
+            
+            const rect = previewCanvas.getBoundingClientRect();
+            // Scale movement according to canvas display vs coordinate bounds
+            const scaleX = 512 / rect.width;
+            const scaleY = previewCanvas.height / rect.height;
+            
+            const dx = (e.clientX - state.startX) * scaleX;
+            const dy = (e.clientY - state.startY) * scaleY;
+            
+            if (state.dragMode === "fg") {
+                state.fgX = state.startOffsetX + dx;
+                state.fgY = state.startOffsetY + dy;
+            } else {
+                if (state.bgType === "image") {
+                    state.bgX = state.startOffsetX + dx;
+                    state.bgY = state.startOffsetY + dy;
+                }
+            }
+            redraw();
+        }
+
+        function stopDrag() {
+            state.isDragging = false;
+        }
+
+        // Draw hexagon path helper on any canvas context
+        function pathHexagon(tCtx, cx, cy, w, h, inset = 0) {
+            // Formula corresponding to standard hex drawing constants in map generator
+            const wt = w/4 - inset * 0.5;
+            const wp = w/2 - inset;
+            const ht = h/2 - inset * (h / w);
+            
+            tCtx.beginPath();
+            tCtx.moveTo(cx - wt, cy - ht);
+            tCtx.lineTo(cx + wt, cy - ht);
+            tCtx.lineTo(cx + wp, cy);
+            tCtx.lineTo(cx + wt, cy + ht);
+            tCtx.lineTo(cx - wt, cy + ht);
+            tCtx.lineTo(cx - wp, cy);
+            tCtx.closePath();
+        }
+
+        // Draw circle path helper on any canvas context
+        function pathCircle(tCtx, cx, cy, w, h, inset = 0) {
+            const radius = (h / 2) - inset;
+            tCtx.beginPath();
+            tCtx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            tCtx.closePath();
+        }
+
+        // Main Drawing logic to composite layers on any size canvas context
+        function drawComposition(tCtx, w, h) {
+            const scaleFactor = w / 512;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            tCtx.clearRect(0, 0, w, h);
+            
+            // 1. Draw Background inside clip mask
+            tCtx.save();
+            if (state.tileShape === "circle") {
+                pathCircle(tCtx, cx, cy, w, h, 0);
+            } else {
+                pathHexagon(tCtx, cx, cy, w, h, 0);
+            }
+            tCtx.clip();
+            
+            if (state.bgType === "preset" && state.bgColor !== "transparent") {
+                tCtx.fillStyle = state.bgColor;
+                tCtx.fillRect(0, 0, w, h);
+            } else if (state.bgType === "image" && state.bgImage) {
+                tCtx.save();
+                tCtx.translate(cx + state.bgX * scaleFactor, cy + state.bgY * scaleFactor);
+                tCtx.rotate(state.bgRotation * Math.PI / 180);
+                
+                const drawW = state.bgImage.width * state.bgScale * scaleFactor;
+                const drawH = state.bgImage.height * state.bgScale * scaleFactor;
+                tCtx.drawImage(state.bgImage, -drawW / 2, -drawH / 2, drawW, drawH);
+                tCtx.restore();
+            }
+            
+            // 2. Draw Foreground image if uploaded
+            if (state.fgImage) {
+                tCtx.save();
+                tCtx.translate(cx + state.fgX * scaleFactor, cy + state.fgY * scaleFactor);
+                tCtx.rotate(state.fgRotation * Math.PI / 180);
+                
+                const drawW = state.fgImage.width * state.fgScale * scaleFactor;
+                const drawH = state.fgImage.height * state.fgScale * scaleFactor;
+                tCtx.drawImage(state.fgImage, -drawW / 2, -drawH / 2, drawW, drawH);
+                tCtx.restore();
+            }
+            tCtx.restore(); // Remove clipping mask
+            
+            // 3. Draw inside border outline
+            if (state.borderStyle !== "none") {
+                let borderStrokeColor = state.borderStyle;
+                if (borderStrokeColor === "custom") {
+                    borderStrokeColor = state.borderColorCustom;
+                }
+                
+                tCtx.save();
+                if (state.tileShape === "circle") {
+                    pathCircle(tCtx, cx, cy, w, h, state.borderInset * scaleFactor);
+                } else {
+                    pathHexagon(tCtx, cx, cy, w, h, state.borderInset * scaleFactor);
+                }
+                tCtx.strokeStyle = borderStrokeColor;
+                tCtx.lineWidth = state.borderWidth * scaleFactor;
+                tCtx.stroke();
+                tCtx.restore();
+            }
+        }
+
+        // Helper to update canvas layout on shape selection
+        function updateShapeUI(shape) {
+            state.tileShape = shape;
+            const canvasSizeInfo = document.getElementById("canvas-size-info");
+            
+            if (shape === "circle") {
+                previewCanvas.width = 512;
+                previewCanvas.height = 512;
+                if (canvasSizeInfo) {
+                    canvasSizeInfo.textContent = "Composition Scale: 1:1 (512x512)";
+                }
+                downloadStdBtn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i> Save Standard (51x51 px)';
+                downloadHiresBtn.innerHTML = '<i class="fa-solid fa-file-image"></i> Save High-Res (512x512 px)';
+            } else {
+                previewCanvas.width = 512;
+                previewCanvas.height = 443;
+                if (canvasSizeInfo) {
+                    canvasSizeInfo.textContent = "Composition Scale: 1:1 (512x443)";
+                }
+                downloadStdBtn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i> Save Standard (128x110 px)';
+                downloadHiresBtn.innerHTML = '<i class="fa-solid fa-file-image"></i> Save High-Res (512x443 px)';
+            }
+        }
+
+        // Live preview redraw
+        function redraw() {
+            drawComposition(ctx, previewCanvas.width, previewCanvas.height);
+        }
+
+        // High-quality step-down canvas resizing helper (mimics cv2.INTER_AREA)
+        function downsampleCanvas(sourceCanvas, targetW, targetH) {
+            let currentCanvas = sourceCanvas;
+            let currentW = sourceCanvas.width;
+            let currentH = sourceCanvas.height;
+
+            // Half-step downscaling to prevent aliasing
+            while (currentW > targetW * 2 && currentH > targetH * 2) {
+                currentW = Math.round(currentW / 2);
+                currentH = Math.round(currentH / 2);
+
+                const nextCanvas = document.createElement("canvas");
+                nextCanvas.width = currentW;
+                nextCanvas.height = currentH;
+                const nextCtx = nextCanvas.getContext("2d");
+                
+                nextCtx.imageSmoothingEnabled = true;
+                nextCtx.imageSmoothingQuality = "high";
+                nextCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, currentW, currentH);
+                
+                currentCanvas = nextCanvas;
+            }
+
+            // Final scale step to target size
+            const finalCanvas = document.createElement("canvas");
+            finalCanvas.width = targetW;
+            finalCanvas.height = targetH;
+            const finalCtx = finalCanvas.getContext("2d");
+            
+            finalCtx.imageSmoothingEnabled = true;
+            finalCtx.imageSmoothingQuality = "high";
+            finalCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, targetW, targetH);
+
+            return finalCanvas;
+        }
+
+        // Export resulting tile as a PNG file download
+        function exportPngFile(w, h, isHires) {
+            let finalCanvas;
+            if (isHires) {
+                finalCanvas = document.createElement("canvas");
+                finalCanvas.width = w;
+                finalCanvas.height = h;
+                const tempCtx = finalCanvas.getContext("2d");
+                drawComposition(tempCtx, w, h);
+            } else {
+                // High-res rendering source
+                const srcCanvas = document.createElement("canvas");
+                srcCanvas.width = 512;
+                srcCanvas.height = state.tileShape === "circle" ? 512 : 443;
+                const srcCtx = srcCanvas.getContext("2d");
+                drawComposition(srcCtx, srcCanvas.width, srcCanvas.height);
+                
+                // High-quality downsampling
+                finalCanvas = downsampleCanvas(srcCanvas, w, h);
+            }
+            
+            const dataUrl = finalCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = `${state.tileId}${isHires ? "_hires" : ""}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast(`Downloaded ${isHires ? "high-res" : "standard"} tile!`);
+        }
+
+        // Copy tile as a base64 encoded PNG string
+        function copyBase64String() {
+            const w = state.tileShape === "circle" ? 51 : 128;
+            const h = state.tileShape === "circle" ? 51 : 110;
+            
+            // High-res rendering source
+            const srcCanvas = document.createElement("canvas");
+            srcCanvas.width = 512;
+            srcCanvas.height = state.tileShape === "circle" ? 512 : 443;
+            const srcCtx = srcCanvas.getContext("2d");
+            drawComposition(srcCtx, srcCanvas.width, srcCanvas.height);
+            
+            // High-quality downsampling
+            const finalCanvas = downsampleCanvas(srcCanvas, w, h);
+            
+            const base64Str = finalCanvas.toDataURL("image/png");
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(base64Str).then(() => {
+                showToast("Copied standard tile Base64 URL!");
+            }).catch(err => {
+                console.error("Clipboard copy failed: ", err);
+                alert("Failed to copy string automatically. Copy from console.");
+                console.log(base64Str);
+            });
+        }
+
+        // Show feedback toast
+        function showToast(message) {
+            toastText.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // Start app
+        document.addEventListener("DOMContentLoaded", () => {
+            initEvents();
+            redraw();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexagonal Map Generator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vanilla CSS Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-map-location-dot logo-icon"></i>
+                <h2>Wizards of the North</h2>
+                <p>Hex Map Generator</p>
+            </div>
+            
+            <div class="control-sections">
+                <!-- Map Size Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-maximize"></i> Map Dimensions</h3>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="dimensions-reset-btn" class="icon-btn" title="Reset Dimensions"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                            <button id="grid-settings-btn" class="icon-btn" title="Slider Settings"><i class="fa-solid fa-gear"></i></button>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Columns (Width)</span>
+                            <input type="number" id="cols-val" class="dimension-input" value="15" min="3" max="100">
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="cols-slider" title="Decrease Columns"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="cols-slider" min="3" max="30" value="15">
+                            <button class="slider-btn inc-btn" data-target="cols-slider" title="Increase Columns"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Rows (Height)</span>
+                            <input type="number" id="rows-val" class="dimension-input" value="10" min="3" max="100">
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="rows-slider" title="Decrease Rows"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="rows-slider" min="3" max="30" value="10">
+                            <button class="slider-btn inc-btn" data-target="rows-slider" title="Increase Rows"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="toggle-container" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+                        <span class="toggle-label"><i class="fa-solid fa-crop-simple"></i> Limit Map Dimensions</span>
+                        <label class="switch">
+                            <input type="checkbox" id="dimensions-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Generation Settings Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Terrain Generation</h3>
+                        <button id="terrain-reset-btn" class="icon-btn" title="Reset Terrain"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                    </div>
+                    <div class="input-container">
+                        <label for="seed-input">Map Seed</label>
+                        <div class="seed-input-wrapper">
+                            <input type="text" id="seed-input" value="12345" placeholder="Enter seed">
+                            <button id="random-seed-btn" class="icon-btn" title="Random Seed">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="button-row">
+                        <button id="generate-btn" class="primary-btn">
+                            <i class="fa-solid fa-rotate"></i> Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Start Positions Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-chess-rook"></i> Start Towers</h3>
+                        <button id="towers-reset-btn" class="icon-btn" title="Reset Start Towers"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                    </div>
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-hand-pointer"></i> Manual Tower Placement</span>
+                        <label class="switch">
+                            <input type="checkbox" id="manual-towers-toggle">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-container" id="start-axis-container">
+                        <span class="toggle-label" id="start-axis-label"><i class="fa-solid fa-arrows-left-right"></i> Left & Right Columns</span>
+                        <label class="switch">
+                            <input type="checkbox" id="start-axis-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Players Settings Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-users"></i> Players Settings</h3>
+                        <button id="players-reset-btn" class="icon-btn" title="Reset Players"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                    </div>
+                    <div class="input-container">
+                        <label for="player-count-select">Number of Players</label>
+                        <select id="player-count-select">
+                            <option value="2" selected>2 Players</option>
+                            <option value="3">3 Players</option>
+                            <option value="4">4 Players</option>
+                        </select>
+                    </div>
+                    <div id="player-positions-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Player starting positions will be dynamically generated here -->
+                    </div>
+                </div>
+
+                <!-- Display Settings Group -->
+                <div class="control-group">
+                    <div class="control-header-row">
+                        <h3><i class="fa-solid fa-sliders"></i> Display Options</h3>
+                        <button id="display-reset-btn" class="icon-btn" title="Reset Display Options"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                    </div>
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-border-all"></i> Show Grid Lines</span>
+                        <label class="switch">
+                            <input type="checkbox" id="grid-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-map"></i> Show Terrain Art</span>
+                        <label class="switch">
+                            <input type="checkbox" id="tiles-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-border-none"></i> Show Inside Borders</span>
+                        <label class="switch">
+                            <input type="checkbox" id="borders-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-image"></i> High-Res Tiles (512px)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="hires-toggle">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-bullseye"></i> Highlight Center Tile(s)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="center-toggle">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <span>Zoom Level</span>
+                            <span id="zoom-val">100%</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="zoom-slider" title="Decrease Zoom"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="zoom-slider" min="30" max="150" value="100">
+                            <button class="slider-btn inc-btn" data-target="zoom-slider" title="Increase Zoom"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="button-row" style="margin-top: 16px;">
+                        <button id="center-map-btn" class="secondary-btn" style="width: 100%;">
+                            <i class="fa-solid fa-align-center"></i> Center Map
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Terrain Statistics Group -->
+                <div class="control-group">
+                    <h3><i class="fa-solid fa-chart-pie"></i> Terrain Distribution</h3>
+                    <div class="stats-panel" id="stats-panel"></div>
+                </div>
+
+                <!-- Save & Load Options Group -->
+                <div class="control-group">
+                    <h3><i class="fa-solid fa-floppy-disk"></i> Save & Load</h3>
+                    <div class="button-column">
+                        <button id="export-png-btn" class="secondary-btn">
+                            <i class="fa-solid fa-file-image"></i> Export as PNG
+                        </button>
+                        <button id="export-svg-btn" class="secondary-btn">
+                            <i class="fa-solid fa-file-code"></i> Export as SVG
+                        </button>
+                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 8px 0;">
+                        <button id="export-json-btn" class="secondary-btn">
+                            <i class="fa-solid fa-file-export"></i> Save Map (JSON)
+                        </button>
+                        <button id="import-json-btn" class="secondary-btn">
+                            <i class="fa-solid fa-file-import"></i> Load Map (JSON)
+                        </button>
+                        <input type="file" id="import-json-input" accept=".json" style="display: none;">
+                        <div id="file-protocol-warning" class="warning-box" style="display: none;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Running locally via <code>file://</code>. Tile exports will fail due to browser security. Run a local web server (e.g. <code>python -m http.server</code>) or run <code>python embed_assets.py</code> to package assets offline.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                <div style="text-align: center; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">
+                    Start points locked to Wizards Towers
+                </div>
+                <button class="secondary-btn" style="width: 100%; padding: 6px 12px; font-size: 0.78rem;" onclick="window.location.href='tile_creator.html'">
+                    <i class="fa-solid fa-cube"></i> Open Hex Tile Creator
+                </button>
+                <button class="secondary-btn" style="width: 100%; padding: 6px 12px; font-size: 0.78rem;" onclick="window.location.href='card_generator.html'">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Open Card Creator
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Viewport containing the Interactive Canvas -->
+        <main class="viewport">
+            <!-- Instructions and status indicator -->
+            <div class="viewport-header glass-panel">
+                <div class="tool-status">
+                    <span id="mode-badge" class="mode-badge auto-mode">Procedural Map</span>
+                    <span id="dimensions-display" class="dimensions-display">Grid: 15 x 10</span>
+                    <span id="coordinates-display" class="coordinates-display">Hover a tile to coordinates</span>
+                </div>
+                <div class="tool-tips">
+                    <span><kbd>Left Click</kbd> to paint manually</span>
+                    <span><kbd>Right Click + Drag</kbd> to pan</span>
+                    <span><kbd>Scroll</kbd> to zoom</span>
+                </div>
+            </div>
+
+            <!-- Canvas Wrapper for Panning and Zooming -->
+            <div class="canvas-wrapper" id="canvas-wrapper">
+                <canvas id="map-canvas"></canvas>
+            </div>
+
+            <!-- Floating Brush Palette at the Bottom -->
+            <div class="palette-container glass-panel">
+                <div class="palette-header">
+                    <h3><i class="fa-solid fa-palette"></i> Manual Paint Brush</h3>
+                    <div class="palette-controls">
+                        <button id="clear-canvas-btn" class="danger-btn btn-sm" title="Clear Canvas to Empty Space">
+                            <i class="fa-solid fa-eraser"></i> Clear Canvas
+                        </button>
+                        <button id="clear-map-btn" class="danger-btn btn-sm" title="Clear Map to Grass">
+                            <i class="fa-solid fa-trash-can"></i> Clear to Grass
+                        </button>
+                        <button id="reset-mode-btn" class="secondary-btn btn-sm" title="Switch back to Procedural Map Mode">
+                            <i class="fa-solid fa-wand-magic"></i> Auto Mode
+                        </button>
+                    </div>
+                </div>
+                <div class="tile-palette" id="tile-palette">
+                    <!-- Tiles will be dynamically injected here by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Map Tooltip element -->
+    <div id="map-tooltip" class="map-tooltip" style="display: none; position: fixed; pointer-events: none; z-index: 1000;"></div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gear"></i> Grid Limits Settings</h2>
+                <button id="close-modal-btn" class="icon-btn close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Set the maximum limits for the grid width (columns) and height (rows) sliders.</p>
+                <div class="input-container">
+                    <label for="max-cols-input">Max Columns Limit</label>
+                    <input type="number" id="max-cols-input" class="modal-input" value="30" min="3" max="100">
+                </div>
+                <div class="input-container">
+                    <label for="max-rows-input">Max Rows Limit</label>
+                    <input type="number" id="max-rows-input" class="modal-input" value="30" min="3" max="100">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings-btn" class="primary-btn">Save Settings</button>
+                <button id="cancel-settings-btn" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Files -->
+    <script src="assets_base64.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
