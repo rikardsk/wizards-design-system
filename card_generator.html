@@ -546,6 +546,17 @@
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.04);
             overflow: auto;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card-container-wrapper.light-bg {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .card-container-wrapper.dark-bg {
+            background: #000000;
+            border-color: rgba(255, 255, 255, 0.08);
         }
 
         /* HIGH-FIDELITY MTG CARD LAYOUT */
@@ -1583,9 +1594,14 @@
         <main class="viewport">
             <div class="viewport-header glass-panel">
                 <span class="mode-badge"><i class="fa-solid fa-eye"></i> Card Live Composition</span>
-                <button class="secondary-btn" id="download-card-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
-                    <i class="fa-solid fa-download"></i> Save Card Image (PNG)
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="secondary-btn btn-sm" id="toggle-canvas-bg" title="Toggle Canvas Background" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-circle-half-stroke"></i> Toggle Background
+                    </button>
+                    <button class="secondary-btn" id="download-card-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-download"></i> Save Card Image (PNG)
+                    </button>
+                </div>
             </div>
 
             <!-- Center container with grid wrapper -->
@@ -1761,7 +1777,10 @@
             
             // Full deck database
             deck: [],
-            selectedCardId: null // If editing a card, its ID
+            selectedCardId: null, // If editing a card, its ID
+
+            // Viewport configuration
+            canvasBackground: "dark"
         };
 
         // Available Keywords (loaded from localStorage with defaults)
@@ -1814,6 +1833,8 @@
         const deckNameInput = document.getElementById("deck-name-input");
         
         const downloadCardPng = document.getElementById("download-card-png");
+        const toggleCanvasBg = document.getElementById("toggle-canvas-bg");
+        const canvasWrapper = document.getElementById("canvas-wrapper");
         const exportDeckBtn = document.getElementById("export-deck-btn");
         const importDeckBtn = document.getElementById("import-deck-btn");
         const importDeckFile = document.getElementById("import-deck-file");
@@ -2131,6 +2152,21 @@
             
             // Image downloads
             downloadCardPng.addEventListener("click", () => downloadCardImage(false));
+
+            // Canvas background toggle
+            if (toggleCanvasBg && canvasWrapper) {
+                toggleCanvasBg.addEventListener("click", () => {
+                    if (state.canvasBackground === "light") {
+                        state.canvasBackground = "dark";
+                        canvasWrapper.classList.remove("light-bg");
+                        canvasWrapper.classList.add("dark-bg");
+                    } else {
+                        state.canvasBackground = "light";
+                        canvasWrapper.classList.remove("dark-bg");
+                        canvasWrapper.classList.add("light-bg");
+                    }
+                });
+            }
             
             // Deck operations
             clearDeckBtn.addEventListener("click", clearDeck);
