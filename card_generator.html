@@ -3157,9 +3157,30 @@
                 alert("There are no cards in the deck to export.");
                 return;
             }
+            
+            // Normalize all cards to ensure keywords and activatedAbilities are present
+            const normalizedCards = state.deck.map(card => ({
+                id: card.id,
+                cardName: card.cardName || "Unnamed Card",
+                frameStyle: card.frameStyle || "red",
+                borderColor: card.borderColor || "black",
+                manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
+                cardType: card.cardType || "Creature",
+                rulesText: card.rulesText || "",
+                power: card.power || "1",
+                toughness: card.toughness || "1",
+                artBase64: card.artBase64 || "",
+                artScale: card.artScale !== undefined ? card.artScale : 1.0,
+                artRotation: card.artRotation !== undefined ? card.artRotation : 0,
+                artX: card.artX !== undefined ? card.artX : 0,
+                artY: card.artY !== undefined ? card.artY : 0,
+                keywords: Array.isArray(card.keywords) ? card.keywords : [],
+                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : []
+            }));
+
             const exportData = {
                 deckName: state.deckName || "Wizards Deck",
-                cards: state.deck
+                cards: normalizedCards
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchor = document.createElement("a");
@@ -3176,8 +3197,30 @@
             
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
-            downloadAnchor.removeChild(downloadAnchor);
+            document.body.removeChild(downloadAnchor);
             showToast("Exported deck config JSON!");
+        }
+
+        // Helper to normalize card properties on import
+        function normalizeImportedCard(card) {
+            return {
+                id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
+                cardName: card.cardName || "Unnamed Card",
+                frameStyle: card.frameStyle || "red",
+                borderColor: card.borderColor || "black",
+                manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
+                cardType: card.cardType || "Creature",
+                rulesText: card.rulesText || "",
+                power: card.power || "1",
+                toughness: card.toughness || "1",
+                artBase64: card.artBase64 || "",
+                artScale: card.artScale !== undefined ? card.artScale : 1.0,
+                artRotation: card.artRotation !== undefined ? card.artRotation : 0,
+                artX: card.artX !== undefined ? card.artX : 0,
+                artY: card.artY !== undefined ? card.artY : 0,
+                keywords: Array.isArray(card.keywords) ? card.keywords : [],
+                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : []
+            };
         }
 
         // Import Deck database from a uploaded JSON file
@@ -3190,7 +3233,7 @@
                 try {
                     const imported = JSON.parse(event.target.result);
                     if (Array.isArray(imported)) {
-                        state.deck = imported;
+                        state.deck = imported.map(normalizeImportedCard);
                         state.deckName = "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
@@ -3198,7 +3241,7 @@
                         resetForm();
                         showToast("Deck imported successfully!");
                     } else if (imported && Array.isArray(imported.cards)) {
-                        state.deck = imported.cards;
+                        state.deck = imported.cards.map(normalizeImportedCard);
                         state.deckName = imported.deckName || "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
