@@ -288,7 +288,7 @@
             gap: 6px;
         }
 
-        .color-preset-btn {
+        .color-preset-btn, .border-preset-btn {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
@@ -304,11 +304,11 @@
             text-transform: uppercase;
         }
 
-        .color-preset-btn:hover {
+        .color-preset-btn:hover, .border-preset-btn:hover {
             border-color: var(--text-main);
         }
 
-        .color-preset-btn.active {
+        .color-preset-btn.active, .border-preset-btn.active {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
             background: rgba(226, 183, 71, 0.05);
@@ -594,26 +594,12 @@
             box-shadow: 0 0 20px rgba(141, 146, 153, 0.1), 0 15px 40px rgba(0,0,0,0.8);
         }
 
-        /* Inner pinstripe border */
-        .mtg-card-frame::before {
-            content: "";
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            right: 2px;
-            bottom: 2px;
-            border: 1px solid rgba(226, 183, 71, 0.3);
-            border-radius: 9px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
         /* Inner Content Border box */
         .card-inner-border {
             display: flex;
             flex-direction: column;
             height: 100%;
-            border: 3px double rgba(0, 0, 0, 0.45);
+            border: 2px solid rgba(0, 0, 0, 0.5);
             border-radius: 8px;
             padding: 4px;
             background: rgba(255, 255, 255, 0.03);
@@ -733,7 +719,7 @@
         /* Card Rules Text Box */
         .card-text-box {
             flex: 1;
-            background: rgba(234, 230, 222, 0.88); /* Authentic parchment feel */
+            background: rgba(234, 230, 222, 0.96); /* Authentic parchment feel */
             border: 2px solid #332b1d;
             border-radius: 4px;
             padding: 10px 12px;
@@ -1416,6 +1402,19 @@
                             <button class="color-preset-btn" data-style="artifact" title="Artifact / Grey">Artifact</button>
                         </div>
                     </div>
+
+                    <div class="input-container" style="margin-top: 12px;">
+                        <label>Border Color Style</label>
+                        <div class="preset-grid">
+                            <button class="border-preset-btn" data-border="red" title="Red Border">Red</button>
+                            <button class="border-preset-btn" data-border="green" title="Green Border">Green</button>
+                            <button class="border-preset-btn active" data-border="black" title="Black Border">Black</button>
+                            <button class="border-preset-btn" data-border="white" title="White Border">White</button>
+                            <button class="border-preset-btn" data-border="blue" title="Blue Border">Blue</button>
+                            <button class="border-preset-btn" data-border="gold" title="Gold Border">Gold</button>
+                            <button class="border-preset-btn" data-border="artifact" title="Artifact Border">Artifact</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Mana Cost Builder Group -->
@@ -1615,7 +1614,6 @@
                         <!-- Type bar -->
                         <div class="card-type-bar">
                             <span class="card-type-text" id="card-preview-type">Creature</span>
-                            <i class="fa-solid fa-clover card-expansion-icon"></i>
                         </div>
 
                         <!-- Text/Rules box -->
@@ -1743,6 +1741,7 @@
             deckName: "Wizards Deck",
             cardName: "Volcano Elemental",
             frameStyle: "red", // red, green, black, white, blue, gold, artifact
+            borderColor: "black", // black, white, gold, silver, none
             manaCost: ["C2", "R", "R"], // W, U, B, R, G, C1, C2...
             cardType: "Creature", // Creature, Artifact, Enchantment, Spell
             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
@@ -1798,6 +1797,7 @@
         const manaDisplayContainer = document.getElementById("mana-display-container");
         const clearManaBtn = document.getElementById("clear-mana-btn");
         const colorPresetBtns = document.querySelectorAll(".color-preset-btn");
+        const borderPresetBtns = document.querySelectorAll(".border-preset-btn");
         
         const cardArtDropzone = document.getElementById("card-art-dropzone");
         const cardArtFile = document.getElementById("card-art-file");
@@ -1922,6 +1922,14 @@
             // Sync keyword buttons
             renderKeywordButtons();
             
+            // Sync border buttons
+            borderPresetBtns.forEach(btn => {
+                btn.classList.remove("active");
+                if (btn.dataset.border === (state.borderColor || "black")) {
+                    btn.classList.add("active");
+                }
+            });
+            
             updateCreatureStatsVisibility();
             updateManaDisplay();
             renderAbilityManaDisplay();
@@ -1975,6 +1983,23 @@
                     colorPresetBtns.forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
                     state.frameStyle = btn.dataset.style;
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+            });
+
+            // Border color button click handler
+            borderPresetBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const isAlreadyActive = btn.classList.contains("active");
+                    borderPresetBtns.forEach(b => b.classList.remove("active"));
+                    
+                    if (isAlreadyActive) {
+                        state.borderColor = "none";
+                    } else {
+                        btn.classList.add("active");
+                        state.borderColor = btn.dataset.border;
+                    }
                     updateCardPreview();
                     autoSaveCurrentCard();
                 });
@@ -2228,9 +2253,13 @@
                 state.cardName = "";
                 cardNameInput.value = "";
                 state.frameStyle = "red";
+                state.borderColor = "black";
                 colorPresetBtns.forEach(b => b.classList.remove("active"));
                 const redPreset = document.querySelector('.color-preset-btn[data-style="red"]');
                 if (redPreset) redPreset.classList.add("active");
+                borderPresetBtns.forEach(b => b.classList.remove("active"));
+                const blackBorderPreset = document.querySelector('.border-preset-btn[data-border="black"]');
+                if (blackBorderPreset) blackBorderPreset.classList.add("active");
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -2533,6 +2562,19 @@
             // Frame styling classes
             cardPreviewFrame.className = `mtg-card-frame style-${state.frameStyle}`;
             
+            // Border color styling
+            let borderColorHex = "#0d0d0c"; // Black default
+            if (state.borderColor === "red") borderColorHex = "#ae3d24";
+            else if (state.borderColor === "green") borderColorHex = "#275924";
+            else if (state.borderColor === "black") borderColorHex = "#0c0d0c";
+            else if (state.borderColor === "white") borderColorHex = "#fdfaf2";
+            else if (state.borderColor === "blue") borderColorHex = "#2c5c8e";
+            else if (state.borderColor === "gold") borderColorHex = "#cb9b3c";
+            else if (state.borderColor === "artifact") borderColorHex = "#8d9299";
+            else if (state.borderColor === "none") borderColorHex = "transparent";
+            
+            cardPreviewFrame.style.borderColor = borderColorHex;
+            
             // Rules Text
             const fullRules = getFullRulesText();
             cardPreviewRules.innerHTML = formatRulesTextForHTML(fullRules);
@@ -2574,6 +2616,7 @@
         function resetForm() {
             state.cardName = "";
             state.frameStyle = "red";
+            state.borderColor = "black";
             state.manaCost = [];
             state.cardType = "Creature";
             state.rulesText = "";
@@ -2620,6 +2663,7 @@
                 id: state.selectedCardId,
                 cardName: state.cardName.trim() || "Unnamed Card",
                 frameStyle: state.frameStyle,
+                borderColor: state.borderColor || "black",
                 manaCost: [...state.manaCost],
                 cardType: state.cardType,
                 rulesText: state.rulesText || "",
@@ -2669,6 +2713,7 @@
             state.selectedCardId = card.id;
             state.cardName = card.cardName;
             state.frameStyle = card.frameStyle;
+            state.borderColor = card.borderColor || "black";
             state.manaCost = [...card.manaCost];
             state.cardType = card.cardType;
             state.rulesText = card.rulesText || "";
@@ -2721,6 +2766,14 @@
             colorPresetBtns.forEach(b => {
                 b.classList.remove("active");
                 if (b.dataset.style === card.frameStyle) {
+                    b.classList.add("active");
+                }
+            });
+
+            // Select active border style button
+            borderPresetBtns.forEach(b => {
+                b.classList.remove("active");
+                if (b.dataset.border === (card.borderColor || "black")) {
                     b.classList.add("active");
                 }
             });
@@ -2793,6 +2846,7 @@
                             id: "default_volcano",
                             cardName: "Volcano Elemental",
                             frameStyle: "red",
+                            borderColor: "black",
                             manaCost: ["C2", "R", "R"],
                             cardType: "Creature",
                             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
@@ -3138,16 +3192,6 @@
             tempCtx.clip();
             
             // 1. Draw frame borders and background texture gradient
-            tempCtx.fillStyle = "#0c0d0c";
-            tempCtx.fillRect(0, 0, targetW, targetH); // Bold outer black frame
-            
-            // Draw curved interior bounding box (matching 10px border + 10px padding from CSS)
-            const innerMargin = 20 * scale;
-            const innerW = targetW - (innerMargin * 2);
-            const innerH = targetH - (innerMargin * 2);
-            const cornerRad = 8 * scale; // matching 8px border-radius from CSS
-            
-            // Frame style-specific gradient colors
             let gradColors = ["#ae3d24", "#6e1c0d"]; // Red default
             if (state.frameStyle === "green") gradColors = ["#275924", "#112d0e"];
             else if (state.frameStyle === "black") gradColors = ["#37333d", "#151119"];
@@ -3159,14 +3203,38 @@
             const gradient = tempCtx.createLinearGradient(0, 0, targetW, targetH);
             gradient.addColorStop(0, gradColors[0]);
             gradient.addColorStop(1, gradColors[1]);
-            tempCtx.fillStyle = gradient;
             
-            // Fill curved interior bounding box
-            tempCtx.beginPath();
-            tempCtx.roundRect(innerMargin, innerMargin, innerW, innerH, cornerRad);
-            tempCtx.fill();
+            const innerMargin = 20 * scale;
+            const innerW = targetW - (innerMargin * 2);
+            const innerH = targetH - (innerMargin * 2);
+            const cornerRad = 8 * scale; // matching 8px border-radius from CSS
+
+            if (state.borderColor === "none") {
+                // If border is omitted, fill the entire card with the gradient
+                tempCtx.fillStyle = gradient;
+                tempCtx.fillRect(0, 0, targetW, targetH);
+            } else {
+                // Otherwise, draw the solid border color first
+                let borderFill = "#0c0d0c"; // Black default
+                if (state.borderColor === "red") borderFill = "#ae3d24";
+                else if (state.borderColor === "green") borderFill = "#275924";
+                else if (state.borderColor === "black") borderFill = "#0c0d0c";
+                else if (state.borderColor === "white") borderFill = "#fdfaf2";
+                else if (state.borderColor === "blue") borderFill = "#2c5c8e";
+                else if (state.borderColor === "gold") borderFill = "#cb9b3c";
+                else if (state.borderColor === "artifact") borderFill = "#8d9299";
+                
+                tempCtx.fillStyle = borderFill;
+                tempCtx.fillRect(0, 0, targetW, targetH);
+                
+                // Then fill curved interior bounding box with gradient
+                tempCtx.fillStyle = gradient;
+                tempCtx.beginPath();
+                tempCtx.roundRect(innerMargin, innerMargin, innerW, innerH, cornerRad);
+                tempCtx.fill();
+            }
             
-            // Draw double black pinstripe borders
+            // Draw inner border
             tempCtx.strokeStyle = "rgba(0,0,0,0.5)";
             tempCtx.lineWidth = 2 * scale;
             tempCtx.beginPath();
