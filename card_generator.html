@@ -3635,9 +3635,7 @@
             srcCanvas.height = 1046;
             const srcCtx = srcCanvas.getContext("2d");
             
-            // Fill background based on toggled canvas background state
-            srcCtx.fillStyle = state.canvasBackground === "light" ? "#ffffff" : "#000000";
-            srcCtx.fillRect(0, 0, 750, 1046);
+            // Background is left transparent to preserve transparent rounded corners
             
             // Draw full quality composition
             renderCardToCanvas(srcCtx, 750, 1046);
