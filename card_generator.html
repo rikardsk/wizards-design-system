@@ -3223,6 +3223,31 @@
             };
         }
 
+        // Add any keywords from imported cards to the available keywords list
+        function addImportedKeywordsToAvailable(cards) {
+            let updated = false;
+            cards.forEach(card => {
+                if (Array.isArray(card.keywords)) {
+                    card.keywords.forEach(kw => {
+                        const trimmed = kw.trim();
+                        if (!trimmed) return;
+                        
+                        // Capitalize each word (e.g. "double strike" -> "Double Strike")
+                        const formattedKeyword = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                        
+                        if (!availableKeywords.includes(formattedKeyword)) {
+                            availableKeywords.push(formattedKeyword);
+                            updated = true;
+                        }
+                    });
+                }
+            });
+            if (updated) {
+                saveAvailableKeywords();
+                renderKeywordButtons();
+            }
+        }
+
         // Import Deck database from a uploaded JSON file
         function importDeckFromJson(e) {
             const file = e.target.files[0];
@@ -3234,6 +3259,7 @@
                     const imported = JSON.parse(event.target.result);
                     if (Array.isArray(imported)) {
                         state.deck = imported.map(normalizeImportedCard);
+                        addImportedKeywordsToAvailable(state.deck);
                         state.deckName = "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
@@ -3242,6 +3268,7 @@
                         showToast("Deck imported successfully!");
                     } else if (imported && Array.isArray(imported.cards)) {
                         state.deck = imported.cards.map(normalizeImportedCard);
+                        addImportedKeywordsToAvailable(state.deck);
                         state.deckName = imported.deckName || "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
