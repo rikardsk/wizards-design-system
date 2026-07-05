@@ -78,7 +78,12 @@ const state = {
     maxCols: 30,          // Maximum columns slider setting (default 30)
     maxRows: 30,          // Maximum rows slider setting (default 30)
     playerCount: 2,       // Number of players (2 to 4)
-    playerStartCells: [null, null, null, null] // Starting coordinates for each player
+    playerStartCells: [null, null, null, null], // Starting coordinates for each player
+    mapName: "",                                // Current map name
+    selectedMapId: null,                        // Currently selected map ID
+    isNewSessionMap: true,                      // Whether this is a new session map
+    maps: [],                                   // Saved maps list
+    activeFilters: { size: null, players: null } // Active filter state
 };
 
 // UI Elements
@@ -135,6 +140,19 @@ const towersResetBtn = document.getElementById("towers-reset-btn");
 const playersResetBtn = document.getElementById("players-reset-btn");
 const displayResetBtn = document.getElementById("display-reset-btn");
 
+// Map Manager UI Elements
+const mapNameInput = document.getElementById("map-name-input");
+const mapListContainer = document.getElementById("map-list-container");
+const mapsCountDisplay = document.getElementById("maps-count");
+const newMapBtn = document.getElementById("new-map-btn");
+const exportMapsBtn = document.getElementById("export-maps-btn");
+const importMapsBtn = document.getElementById("import-maps-btn");
+const importMapsFileInput = document.getElementById("import-maps-file");
+const clearMapsBtn = document.getElementById("clear-maps-btn");
+const mapManagerToggleBtn = document.getElementById("map-manager-toggle-btn");
+const mapManagerSidebar = document.getElementById("map-manager-sidebar");
+
+
 // Initialize application
 async function init() {
     // Sync state with initial DOM values (handles browser refresh state caching)
@@ -167,6 +185,33 @@ async function init() {
         const warningBox = document.getElementById("file-protocol-warning");
         if (warningBox) warningBox.style.display = "flex";
     }
+
+    // Initialize Maps DB
+    await initMapsDB();
+    
+    // Sync map name input
+    if (mapNameInput) {
+        mapNameInput.value = state.mapName;
+    }
+
+    // Sync Map Manager collapse state from localStorage
+    const mapManagerCollapsed = localStorage.getItem("mapManagerCollapsed") === "true";
+    if (mapManagerCollapsed) {
+        if (mapManagerSidebar) mapManagerSidebar.classList.add("collapsed");
+        if (mapManagerToggleBtn) {
+            mapManagerToggleBtn.classList.add("collapsed");
+            const icon = mapManagerToggleBtn.querySelector("i");
+            if (icon) icon.className = "fa-solid fa-chevron-left";
+        }
+    } else {
+        if (mapManagerToggleBtn) {
+            const icon = mapManagerToggleBtn.querySelector("i");
+            if (icon) icon.className = "fa-solid fa-chevron-right";
+        }
+    }
+    
+    // Setup filter listeners
+    setupFilterListeners();
 
     setupEventListeners();
     renderPalette();
@@ -344,6 +389,7 @@ function setupEventListeners() {
     centerToggle.addEventListener("change", (e) => {
         state.showCenter = e.target.checked;
         draw();
+        autoSaveCurrentMap();
     });
 
     centerMapBtn.addEventListener("click", () => {
@@ -373,9 +419,13 @@ function setupEventListeners() {
     // Exports
     exportPngBtn.addEventListener("click", exportPNG);
     exportSvgBtn.addEventListener("click", exportSVG);
-    exportJsonBtn.addEventListener("click", saveMapJSON);
-    importJsonBtn.addEventListener("click", () => importJsonInput.click());
-    importJsonInput.addEventListener("change", loadMapJSON);
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", saveMapJSON);
+    }
+    if (importJsonBtn && importJsonInput) {
+        importJsonBtn.addEventListener("click", () => importJsonInput.click());
+        importJsonInput.addEventListener("change", loadMapJSON);
+    }
 
     // Increment/Decrement buttons for all sliders
     document.querySelectorAll(".slider-btn").forEach(btn => {
@@ -412,6 +462,7 @@ function setupEventListeners() {
             enforceStartTowers();
         }
         draw();
+        autoSaveCurrentMap();
     });
 
     // Map Dimensions Toggle
@@ -419,6 +470,7 @@ function setupEventListeners() {
         state.fixedDimensions = e.target.checked;
         updateDimensionsControlsVisibility();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Manual Towers Toggle
@@ -443,6 +495,7 @@ function setupEventListeners() {
         }
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Player Count Dropdown Change
@@ -451,6 +504,7 @@ function setupEventListeners() {
         enforceStartTowers();
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Canvas panning, zoom, and painting
@@ -467,6 +521,54 @@ function setupEventListeners() {
     window.addEventListener("resize", () => {
         draw();
     });
+
+    // Map Manager Listeners
+    if (mapNameInput) {
+        mapNameInput.addEventListener("input", (e) => {
+            state.mapName = e.target.value;
+            autoSaveCurrentMap();
+        });
+    }
+
+    if (newMapBtn) {
+        newMapBtn.addEventListener("click", resetMapForm);
+    }
+
+    if (exportMapsBtn) {
+        exportMapsBtn.addEventListener("click", exportMapsJSON);
+    }
+
+    if (importMapsBtn) {
+        importMapsBtn.addEventListener("click", () => {
+            if (importMapsFileInput) importMapsFileInput.click();
+        });
+    }
+
+    if (importMapsFileInput) {
+        importMapsFileInput.addEventListener("change", importMapsJSON);
+    }
+
+    if (clearMapsBtn) {
+        clearMapsBtn.addEventListener("click", clearAllMaps);
+    }
+
+    if (mapManagerToggleBtn && mapManagerSidebar) {
+        mapManagerToggleBtn.addEventListener("click", () => {
+            const isCollapsed = mapManagerSidebar.classList.toggle("collapsed");
+            mapManagerToggleBtn.classList.toggle("collapsed", isCollapsed);
+            
+            const icon = mapManagerToggleBtn.querySelector("i");
+            if (icon) {
+                if (isCollapsed) {
+                    icon.className = "fa-solid fa-chevron-left";
+                } else {
+                    icon.className = "fa-solid fa-chevron-right";
+                }
+            }
+            
+            localStorage.setItem("mapManagerCollapsed", isCollapsed ? "true" : "false");
+        });
+    }
 }
 
 // Render available tiles to bottom palette
@@ -562,6 +664,7 @@ function renderPalette() {
         enforceStartTowers();
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Reset Terrain handler
@@ -574,6 +677,7 @@ function renderPalette() {
         enforceStartTowers();
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Reset Start Towers handler
@@ -588,6 +692,7 @@ function renderPalette() {
         enforceStartTowers();
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Reset Players handler
@@ -597,6 +702,7 @@ function renderPalette() {
         enforceStartTowers();
         updatePlayerDropdowns();
         draw();
+        autoSaveCurrentMap();
     });
 
     // Reset Display Options handler
@@ -762,6 +868,7 @@ function generateProceduralMap() {
     // 4. Enforce Start towers
     enforceStartTowers();
     updatePlayerDropdowns();
+    autoSaveCurrentMap();
 }
 
 // Maps a 0.0 - 1.0 noise value to specific variants
@@ -851,6 +958,7 @@ function resizeManualGrid() {
     state.mapData = newGrid;
     enforceStartTowers();
     updatePlayerDropdowns();
+    autoSaveCurrentMap();
 }
 
 // Fill entire map with Grass
@@ -864,6 +972,7 @@ function clearToGrass() {
     }
     enforceStartTowers();
     updatePlayerDropdowns();
+    autoSaveCurrentMap();
 }
 
 // Clear entire map to empty space (null), keeping only start towers
@@ -877,6 +986,7 @@ function clearCanvas() {
     }
     enforceStartTowers();
     updatePlayerDropdowns();
+    autoSaveCurrentMap();
 }
 
 // Draw the grid and tiles on Canvas
@@ -1214,6 +1324,7 @@ function paintCell(cell) {
         updatePlayerDropdowns();
     }
     draw();
+    autoSaveCurrentMap();
 }
 
 // Mouse Event Handlers
@@ -2048,6 +2159,7 @@ function updatePlayerDropdowns() {
             }
             updatePlayerDropdowns();
             draw();
+            autoSaveCurrentMap();
         });
         
         div.appendChild(labelWrapper);
@@ -2259,6 +2371,595 @@ function updateDimensionsDisplay() {
         } else {
             dimensionsDisplay.textContent = `Active Area: 0 x 0 (Infinite)`;
         }
+    }
+}
+
+/* ==========================================================================
+   Map Manager Persistence, Auto-Save, and Filter Logic
+   ========================================================================== */
+
+// IndexedDB setup
+const MAPS_DB_NAME = "WizardsMapGeneratorDB";
+const MAPS_STORE_NAME = "mapsStore";
+const MAPS_DB_VERSION = 1;
+let mapsDb = null;
+let autoSaveTimeout = null;
+let isLoadingMap = false;
+
+function initMapsDB() {
+    return new Promise((resolve) => {
+        const request = indexedDB.open(MAPS_DB_NAME, MAPS_DB_VERSION);
+        
+        request.onerror = (event) => {
+            console.error("IndexedDB error:", event.target.errorCode);
+            resolve();
+        };
+        
+        request.onsuccess = (event) => {
+            mapsDb = event.target.result;
+            loadMapsFromDB().then(resolve);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(MAPS_STORE_NAME)) {
+                db.createObjectStore(MAPS_STORE_NAME, { keyPath: "id" });
+            }
+        };
+    });
+}
+
+function loadMapsFromDB() {
+    return new Promise((resolve) => {
+        if (!mapsDb) {
+            resolve();
+            return;
+        }
+        try {
+            const transaction = mapsDb.transaction([MAPS_STORE_NAME], "readonly");
+            const store = transaction.objectStore(MAPS_STORE_NAME);
+            const request = store.get("saved_maps");
+            
+            request.onsuccess = (event) => {
+                if (event.target.result) {
+                    state.maps = event.target.result.maps || [];
+                } else {
+                    state.maps = [];
+                }
+                updateMapsListUI();
+                resolve();
+            };
+            
+            request.onerror = () => {
+                state.maps = [];
+                resolve();
+            };
+        } catch (e) {
+            console.error("Failed to load maps from IndexedDB:", e);
+            state.maps = [];
+            resolve();
+        }
+    });
+}
+
+function saveMapsToDB() {
+    return new Promise((resolve) => {
+        if (!mapsDb) {
+            resolve();
+            return;
+        }
+        try {
+            const transaction = mapsDb.transaction([MAPS_STORE_NAME], "readwrite");
+            const store = transaction.objectStore(MAPS_STORE_NAME);
+            const request = store.put({
+                id: "saved_maps",
+                maps: state.maps
+            });
+            
+            request.onsuccess = () => {
+                resolve();
+            };
+            
+            request.onerror = () => {
+                resolve();
+            };
+        } catch (e) {
+            console.error("Failed to save maps to IndexedDB:", e);
+            resolve();
+        }
+    });
+}
+
+function autoSaveCurrentMap() {
+    if (isLoadingMap) return;
+    
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    
+    autoSaveTimeout = setTimeout(() => {
+        const currentName = (state.mapName || "").trim();
+        if (!currentName) {
+            // Do not save if map name is empty/blank
+            return;
+        }
+        
+        // Find if there is an existing map with the same name (case-insensitive)
+        // excluding the current map ID to avoid self-match when updating name
+        const existingMap = state.maps.find(m => m.name.trim().toLowerCase() === currentName.toLowerCase() && m.id !== state.selectedMapId);
+        
+        if (existingMap) {
+            // Case 1: Name matches another existing map. Update that map and switch session to it.
+            state.selectedMapId = existingMap.id;
+            state.isNewSessionMap = false;
+            
+            const mapIndex = state.maps.findIndex(m => m.id === existingMap.id);
+            if (mapIndex !== -1) {
+                state.maps[mapIndex] = {
+                    id: existingMap.id,
+                    name: currentName,
+                    cols: state.cols,
+                    rows: state.rows,
+                    seed: state.seed,
+                    startVertical: state.startVertical,
+                    mode: state.mode,
+                    fixedDimensions: state.fixedDimensions,
+                    manualTowers: state.manualTowers,
+                    showCenter: state.showCenter,
+                    maxCols: state.maxCols,
+                    maxRows: state.maxRows,
+                    playerCount: state.playerCount,
+                    playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
+                    mapData: JSON.parse(JSON.stringify(state.mapData)),
+                    lastModified: Date.now()
+                };
+            }
+        } else {
+            // Case 2: Name is unique (or matches current map's own name).
+            if (state.selectedMapId && !state.isNewSessionMap) {
+                // If we are editing a pre-existing map (loaded from DB) and we rename it,
+                // we treat it as "saving a new map because it was named a new name".
+                state.selectedMapId = "map_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+                state.isNewSessionMap = true; // Mark as new session map so further typing updates it
+                
+                const newMap = {
+                    id: state.selectedMapId,
+                    name: currentName,
+                    cols: state.cols,
+                    rows: state.rows,
+                    seed: state.seed,
+                    startVertical: state.startVertical,
+                    mode: state.mode,
+                    fixedDimensions: state.fixedDimensions,
+                    manualTowers: state.manualTowers,
+                    showCenter: state.showCenter,
+                    maxCols: state.maxCols,
+                    maxRows: state.maxRows,
+                    playerCount: state.playerCount,
+                    playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
+                    mapData: JSON.parse(JSON.stringify(state.mapData)),
+                    lastModified: Date.now()
+                };
+                state.maps.unshift(newMap);
+            } else if (state.selectedMapId && state.isNewSessionMap) {
+                // If we are editing a map created/cloned in the current session, we just update it
+                const mapIndex = state.maps.findIndex(m => m.id === state.selectedMapId);
+                if (mapIndex !== -1) {
+                    state.maps[mapIndex] = {
+                        id: state.selectedMapId,
+                        name: currentName,
+                        cols: state.cols,
+                        rows: state.rows,
+                        seed: state.seed,
+                        startVertical: state.startVertical,
+                        mode: state.mode,
+                        fixedDimensions: state.fixedDimensions,
+                        manualTowers: state.manualTowers,
+                        showCenter: state.showCenter,
+                        maxCols: state.maxCols,
+                        maxRows: state.maxRows,
+                        playerCount: state.playerCount,
+                        playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
+                        mapData: JSON.parse(JSON.stringify(state.mapData)),
+                        lastModified: Date.now()
+                    };
+                }
+            } else {
+                // If selectedMapId is null (e.g. New Map was clicked), create a new map
+                state.selectedMapId = "map_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+                state.isNewSessionMap = true;
+                
+                const newMap = {
+                    id: state.selectedMapId,
+                    name: currentName,
+                    cols: state.cols,
+                    rows: state.rows,
+                    seed: state.seed,
+                    startVertical: state.startVertical,
+                    mode: state.mode,
+                    fixedDimensions: state.fixedDimensions,
+                    manualTowers: state.manualTowers,
+                    showCenter: state.showCenter,
+                    maxCols: state.maxCols,
+                    maxRows: state.maxRows,
+                    playerCount: state.playerCount,
+                    playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
+                    mapData: JSON.parse(JSON.stringify(state.mapData)),
+                    lastModified: Date.now()
+                };
+                state.maps.unshift(newMap);
+            }
+        }
+        
+        saveMapsToDB().then(() => {
+            updateMapsListUI();
+        });
+    }, 250);
+}
+
+function updateMapsListUI() {
+    if (!mapListContainer || !mapsCountDisplay) return;
+    
+    mapsCountDisplay.textContent = `${state.maps.length} Saved Map${state.maps.length !== 1 ? "s" : ""}`;
+    
+    let filteredMaps = state.maps;
+    if (state.activeFilters.size) {
+        filteredMaps = filteredMaps.filter(map => {
+            const tileCount = map.cols * map.rows;
+            if (state.activeFilters.size === "Small") return tileCount <= 100;
+            if (state.activeFilters.size === "Medium") return tileCount > 100 && tileCount <= 300;
+            if (state.activeFilters.size === "Large") return tileCount > 300;
+            return true;
+        });
+    }
+    if (state.activeFilters.players) {
+        filteredMaps = filteredMaps.filter(map => map.playerCount === parseInt(state.activeFilters.players));
+    }
+    
+    mapListContainer.innerHTML = "";
+    
+    if (filteredMaps.length === 0) {
+        mapListContainer.innerHTML = `
+            <div class="map-empty-placeholder">
+                <i class="fa-solid fa-map"></i>
+                No matching maps found.
+            </div>
+        `;
+        return;
+    }
+    
+    filteredMaps.forEach(map => {
+        const row = document.createElement("div");
+        row.className = "map-card-row";
+        if (map.id === state.selectedMapId) {
+            row.classList.add("selected");
+        }
+        
+        const info = document.createElement("div");
+        info.className = "map-card-info";
+        
+        const name = document.createElement("div");
+        name.className = "map-card-name";
+        name.textContent = map.name || "Unnamed Map";
+        
+        const meta = document.createElement("div");
+        meta.className = "map-card-meta";
+        
+        const sizeSpan = document.createElement("span");
+        sizeSpan.className = "map-card-size";
+        sizeSpan.textContent = `${map.cols}x${map.rows}`;
+        
+        const modeSpan = document.createElement("span");
+        modeSpan.className = "map-card-mode";
+        modeSpan.textContent = map.mode === "auto" ? "Procedural" : "Manual";
+        
+        const playersSpan = document.createElement("span");
+        playersSpan.className = "map-card-size";
+        playersSpan.textContent = `${map.playerCount} Players`;
+        
+        meta.appendChild(sizeSpan);
+        meta.appendChild(modeSpan);
+        meta.appendChild(playersSpan);
+        
+        info.appendChild(name);
+        info.appendChild(meta);
+        
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "map-card-delete-btn";
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+        deleteBtn.title = "Delete Map";
+        deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteMap(map.id);
+        });
+        
+        row.appendChild(info);
+        row.appendChild(deleteBtn);
+        
+        row.addEventListener("click", () => {
+            loadMapDetails(map.id);
+        });
+        
+        mapListContainer.appendChild(row);
+    });
+}
+
+function loadMapDetails(id) {
+    const map = state.maps.find(m => m.id === id);
+    if (!map) return;
+    
+    isLoadingMap = true;
+    
+    state.selectedMapId = map.id;
+    state.isNewSessionMap = false;
+    state.mapName = map.name || "";
+    if (mapNameInput) mapNameInput.value = state.mapName;
+    
+    state.cols = parseInt(map.cols);
+    state.rows = parseInt(map.rows);
+    state.seed = map.seed || "";
+    state.startVertical = map.startVertical !== undefined ? map.startVertical : true;
+    state.mode = map.mode || "manual";
+    state.fixedDimensions = map.fixedDimensions !== undefined ? map.fixedDimensions : true;
+    state.manualTowers = map.manualTowers !== undefined ? map.manualTowers : false;
+    state.showCenter = map.showCenter !== undefined ? map.showCenter : false;
+    state.maxCols = map.maxCols !== undefined ? parseInt(map.maxCols) : 30;
+    state.maxRows = map.maxRows !== undefined ? parseInt(map.maxRows) : 30;
+    state.playerCount = map.playerCount !== undefined ? parseInt(map.playerCount) : 2;
+    state.playerStartCells = map.playerStartCells !== undefined ? JSON.parse(JSON.stringify(map.playerStartCells)) : [null, null, null, null];
+    state.mapData = JSON.parse(JSON.stringify(map.mapData));
+    
+    // Sync UI elements
+    colsSlider.max = state.maxCols;
+    colsSlider.value = state.cols;
+    colsVal.value = state.cols;
+    rowsSlider.max = state.maxRows;
+    rowsSlider.value = state.rows;
+    rowsVal.value = state.rows;
+    seedInput.value = state.seed;
+    startAxisToggle.checked = state.startVertical;
+    dimensionsToggle.checked = state.fixedDimensions;
+    manualTowersToggle.checked = state.manualTowers;
+    centerToggle.checked = state.showCenter;
+    playerCountSelect.value = state.playerCount;
+    
+    updateDimensionsControlsVisibility();
+    updateStartAxisVisibility();
+    updatePlayerDropdowns();
+    setMode(state.mode);
+    
+    centerMap();
+    draw();
+    
+    isLoadingMap = false;
+    
+    showToast(`Loaded map "${state.mapName}"`);
+    updateMapsListUI();
+}
+
+function deleteMap(id) {
+    const map = state.maps.find(m => m.id === id);
+    if (!map) return;
+    
+    if (confirm(`Are you sure you want to delete "${map.name || 'this map'}"?`)) {
+        state.maps = state.maps.filter(m => m.id !== id);
+        
+        if (state.selectedMapId === id) {
+            state.selectedMapId = null;
+            state.isNewSessionMap = true;
+            state.mapName = "";
+            if (mapNameInput) {
+                mapNameInput.value = "";
+                mapNameInput.placeholder = "Enter Map Name...";
+            }
+        }
+        
+        saveMapsToDB().then(() => {
+            updateMapsListUI();
+            showToast("Map deleted");
+        });
+    }
+}
+
+function resetMapForm() {
+    state.selectedMapId = null;
+    state.isNewSessionMap = true;
+    state.mapName = "";
+    if (mapNameInput) {
+        mapNameInput.value = "";
+        mapNameInput.placeholder = "Enter Map Name...";
+    }
+    
+    state.cols = 15;
+    state.rows = 10;
+    state.seed = "12345";
+    state.mode = "auto";
+    state.fixedDimensions = true;
+    state.manualTowers = false;
+    state.showCenter = false;
+    state.playerCount = 2;
+    state.playerStartCells = [null, null, null, null];
+    
+    colsSlider.value = 15;
+    colsVal.value = 15;
+    rowsSlider.value = 10;
+    rowsVal.value = 10;
+    seedInput.value = "12345";
+    startAxisToggle.checked = true;
+    dimensionsToggle.checked = true;
+    manualTowersToggle.checked = false;
+    centerToggle.checked = false;
+    playerCountSelect.value = 2;
+    
+    updateDimensionsControlsVisibility();
+    updateStartAxisVisibility();
+    setMode("auto");
+    generateProceduralMap();
+    centerMap();
+    draw();
+    
+    showToast("Started a new map");
+    updateMapsListUI();
+}
+
+function showToast(text) {
+    const toast = document.getElementById("toast");
+    const toastText = document.getElementById("toast-text");
+    if (!toast || !toastText) return;
+    
+    toastText.textContent = text;
+    toast.classList.add("show");
+    
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2500);
+}
+
+function exportMapsJSON() {
+    if (state.maps.length === 0) {
+        alert("No saved maps to export.");
+        return;
+    }
+    const data = {
+        version: 1,
+        maps: state.maps
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wizards_saved_maps_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Maps exported successfully!");
+}
+
+function importMapsJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.maps || !Array.isArray(data.maps)) {
+                alert("Invalid file format. Missing maps collection.");
+                return;
+            }
+            
+            data.maps.forEach(importedMap => {
+                const existingIndex = state.maps.findIndex(m => m.id === importedMap.id);
+                if (existingIndex !== -1) {
+                    importedMap.id = "map_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+                }
+                state.maps.unshift(importedMap);
+            });
+            
+            saveMapsToDB().then(() => {
+                updateMapsListUI();
+                showToast(`Imported ${data.maps.length} maps`);
+            });
+        } catch (error) {
+            console.error("Error reading maps file:", error);
+            alert("Error parsing file. Invalid JSON format.");
+        }
+        event.target.value = "";
+    };
+    reader.readAsText(file);
+}
+
+function clearAllMaps() {
+    if (state.maps.length === 0) return;
+    if (confirm("Are you sure you want to delete ALL saved maps? This action cannot be undone.")) {
+        state.maps = [];
+        state.selectedMapId = null;
+        state.isNewSessionMap = true;
+        state.mapName = "";
+        if (mapNameInput) {
+            mapNameInput.value = "";
+            mapNameInput.placeholder = "Enter Map Name...";
+        }
+        
+        saveMapsToDB().then(() => {
+            updateMapsListUI();
+            showToast("All maps deleted");
+        });
+    }
+}
+
+function setupFilterListeners() {
+    const sizeBtns = document.querySelectorAll(".size-filter-btn");
+    const clearSizeBtn = document.getElementById("clear-size-filters-btn");
+    const sizeContainer = document.getElementById("size-filters-container");
+    
+    sizeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const size = btn.dataset.size;
+            if (state.activeFilters.size === size) {
+                state.activeFilters.size = null;
+                btn.classList.remove("active");
+            } else {
+                sizeBtns.forEach(b => b.classList.remove("active"));
+                state.activeFilters.size = size;
+                btn.classList.add("active");
+            }
+            
+            if (state.activeFilters.size) {
+                if (clearSizeBtn) clearSizeBtn.style.display = "block";
+                if (sizeContainer) sizeContainer.classList.add("has-active");
+            } else {
+                if (clearSizeBtn) clearSizeBtn.style.display = "none";
+                if (sizeContainer) sizeContainer.classList.remove("has-active");
+            }
+            updateMapsListUI();
+        });
+    });
+    
+    if (clearSizeBtn) {
+        clearSizeBtn.addEventListener("click", () => {
+            state.activeFilters.size = null;
+            sizeBtns.forEach(b => b.classList.remove("active"));
+            clearSizeBtn.style.display = "none";
+            if (sizeContainer) sizeContainer.classList.remove("has-active");
+            updateMapsListUI();
+        });
+    }
+    
+    const playerBtns = document.querySelectorAll(".player-filter-btn");
+    const clearPlayerBtn = document.getElementById("clear-player-filters-btn");
+    const playerContainer = document.getElementById("player-filters-container");
+    
+    playerBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const players = btn.dataset.players;
+            if (state.activeFilters.players === players) {
+                state.activeFilters.players = null;
+                btn.classList.remove("active");
+            } else {
+                playerBtns.forEach(b => b.classList.remove("active"));
+                state.activeFilters.players = players;
+                btn.classList.add("active");
+            }
+            
+            if (state.activeFilters.players) {
+                if (clearPlayerBtn) clearPlayerBtn.style.display = "block";
+                if (playerContainer) playerContainer.classList.add("has-active");
+            } else {
+                if (clearPlayerBtn) clearPlayerBtn.style.display = "none";
+                if (playerContainer) playerContainer.classList.remove("has-active");
+            }
+            updateMapsListUI();
+        });
+    });
+    
+    if (clearPlayerBtn) {
+        clearPlayerBtn.addEventListener("click", () => {
+            state.activeFilters.players = null;
+            playerBtns.forEach(b => b.classList.remove("active"));
+            clearPlayerBtn.style.display = "none";
+            if (playerContainer) playerContainer.classList.remove("has-active");
+            updateMapsListUI();
+        });
     }
 }
 

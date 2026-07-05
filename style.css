@@ -430,7 +430,8 @@ button:active {
 .viewport {
     flex: 1;
     height: 100vh;
-    padding: 12px 12px 12px 0;
+    padding: 12px 0;
+    margin-right: 12px;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -965,5 +966,283 @@ button:active {
     from { transform: scale(0.95) translateY(10px); }
     to { transform: scale(1) translateY(0); }
 }
+
+
+/* ==========================================================================
+   Map Manager (Right Sidebar) & Toast Styles
+   ========================================================================== */
+
+/* Map List (Right Sidebar) */
+.map-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+}
+
+.map-card-row:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.map-card-row.selected {
+    background: rgba(226, 183, 71, 0.08);
+    border-color: rgba(226, 183, 71, 0.6);
+    box-shadow: 0 0 12px rgba(226, 183, 71, 0.15);
+}
+
+.map-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+.map-card-name {
+    font-weight: 600;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-main);
+}
+
+.map-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.map-card-size {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.map-card-mode {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.map-card-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-card-delete-btn:hover {
+    color: var(--danger-color);
+}
+
+.map-empty-placeholder {
+    padding: 40px 10px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    border: 1px dashed rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+.map-empty-placeholder i {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    display: block;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Map Manager Filters */
+.map-filters {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.size-filter-btn, .player-filter-btn {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.size-filter-btn:hover, .player-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-main);
+}
+
+.size-filter-btn.active, .player-filter-btn.active {
+    background: var(--accent-gold);
+    color: #111111;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 10px var(--gold-glow);
+    font-weight: 600;
+}
+
+.filter-buttons.has-active .size-filter-btn:not(.active),
+.filter-buttons.has-active .player-filter-btn:not(.active) {
+    opacity: 0.4;
+}
+
+.clear-filters-btn {
+    font-size: 0.62rem;
+    color: var(--accent-gold);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: none;
+    text-transform: none;
+    letter-spacing: 0px;
+    font-family: inherit;
+}
+
+.clear-filters-btn:hover {
+    text-decoration: underline;
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(11, 12, 22, 0.95);
+    border: 1px solid var(--accent-gold);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 15px rgba(226, 183, 71, 0.25);
+    border-radius: 50px;
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast i {
+    color: var(--accent-gold);
+    font-size: 1.05rem;
+}
+
+/* Floating Right Sidebar (Map Manager) collapsible styles */
+#map-manager-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 20;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    background: rgba(13, 17, 33, 1.0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+#map-manager-sidebar.collapsed {
+    transform: translateX(calc(100% + 24px));
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Toggle Button for Map Manager */
+.sidebar-toggle-btn {
+    position: absolute;
+    right: 344px; /* Width of sidebar (320px) + margin (12px) + gap (12px) */
+    top: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--panel-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--panel-border);
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30; /* High z-index to stay on top */
+    box-shadow: var(--panel-glow);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.sidebar-toggle-btn.collapsed {
+    right: 24px; /* Pull to edge when sidebar is hidden */
+}
+
 
 

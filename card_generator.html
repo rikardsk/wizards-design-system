@@ -132,6 +132,12 @@
             border-radius: 16px;
         }
 
+        #deck-manager-sidebar {
+            background: rgba(15, 18, 36, 1.0); /* Fully opaque */
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
         /* UI Control Groups */
         .control-group {
             margin-bottom: 18px;
@@ -1651,7 +1657,7 @@
         </main>
 
         <!-- Right Sidebar: Deck List / Collection Manager -->
-        <aside class="sidebar glass-panel">
+        <aside class="sidebar glass-panel" id="deck-manager-sidebar">
             <div class="sidebar-header">
                 <i class="fa-solid fa-folder-open logo-icon"></i>
                 <h2>Deck Manager</h2>

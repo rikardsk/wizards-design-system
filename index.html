@@ -208,14 +208,6 @@
                         <button id="export-svg-btn" class="secondary-btn">
                             <i class="fa-solid fa-file-code"></i> Export as SVG
                         </button>
-                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 8px 0;">
-                        <button id="export-json-btn" class="secondary-btn">
-                            <i class="fa-solid fa-file-export"></i> Save Map (JSON)
-                        </button>
-                        <button id="import-json-btn" class="secondary-btn">
-                            <i class="fa-solid fa-file-import"></i> Load Map (JSON)
-                        </button>
-                        <input type="file" id="import-json-input" accept=".json" style="display: none;">
                         <div id="file-protocol-warning" class="warning-box" style="display: none;">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                             <span>Running locally via <code>file://</code>. Tile exports will fail due to browser security. Run a local web server (e.g. <code>python -m http.server</code>) or run <code>python embed_assets.py</code> to package assets offline.</span>
@@ -279,10 +271,94 @@
                 </div>
             </div>
         </main>
+
+        <!-- Toggle Button for Map Manager Sidebar -->
+        <button id="map-manager-toggle-btn" class="sidebar-toggle-btn" title="Toggle Map Manager">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <!-- Right Sidebar: Map Manager / Saved Maps List -->
+        <aside class="sidebar glass-panel" id="map-manager-sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-folder-open logo-icon"></i>
+                <h2>Map Manager</h2>
+                <p id="maps-count">0 Saved Maps</p>
+            </div>
+            
+            <div class="control-sections">
+                <!-- Map Name Section -->
+                <div class="input-container" style="margin-bottom: 16px; padding: 0 4px;">
+                    <label for="map-name-input" style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-gold); margin-bottom: 6px;">Map Name</label>
+                    <input type="text" id="map-name-input" placeholder="Enter Map Name..." value="">
+                </div>
+
+                <!-- Map Filters -->
+                <div class="map-filters">
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Size</span>
+                            <button class="clear-filters-btn" id="clear-size-filters-btn">Clear</button>
+                        </div>
+                        <div class="filter-buttons" id="size-filters-container">
+                            <button class="size-filter-btn" data-size="Small" title="Small Map (<= 100 tiles)">Small</button>
+                            <button class="size-filter-btn" data-size="Medium" title="Medium Map (101-300 tiles)">Medium</button>
+                            <button class="size-filter-btn" data-size="Large" title="Large Map (> 300 tiles)">Large</button>
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 10px;">
+                        <div class="filter-label">
+                            <span>Filter by Players</span>
+                            <button class="clear-filters-btn" id="clear-player-filters-btn">Clear</button>
+                        </div>
+                        <div class="filter-buttons" id="player-filters-container">
+                            <button class="player-filter-btn" data-players="2" title="2 Players">2 Players</button>
+                            <button class="player-filter-btn" data-players="3" title="3 Players">3 Players</button>
+                            <button class="player-filter-btn" data-players="4" title="4 Players">4 Players</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saved maps list container -->
+                <div class="map-list" id="map-list-container" style="margin-top: 12px;">
+                    <div class="map-empty-placeholder">
+                        <i class="fa-solid fa-map"></i>
+                        No saved maps yet.<br>Name your map and edit to save.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map manager operations -->
+            <div class="sidebar-footer" style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                <div class="button-column">
+                    <button class="primary-btn" id="new-map-btn">
+                        <i class="fa-solid fa-plus"></i> New Map
+                    </button>
+                    <button class="secondary-btn" id="export-maps-btn" style="width: 100%;">
+                        <i class="fa-solid fa-file-export"></i> Export Maps (JSON)
+                    </button>
+                    <button class="secondary-btn" id="import-maps-btn" style="width: 100%;">
+                        <i class="fa-solid fa-file-import"></i> Import Maps (JSON)
+                    </button>
+                    <button class="danger-btn" id="clear-maps-btn" style="width: 100%;">
+                        <i class="fa-solid fa-trash-can"></i> Delete All Maps
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Hidden input for file importing -->
+            <input type="file" id="import-maps-file" accept=".json" style="display: none;">
+        </aside>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">Map saved!</span>
     </div>
 
     <!-- Map Tooltip element -->
     <div id="map-tooltip" class="map-tooltip" style="display: none; position: fixed; pointer-events: none; z-index: 1000;"></div>
+
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal-overlay" style="display: none;">

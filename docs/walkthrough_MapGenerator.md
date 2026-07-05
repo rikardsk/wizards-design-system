@@ -33,6 +33,7 @@ I have built the web-based hexagonal map generator in the workspace root. It is 
         *   *PNG:* Draws tiles, borders, highlights, and player starting badges to a hidden 1:1 canvas and triggers download.
         *   *SVG:* Builds a complete vector grid, using `<clipPath>` for hexagons, embeds images as base64 URLs, and renders player starting badges as vector graphics so the SVG works standalone.
         *   *JSON:* Saves and loads `playerCount` and `playerStartCells` alongside the map layout data.
+    *   **Map Manager Sidebar (IndexedDB Persistence):** Added a floating right sidebar to name, save, list, filter, delete, and import/export map designs persistent across sessions via IndexedDB. Includes a collapsible panel toggled via a smooth-sliding button.
 
 ## Verification Steps
 
@@ -60,6 +61,11 @@ To verify the map generator:
 8.  **Verify Navigation:** Scroll to zoom, and right-click & drag to pan around the map.
 9.  **Verify Export:** Click **Export as PNG** or **Export as SVG** and verify the downloaded image matches your map (including matching the Show Terrain Art state).
 10. **Verify Bugfix:** Ensure painting into previously undefined coordinate space (if canvas expansion is enabled) initializes arrays correctly without crashing.
+11. **Verify Map Manager & Collapse Toggle:**
+    *   Click the circular toggle button (folder/chevron icon) on the right; confirm the sidebar slides away smoothly and the canvas fills the expanded area.
+    *   Type a Map Name, make edits to the map, and verify that the map is automatically saved to the list in the sidebar.
+    *   Filter maps by size or player counts and verify the list updates instantly.
+    *   Reload the page and verify that your saved maps and the sidebar collapse state persist.
 
 ## Standalone Hex Tile Creator (tile_creator.html)
 
