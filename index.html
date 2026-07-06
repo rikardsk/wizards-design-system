@@ -333,11 +333,19 @@
                     <button class="primary-btn" id="new-map-btn">
                         <i class="fa-solid fa-plus"></i> New Map
                     </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="secondary-btn" id="export-json-btn" style="flex: 1; padding: 8px 4px; font-size: 0.72rem;" title="Export Current Map (JSON)">
+                            <i class="fa-solid fa-file-export"></i> Export Map
+                        </button>
+                        <button class="secondary-btn" id="import-json-btn" style="flex: 1; padding: 8px 4px; font-size: 0.72rem;" title="Import Single Map (JSON)">
+                            <i class="fa-solid fa-file-import"></i> Import Map
+                        </button>
+                    </div>
                     <button class="secondary-btn" id="export-maps-btn" style="width: 100%;">
-                        <i class="fa-solid fa-file-export"></i> Export Maps (JSON)
+                        <i class="fa-solid fa-file-export"></i> Export All Maps (JSON)
                     </button>
                     <button class="secondary-btn" id="import-maps-btn" style="width: 100%;">
-                        <i class="fa-solid fa-file-import"></i> Import Maps (JSON)
+                        <i class="fa-solid fa-file-import"></i> Import All Maps (JSON)
                     </button>
                     <button class="danger-btn" id="clear-maps-btn" style="width: 100%;">
                         <i class="fa-solid fa-trash-can"></i> Delete All Maps
@@ -345,8 +353,9 @@
                 </div>
             </div>
             
-            <!-- Hidden input for file importing -->
+            <!-- Hidden inputs for file importing -->
             <input type="file" id="import-maps-file" accept=".json" style="display: none;">
+            <input type="file" id="import-json-input" accept=".json" style="display: none;">
         </aside>
     </div>
 

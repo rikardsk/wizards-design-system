@@ -1670,7 +1670,8 @@ async function exportSVG() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `map_seed_${state.seed}_${state.cols}x${state.rows}.svg`;
+    const baseName = state.mapName || `map_seed_${state.seed}_${state.cols}x${state.rows}`;
+    link.download = getExportFileName(baseName, "svg");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1712,7 +1713,8 @@ function saveMapJSON() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `wizards_map_${state.seed || "custom"}.json`;
+    const baseName = state.mapName || `wizards_map_${state.seed || "custom"}`;
+    a.download = getExportFileName(baseName, "json");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1748,6 +1750,42 @@ function loadMapJSON(event) {
             state.playerStartCells = data.playerStartCells !== undefined ? data.playerStartCells : [null, null, null, null];
             state.mapData = data.mapData;
             
+            // Extract map name from file name
+            const fileName = file.name;
+            let importedName = fileName.replace(/\.json$/i, "");
+            importedName = importedName.replace(/_\d{4}-\d{2}-\d{2}$/, "");
+            importedName = importedName.split(/[_-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+            
+            state.mapName = importedName;
+            if (mapNameInput) {
+                mapNameInput.value = state.mapName;
+            }
+            
+            const newId = "map_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+            state.selectedMapId = newId;
+            state.isNewSessionMap = true;
+            
+            // Create map object and add to local maps list
+            const newMap = {
+                id: newId,
+                name: state.mapName,
+                cols: state.cols,
+                rows: state.rows,
+                seed: state.seed,
+                startVertical: state.startVertical,
+                mode: state.mode,
+                fixedDimensions: state.fixedDimensions,
+                manualTowers: state.manualTowers,
+                showCenter: state.showCenter,
+                maxCols: state.maxCols,
+                maxRows: state.maxRows,
+                playerCount: state.playerCount,
+                playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
+                mapData: JSON.parse(JSON.stringify(state.mapData)),
+                lastModified: Date.now()
+            };
+            state.maps.unshift(newMap);
+            
             // Sync DOM inputs to new state
             colsSlider.max = state.maxCols;
             colsSlider.value = state.cols;
@@ -1773,7 +1811,11 @@ function loadMapJSON(event) {
             centerMap();
             draw();
             
-            alert("Map loaded successfully!");
+            // Save maps list to DB and update UI sidebar list
+            saveMapsToDB().then(() => {
+                updateMapsListUI();
+                showToast(`Map "${state.mapName}" imported successfully!`);
+            });
         } catch (error) {
             console.error("Error reading JSON file", error);
             alert("Error loading map. Could not parse JSON.");
@@ -1929,7 +1971,8 @@ function exportPNG() {
         const dataUrl = tempCanvas.toDataURL("image/png");
         const link = document.createElement("a");
         link.href = dataUrl;
-        link.download = `map_seed_${state.seed}_${state.cols}x${state.rows}.png`;
+        const baseName = state.mapName || `map_seed_${state.seed}_${state.cols}x${state.rows}`;
+        link.download = getExportFileName(baseName, "png");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2514,33 +2557,8 @@ function autoSaveCurrentMap() {
             }
         } else {
             // Case 2: Name is unique (or matches current map's own name).
-            if (state.selectedMapId && !state.isNewSessionMap) {
-                // If we are editing a pre-existing map (loaded from DB) and we rename it,
-                // we treat it as "saving a new map because it was named a new name".
-                state.selectedMapId = "map_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-                state.isNewSessionMap = true; // Mark as new session map so further typing updates it
-                
-                const newMap = {
-                    id: state.selectedMapId,
-                    name: currentName,
-                    cols: state.cols,
-                    rows: state.rows,
-                    seed: state.seed,
-                    startVertical: state.startVertical,
-                    mode: state.mode,
-                    fixedDimensions: state.fixedDimensions,
-                    manualTowers: state.manualTowers,
-                    showCenter: state.showCenter,
-                    maxCols: state.maxCols,
-                    maxRows: state.maxRows,
-                    playerCount: state.playerCount,
-                    playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
-                    mapData: JSON.parse(JSON.stringify(state.mapData)),
-                    lastModified: Date.now()
-                };
-                state.maps.unshift(newMap);
-            } else if (state.selectedMapId && state.isNewSessionMap) {
-                // If we are editing a map created/cloned in the current session, we just update it
+            if (state.selectedMapId) {
+                // If we are editing a map, update it in-place (no longer duplicating on rename)
                 const mapIndex = state.maps.findIndex(m => m.id === state.selectedMapId);
                 if (mapIndex !== -1) {
                     state.maps[mapIndex] = {
@@ -2759,19 +2777,10 @@ function deleteMap(id) {
     }
 }
 
-function resetMapForm() {
-    state.selectedMapId = null;
-    state.isNewSessionMap = true;
-    state.mapName = "";
-    if (mapNameInput) {
-        mapNameInput.value = "";
-        mapNameInput.placeholder = "Enter Map Name...";
-    }
-    
+function resetStateAndInputs() {
     state.cols = 15;
     state.rows = 10;
     state.seed = "12345";
-    state.mode = "auto";
     state.fixedDimensions = true;
     state.manualTowers = false;
     state.showCenter = false;
@@ -2788,11 +2797,31 @@ function resetMapForm() {
     manualTowersToggle.checked = false;
     centerToggle.checked = false;
     playerCountSelect.value = 2;
+}
+
+function resetMapForm() {
+    state.selectedMapId = null;
+    state.isNewSessionMap = true;
+    
+    let uniqueName = "New map 1";
+    let counter = 1;
+    while (state.maps.some(m => m.name.trim().toLowerCase() === uniqueName.toLowerCase())) {
+        counter++;
+        uniqueName = `New map ${counter}`;
+    }
+    
+    state.mapName = uniqueName;
+    if (mapNameInput) {
+        mapNameInput.value = uniqueName;
+        mapNameInput.placeholder = "Enter Map Name...";
+    }
+    
+    resetStateAndInputs();
     
     updateDimensionsControlsVisibility();
     updateStartAxisVisibility();
-    setMode("auto");
-    generateProceduralMap();
+    setMode("manual");
+    clearCanvas();
     centerMap();
     draw();
     
@@ -2813,6 +2842,17 @@ function showToast(text) {
     }, 2500);
 }
 
+// Helper to get formatted filename with today's date
+function getExportFileName(baseName, extension) {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    const sanitized = baseName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+    return `${sanitized}_${today}.${extension}`;
+}
+
 function exportMapsJSON() {
     if (state.maps.length === 0) {
         alert("No saved maps to export.");
@@ -2826,7 +2866,7 @@ function exportMapsJSON() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `wizards_saved_maps_${Date.now()}.json`;
+    a.download = getExportFileName("wizards_saved_maps", "json");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
