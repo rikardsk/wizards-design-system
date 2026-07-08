@@ -1607,6 +1607,9 @@
                     <button class="secondary-btn" id="download-card-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
                         <i class="fa-solid fa-download"></i> Save Card Image (PNG)
                     </button>
+                    <button class="secondary-btn" id="download-art-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-image"></i> Save Art Only (PNG)
+                    </button>
                 </div>
             </div>
 
@@ -1715,6 +1718,9 @@
                 <div class="btn-column">
                     <button class="secondary-btn" id="export-deck-btn">
                         <i class="fa-solid fa-file-export"></i> Export Deck (JSON)
+                    </button>
+                    <button class="secondary-btn" id="export-all-art-btn">
+                        <i class="fa-solid fa-images"></i> Export All Art Only (PNGs)
                     </button>
                     <button class="secondary-btn" id="import-deck-btn">
                         <i class="fa-solid fa-file-import"></i> Import Deck (JSON)
@@ -1839,9 +1845,11 @@
         const deckNameInput = document.getElementById("deck-name-input");
         
         const downloadCardPng = document.getElementById("download-card-png");
+        const downloadArtPng = document.getElementById("download-art-png");
         const toggleCanvasBg = document.getElementById("toggle-canvas-bg");
         const canvasWrapper = document.getElementById("canvas-wrapper");
         const exportDeckBtn = document.getElementById("export-deck-btn");
+        const exportAllArtBtn = document.getElementById("export-all-art-btn");
         const importDeckBtn = document.getElementById("import-deck-btn");
         const importDeckFile = document.getElementById("import-deck-file");
         const clearDeckBtn = document.getElementById("clear-deck-btn");
@@ -2158,6 +2166,9 @@
             
             // Image downloads
             downloadCardPng.addEventListener("click", () => downloadCardImage(false));
+            if (downloadArtPng) {
+                downloadArtPng.addEventListener("click", downloadArtImage);
+            }
 
             // Canvas background toggle
             if (toggleCanvasBg && canvasWrapper) {
@@ -2177,6 +2188,9 @@
             // Deck operations
             clearDeckBtn.addEventListener("click", clearDeck);
             exportDeckBtn.addEventListener("click", exportDeckToJson);
+            if (exportAllArtBtn) {
+                exportAllArtBtn.addEventListener("click", exportAllArtOnly);
+            }
             importDeckBtn.addEventListener("click", () => importDeckFile.click());
             importDeckFile.addEventListener("change", importDeckFromJson);
 
@@ -3731,6 +3745,168 @@
             link.click();
             document.body.removeChild(link);
             showToast("Card image downloaded!");
+        }
+
+        // Trigger illustration only file download (Uses High-Quality Step-down Downsampling)
+        function downloadArtImage() {
+            if (!state.artImage) {
+                alert("No illustration selected.");
+                return;
+            }
+            
+            // High-res source canvas
+            const scale = 2;
+            const targetW = 327 * scale;
+            const targetH = 220 * scale;
+            
+            const srcCanvas = document.createElement("canvas");
+            srcCanvas.width = targetW;
+            srcCanvas.height = targetH;
+            const srcCtx = srcCanvas.getContext("2d");
+            
+            srcCtx.save();
+            
+            // Base fit dimensions (equivalent to object-fit: cover)
+            const imgW = state.artImage.width;
+            const imgH = state.artImage.height;
+            const scaleW = targetW / imgW;
+            const scaleH = targetH / imgH;
+            const fitScale = Math.max(scaleW, scaleH);
+            
+            const drawW = imgW * fitScale;
+            const drawH = imgH * fitScale;
+            
+            // Translate to center of the canvas
+            const centerX = targetW / 2;
+            const centerY = targetH / 2;
+            srcCtx.translate(centerX, centerY);
+            
+            // Apply drag offsets (scaled according to canvas resolution)
+            srcCtx.translate((state.artX || 0) * scale, (state.artY || 0) * scale);
+            
+            // Apply rotation
+            srcCtx.rotate((state.artRotation || 0) * Math.PI / 180);
+            
+            // Apply scale
+            const customScale = state.artScale || 1.0;
+            srcCtx.scale(customScale, customScale);
+            
+            // Draw centered at the origin
+            srcCtx.drawImage(state.artImage, -drawW / 2, -drawH / 2, drawW, drawH);
+            srcCtx.restore();
+            
+            // Use multi-pass step-down resizer to produce clean 327x220 PNG
+            const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
+            
+            const dataUrl = finalCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            
+            // File download naming
+            const name = state.cardName ? state.cardName.replace(/\s+/g, '_') : 'card';
+            link.download = `${name}_art.png`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Illustration image downloaded!");
+        }
+
+        // Download art for a single card in the deck (asynchronously)
+        function downloadSingleCardArt(card) {
+            return new Promise((resolve, reject) => {
+                if (!card.artBase64) {
+                    resolve();
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = () => {
+                    // High-res source canvas
+                    const scale = 2;
+                    const targetW = 327 * scale;
+                    const targetH = 220 * scale;
+                    
+                    const srcCanvas = document.createElement("canvas");
+                    srcCanvas.width = targetW;
+                    srcCanvas.height = targetH;
+                    const srcCtx = srcCanvas.getContext("2d");
+                    
+                    srcCtx.save();
+                    
+                    // Base fit dimensions (equivalent to object-fit: cover)
+                    const imgW = img.width;
+                    const imgH = img.height;
+                    const scaleW = targetW / imgW;
+                    const scaleH = targetH / imgH;
+                    const fitScale = Math.max(scaleW, scaleH);
+                    
+                    const drawW = imgW * fitScale;
+                    const drawH = imgH * fitScale;
+                    
+                    // Translate to center of the canvas
+                    const centerX = targetW / 2;
+                    const centerY = targetH / 2;
+                    srcCtx.translate(centerX, centerY);
+                    
+                    // Apply drag offsets (scaled according to canvas resolution)
+                    srcCtx.translate((card.artX || 0) * scale, (card.artY || 0) * scale);
+                    
+                    // Apply rotation
+                    srcCtx.rotate((card.artRotation || 0) * Math.PI / 180);
+                    
+                    // Apply scale
+                    const customScale = card.artScale || 1.0;
+                    srcCtx.scale(customScale, customScale);
+                    
+                    // Draw centered at origin
+                    srcCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                    srcCtx.restore();
+                    
+                    // Use multi-pass step-down resizer to produce clean 327x220 PNG
+                    const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
+                    
+                    const dataUrl = finalCanvas.toDataURL("image/png");
+                    const link = document.createElement("a");
+                    link.href = dataUrl;
+                    
+                    // File download naming
+                    const name = card.cardName ? card.cardName.replace(/\s+/g, '_') : 'card';
+                    link.download = `${name}_art.png`;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    resolve();
+                };
+                img.onerror = (err) => {
+                    reject(err);
+                };
+                img.src = card.artBase64;
+            });
+        }
+
+        // Export all illustration images for all cards in the deck
+        async function exportAllArtOnly() {
+            const cardsWithArt = state.deck.filter(c => c.artBase64);
+            if (cardsWithArt.length === 0) {
+                alert("There are no cards in the deck with illustrations to export.");
+                return;
+            }
+            
+            showToast(`Starting export of ${cardsWithArt.length} illustrations...`);
+            
+            for (let i = 0; i < cardsWithArt.length; i++) {
+                const card = cardsWithArt[i];
+                try {
+                    await downloadSingleCardArt(card);
+                    // Introduce a delay between downloads to prevent browser blocking/freezing
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (err) {
+                    console.error(`Failed to export art for "${card.cardName}":`, err);
+                }
+            }
+            showToast("All illustrations exported!");
         }
 
         // Helper: Multi-pass step-down resizer for clean image results
