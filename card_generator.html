@@ -758,6 +758,27 @@
             font-style: normal;
         }
 
+        .rules-paragraph {
+            margin-bottom: 8px;
+        }
+        .rules-paragraph:last-child {
+            margin-bottom: 0;
+        }
+
+        .activated-ability-preview-item {
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: 0 -4px;
+            display: block;
+        }
+
+        .activated-ability-preview-item:hover {
+            background-color: rgba(226, 183, 71, 0.12);
+            color: #e2b747;
+        }
+
         .card-rules-text .mana-icon-svg {
             width: 14px;
             height: 14px;
@@ -812,6 +833,13 @@
             padding: 6px 10px;
             font-size: 0.75rem;
             margin-bottom: 2px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .ability-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .ability-item-details {
@@ -1756,6 +1784,23 @@
         </div>
     </div>
 
+    <!-- Affirmation Modal for Deleting/Activating Activated Abilities -->
+    <div class="modal-overlay" id="affirmation-modal">
+        <div class="modal-content" style="width: 380px;">
+            <div class="modal-header">
+                <h3 id="affirmation-title"><i class="fa-solid fa-circle-question"></i> Confirm Action</h3>
+                <button type="button" class="close-modal-btn" id="close-affirmation-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-bottom: 8px;">
+                <p id="affirmation-message" style="font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; color: var(--text-color);"></p>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" class="secondary-btn" id="confirm-cancel-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; margin: 0;">Cancel</button>
+                    <button type="button" class="danger-btn" id="confirm-ok-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; margin: 0;">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Feedback Toast -->
     <div id="toast" class="toast">
         <i class="fa-solid fa-circle-check"></i>
@@ -1886,6 +1931,58 @@
         const abilityDescInput = document.getElementById("ability-desc-input");
         const addAbilityBtn = document.getElementById("add-ability-btn");
         const abilitiesListContainer = document.getElementById("abilities-list-container");
+
+        // Affirmation Modal DOM Elements
+        const affirmationModal = document.getElementById("affirmation-modal");
+        const closeAffirmationModalBtn = document.getElementById("close-affirmation-modal-btn");
+        const affirmationMessage = document.getElementById("affirmation-message");
+        const confirmCancelBtn = document.getElementById("confirm-cancel-btn");
+        const confirmOkBtn = document.getElementById("confirm-ok-btn");
+        let affirmationCallback = null;
+
+        function showAffirmationModal(title, message, isDanger, onConfirm) {
+            if (!affirmationModal) return;
+            const titleEl = document.getElementById("affirmation-title");
+            if (titleEl) {
+                titleEl.innerHTML = `<i class="fa-solid fa-circle-question"></i> ${title}`;
+            }
+            affirmationMessage.innerHTML = message;
+            affirmationCallback = onConfirm;
+            if (confirmOkBtn) {
+                if (isDanger) {
+                    confirmOkBtn.className = "danger-btn";
+                    confirmOkBtn.textContent = "Delete";
+                } else {
+                    confirmOkBtn.className = "primary-btn";
+                    confirmOkBtn.textContent = "Activate";
+                }
+            }
+            affirmationModal.classList.add("show");
+        }
+
+        function closeAffirmationModal() {
+            if (!affirmationModal) return;
+            affirmationModal.classList.remove("show");
+            affirmationCallback = null;
+        }
+
+        // Helper to combine colorless mana in an array and move it to the front
+        function mergeColorlessMana(array) {
+            if (!Array.isArray(array)) return [];
+            let colorlessSum = 0;
+            const normalized = [];
+            array.forEach(symbol => {
+                if (symbol.startsWith("C")) {
+                    colorlessSum += parseInt(symbol.substring(1)) || 0;
+                } else {
+                    normalized.push(symbol);
+                }
+            });
+            if (colorlessSum > 0) {
+                normalized.unshift("C" + colorlessSum);
+            }
+            return normalized;
+        }
 
         // Dynamic Keyword rendering & management helper functions
         function renderKeywordButtons() {
@@ -2046,6 +2143,7 @@
                 btn.addEventListener("click", () => {
                     const symbol = btn.dataset.mana;
                     state.manaCost.push(symbol);
+                    state.manaCost = mergeColorlessMana(state.manaCost);
                     updateManaDisplay();
                     updateCardPreview();
                     autoSaveCurrentCard();
@@ -2232,6 +2330,29 @@
                 }
             });
 
+            // Affirmation Modal event listeners
+            if (closeAffirmationModalBtn) {
+                closeAffirmationModalBtn.addEventListener("click", closeAffirmationModal);
+            }
+            if (confirmCancelBtn) {
+                confirmCancelBtn.addEventListener("click", closeAffirmationModal);
+            }
+            if (affirmationModal) {
+                affirmationModal.addEventListener("click", (e) => {
+                    if (e.target === affirmationModal) {
+                        closeAffirmationModal();
+                    }
+                });
+            }
+            if (confirmOkBtn) {
+                confirmOkBtn.addEventListener("click", () => {
+                    if (typeof affirmationCallback === "function") {
+                        affirmationCallback();
+                    }
+                    closeAffirmationModal();
+                });
+            }
+
             // Function to handle adding keyword
             const handleAddKeyword = () => {
                 const keyword = newKeywordInput.value.trim();
@@ -2268,6 +2389,7 @@
                     const symbol = btn.dataset.mana;
                     if (!state.tempAbilityManaCost) state.tempAbilityManaCost = [];
                     state.tempAbilityManaCost.push(symbol);
+                    state.tempAbilityManaCost = mergeColorlessMana(state.tempAbilityManaCost);
                     renderAbilityManaDisplay();
                 });
             });
@@ -2597,11 +2719,30 @@
                 deleteBtn.className = "ability-item-delete-btn";
                 deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
                 deleteBtn.title = "Delete ability";
-                deleteBtn.addEventListener("click", () => {
-                    state.activatedAbilities.splice(idx, 1);
-                    renderActivatedAbilitiesList();
-                    updateCardPreview();
-                    autoSaveCurrentCard();
+                
+                const triggerDeleteAffirmation = () => {
+                    const costStr = ability.cost.map(sym => `{${sym.startsWith("C") ? sym.substring(1) : sym}}`).join("");
+                    const displayCostText = ability.cost.length > 0 ? `${costStr} ` : "";
+                    showAffirmationModal(
+                        "Delete Ability",
+                        `Are you sure you want to delete this activated ability?<br><br><strong style="color: var(--accent-gold); font-style: italic;">"${displayCostText}${ability.text}"</strong>`,
+                        true,
+                        () => {
+                            state.activatedAbilities.splice(idx, 1);
+                            renderActivatedAbilitiesList();
+                            updateCardPreview();
+                            autoSaveCurrentCard();
+                        }
+                    );
+                };
+
+                deleteBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    triggerDeleteAffirmation();
+                });
+
+                item.addEventListener("click", () => {
+                    triggerDeleteAffirmation();
                 });
                 
                 item.appendChild(details);
@@ -2632,8 +2773,60 @@
             cardPreviewFrame.style.borderColor = borderColorHex;
             
             // Rules Text
-            const fullRules = getFullRulesText();
-            cardPreviewRules.innerHTML = formatRulesTextForHTML(fullRules);
+            cardPreviewRules.innerHTML = "";
+            
+            // 1. Keywords
+            if (state.keywords && state.keywords.length > 0) {
+                const keywordsStr = state.keywords.join(", ") + ".";
+                const p = document.createElement("div");
+                p.className = "rules-paragraph";
+                p.innerHTML = formatRulesTextForHTML(keywordsStr);
+                cardPreviewRules.appendChild(p);
+            }
+            
+            // 2. Activated Abilities
+            if (state.activatedAbilities && state.activatedAbilities.length > 0) {
+                state.activatedAbilities.forEach((ability) => {
+                    const costStr = ability.cost.map(sym => {
+                        if (sym.startsWith("C")) {
+                            return `{${sym.substring(1)}}`;
+                        }
+                        return `{${sym}}`;
+                    }).join("");
+                    const abilityStr = ability.cost.length > 0 ? `${costStr}: ${ability.text}` : ability.text;
+                    
+                    const p = document.createElement("div");
+                    p.className = "rules-paragraph activated-ability-preview-item";
+                    p.innerHTML = formatRulesTextForHTML(abilityStr);
+                    p.title = "Click to simulate activation";
+                    
+                    p.addEventListener("click", () => {
+                        const displayCostText = ability.cost.length > 0 ? `${costStr} ` : "";
+                        showAffirmationModal(
+                            "Activate Ability",
+                            `Are you sure you want to activate this ability?<br><br><strong style="color: var(--accent-gold); font-style: italic;">"${displayCostText}${ability.text}"</strong>`,
+                            false,
+                            () => {
+                                showToast(`Activated ability: ${displayCostText}${ability.text}`);
+                            }
+                        );
+                    });
+                    
+                    cardPreviewRules.appendChild(p);
+                });
+            }
+            
+            // 3. Custom rules text
+            if (state.rulesText && state.rulesText.trim()) {
+                const paragraphs = state.rulesText.trim().split("\n");
+                paragraphs.forEach(paragraph => {
+                    if (!paragraph.trim()) return;
+                    const p = document.createElement("div");
+                    p.className = "rules-paragraph";
+                    p.innerHTML = formatRulesTextForHTML(paragraph);
+                    cardPreviewRules.appendChild(p);
+                });
+            }
             
             // Type Box
             cardPreviewType.textContent = state.cardType;
@@ -2770,13 +2963,17 @@
             state.cardName = card.cardName;
             state.frameStyle = card.frameStyle;
             state.borderColor = card.borderColor || "black";
-            state.manaCost = [...card.manaCost];
+            state.manaCost = mergeColorlessMana(card.manaCost || []);
             state.cardType = card.cardType;
             state.rulesText = card.rulesText || "";
             state.power = card.power;
             state.toughness = card.toughness;
             state.keywords = [...(card.keywords || [])];
-            state.activatedAbilities = JSON.parse(JSON.stringify(card.activatedAbilities || []));
+            const rawAbilities = JSON.parse(JSON.stringify(card.activatedAbilities || []));
+            state.activatedAbilities = rawAbilities.map(ability => ({
+                cost: mergeColorlessMana(ability.cost || []),
+                text: ability.text || ""
+            }));
             state.tempAbilityManaCost = [];
             abilityDescInput.value = "";
             state.artScale = card.artScale !== undefined ? card.artScale : 1.0;
