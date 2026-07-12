@@ -555,6 +555,54 @@
             transition: background 0.3s ease, border-color 0.3s ease;
         }
 
+        /* Navigation Arrows styling */
+        .nav-arrow-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        .nav-arrow-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(226, 183, 71, 0.4);
+            color: #e2b747;
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 15px rgba(226, 183, 71, 0.2);
+        }
+
+        .nav-arrow-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .nav-arrow-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-arrow-btn.prev {
+            left: 20px;
+        }
+
+        .nav-arrow-btn.next {
+            right: 20px;
+        }
+
         .card-container-wrapper.light-bg {
             background: #ffffff;
             border-color: rgba(0, 0, 0, 0.1);
@@ -1654,6 +1702,11 @@
 
             <!-- Center container with grid wrapper -->
             <div class="card-container-wrapper" id="canvas-wrapper">
+                <!-- Navigation Arrows -->
+                <button type="button" class="nav-arrow-btn prev" id="nav-prev-btn" title="Previous Card (Left Arrow)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
                 <!-- THE LIVE RENDERED CARD -->
                 <div class="mtg-card-frame style-red" id="mtg-card-preview">
                     <div class="card-inner-border">
@@ -1695,6 +1748,9 @@
                         </div>
                     </div>
                 </div>
+                <button type="button" class="nav-arrow-btn next" id="nav-next-btn" title="Next Card (Right Arrow)">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
         </main>
 
@@ -2525,6 +2581,33 @@
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
+
+            // Navigation buttons click events
+            document.getElementById("nav-prev-btn").addEventListener("click", () => {
+                navigateDeck("prev");
+            });
+            document.getElementById("nav-next-btn").addEventListener("click", () => {
+                navigateDeck("next");
+            });
+
+            // Keyboard navigation listener
+            document.addEventListener("keydown", (e) => {
+                // Ignore if user is writing in input/textarea
+                const activeEl = document.activeElement;
+                if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
+                    return;
+                }
+                
+                // Ignore if modal is open
+                const openModal = document.querySelector(".modal-overlay.show");
+                if (openModal) return;
+
+                if (e.key === "ArrowLeft") {
+                    navigateDeck("prev");
+                } else if (e.key === "ArrowRight") {
+                    navigateDeck("next");
+                }
+            });
         }
 
         // Setup Drag & Drop helpers
@@ -3330,6 +3413,7 @@
 
         // Render the deck manager list
         function renderDeckList() {
+            updateNavigationButtons();
             deckListContainer.innerHTML = "";
 
             if (state.deck.length === 0) {
@@ -3403,6 +3487,44 @@
                 row.appendChild(deleteBtn);
                 deckListContainer.appendChild(row);
             });
+        }
+
+        // Deck navigation function
+        function navigateDeck(direction) {
+            if (!state.deck || state.deck.length <= 1) return;
+            
+            let index = state.deck.findIndex(c => c.id === state.selectedCardId);
+            
+            if (index === -1) {
+                // If nothing is selected, load the first card
+                loadCardDetails(state.deck[0].id);
+                return;
+            }
+            
+            if (direction === "prev") {
+                if (index > 0) {
+                    loadCardDetails(state.deck[index - 1].id);
+                } else {
+                    loadCardDetails(state.deck[state.deck.length - 1].id);
+                }
+            } else if (direction === "next") {
+                if (index < state.deck.length - 1) {
+                    loadCardDetails(state.deck[index + 1].id);
+                } else {
+                    loadCardDetails(state.deck[0].id);
+                }
+            }
+        }
+
+        // Enable or disable nav arrows based on deck count
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById("nav-prev-btn");
+            const nextBtn = document.getElementById("nav-next-btn");
+            if (!prevBtn || !nextBtn) return;
+            
+            const hasMultipleCards = state.deck && state.deck.length > 1;
+            prevBtn.disabled = !hasMultipleCards;
+            nextBtn.disabled = !hasMultipleCards;
         }
 
         // Clear entire deck list
