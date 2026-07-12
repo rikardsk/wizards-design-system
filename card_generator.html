@@ -1874,6 +1874,7 @@
         <span id="toast-text">Card added to deck!</span>
     </div>
 
+    <script src="card_renderer.js"></script>
     <script>
         // App State
         const state = {
@@ -3491,27 +3492,28 @@
 
         // Deck navigation function
         function navigateDeck(direction) {
-            if (!state.deck || state.deck.length <= 1) return;
+            const filteredDeck = (state.deck || []).filter(cardMatchesFilters);
+            if (filteredDeck.length <= 1) return;
             
-            let index = state.deck.findIndex(c => c.id === state.selectedCardId);
+            let index = filteredDeck.findIndex(c => c.id === state.selectedCardId);
             
             if (index === -1) {
-                // If nothing is selected, load the first card
-                loadCardDetails(state.deck[0].id);
+                // If nothing is selected, load the first card of the filtered deck
+                loadCardDetails(filteredDeck[0].id);
                 return;
             }
             
             if (direction === "prev") {
                 if (index > 0) {
-                    loadCardDetails(state.deck[index - 1].id);
+                    loadCardDetails(filteredDeck[index - 1].id);
                 } else {
-                    loadCardDetails(state.deck[state.deck.length - 1].id);
+                    loadCardDetails(filteredDeck[filteredDeck.length - 1].id);
                 }
             } else if (direction === "next") {
-                if (index < state.deck.length - 1) {
-                    loadCardDetails(state.deck[index + 1].id);
+                if (index < filteredDeck.length - 1) {
+                    loadCardDetails(filteredDeck[index + 1].id);
                 } else {
-                    loadCardDetails(state.deck[0].id);
+                    loadCardDetails(filteredDeck[0].id);
                 }
             }
         }
@@ -3522,7 +3524,8 @@
             const nextBtn = document.getElementById("nav-next-btn");
             if (!prevBtn || !nextBtn) return;
             
-            const hasMultipleCards = state.deck && state.deck.length > 1;
+            const filteredDeck = (state.deck || []).filter(cardMatchesFilters);
+            const hasMultipleCards = filteredDeck.length > 1;
             prevBtn.disabled = !hasMultipleCards;
             nextBtn.disabled = !hasMultipleCards;
         }
@@ -3675,6 +3678,10 @@
 
         // Canvas Drawing Engine for Card Downloads
         function renderCardToCanvas(tempCtx, targetW, targetH) {
+            if (typeof window.renderCardToCanvas === "function") {
+                window.renderCardToCanvas(state, tempCtx, targetW, targetH, state.artImage);
+                return;
+            }
             const scale = targetW / 375; // Ratio to scale card contents
             
             tempCtx.save(); // Save caller state
