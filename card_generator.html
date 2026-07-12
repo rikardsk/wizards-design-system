@@ -1557,6 +1557,17 @@
                     </div>
                 </div>
 
+                <!-- Custom Description Text -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-align-left"></i> Custom Description Text</span>
+                        <button class="reset-panel-btn" id="reset-custom-description-btn" title="Reset Description"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="input-container">
+                        <textarea id="card-description-input" rows="2" placeholder="Enter custom description/introduction..."></textarea>
+                    </div>
+                </div>
+
                 <!-- Keyword Abilities -->
                 <div class="control-group">
                     <h3>
@@ -1828,6 +1839,7 @@
             artY: 0,
             
             // New state fields
+            customDescription: "",
             keywords: ["Trample"],
             activatedAbilities: [],
             tempAbilityManaCost: [],
@@ -1867,6 +1879,7 @@
         const cardTypeSelect = document.getElementById("card-type-select");
         const cardPowerInput = document.getElementById("card-power-input");
         const cardToughnessInput = document.getElementById("card-toughness-input");
+        const cardDescriptionInput = document.getElementById("card-description-input");
         const cardTextInput = document.getElementById("card-text-input");
         const creatureStatsRow = document.getElementById("creature-stats-row");
         
@@ -2041,6 +2054,7 @@
         function initFormValues() {
             cardNameInput.value = state.cardName;
             cardTypeSelect.value = state.cardType;
+            cardDescriptionInput.value = state.customDescription || "";
             cardTextInput.value = state.rulesText;
             cardPowerInput.value = state.power;
             cardToughnessInput.value = state.toughness;
@@ -2099,6 +2113,12 @@
 
             cardToughnessInput.addEventListener("input", (e) => {
                 state.toughness = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardDescriptionInput.addEventListener("input", (e) => {
+                state.customDescription = e.target.value;
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -2492,6 +2512,13 @@
                 autoSaveCurrentCard();
             });
 
+            document.getElementById("reset-custom-description-btn").addEventListener("click", () => {
+                state.customDescription = "";
+                cardDescriptionInput.value = "";
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
             document.getElementById("reset-custom-rules-btn").addEventListener("click", () => {
                 state.rulesText = "";
                 cardTextInput.value = "";
@@ -2622,6 +2649,11 @@
         // Helper to get combined rules text from keywords, activated abilities, and custom rules text
         function getFullRulesText() {
             const parts = [];
+            
+            // 0. Custom description text
+            if (state.customDescription && state.customDescription.trim()) {
+                parts.push(state.customDescription.trim());
+            }
             
             // 1. Keywords
             if (state.keywords && state.keywords.length > 0) {
@@ -2775,6 +2807,18 @@
             // Rules Text
             cardPreviewRules.innerHTML = "";
             
+            // 0. Custom Description Text
+            if (state.customDescription && state.customDescription.trim()) {
+                const paragraphs = state.customDescription.trim().split("\n");
+                paragraphs.forEach(paragraph => {
+                    if (!paragraph.trim()) return;
+                    const p = document.createElement("div");
+                    p.className = "rules-paragraph";
+                    p.innerHTML = formatRulesTextForHTML(paragraph);
+                    cardPreviewRules.appendChild(p);
+                });
+            }
+            
             // 1. Keywords
             if (state.keywords && state.keywords.length > 0) {
                 const keywordsStr = state.keywords.join(", ") + ".";
@@ -2869,6 +2913,7 @@
             state.manaCost = [];
             state.cardType = "Creature";
             state.rulesText = "";
+            state.customDescription = "";
             state.power = "1";
             state.toughness = "1";
             state.artImage = null;
@@ -2916,6 +2961,7 @@
                 manaCost: [...state.manaCost],
                 cardType: state.cardType,
                 rulesText: state.rulesText || "",
+                customDescription: state.customDescription || "",
                 power: state.power || "1",
                 toughness: state.toughness || "1",
                 artBase64: state.artImage ? state.artImage.src : "",
@@ -2966,6 +3012,7 @@
             state.manaCost = mergeColorlessMana(card.manaCost || []);
             state.cardType = card.cardType;
             state.rulesText = card.rulesText || "";
+            state.customDescription = card.customDescription || "";
             state.power = card.power;
             state.toughness = card.toughness;
             state.keywords = [...(card.keywords || [])];
@@ -3428,6 +3475,7 @@
                 manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                 cardType: card.cardType || "Creature",
                 rulesText: card.rulesText || "",
+                customDescription: card.customDescription || "",
                 power: card.power || "1",
                 toughness: card.toughness || "1",
                 artBase64: card.artBase64 || "",
