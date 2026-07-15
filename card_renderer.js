@@ -152,11 +152,14 @@
     }
 
     // Helper to measure text width considering inline mana symbols
-    function measureTextWithSymbols(ctx, word, scale) {
+    function measureTextWithSymbols(ctx, word, scale, isItalic = false) {
         if (!word) return 0;
         const parts = word.split(/(\{.+?\})/g);
         let width = 0;
         const diameter = 13 * scale;
+        
+        ctx.save();
+        ctx.font = `${isItalic ? 'italic ' : ''}${Math.round(12.5 * scale)}px "EB Garamond", serif`;
         
         parts.forEach(part => {
             if (part.startsWith("{") && part.endsWith("}")) {
@@ -170,15 +173,16 @@
             }
             width += ctx.measureText(part).width;
         });
+        ctx.restore();
         return width;
     }
 
-    function measureLineWithSymbols(ctx, line, scale) {
-        return measureTextWithSymbols(ctx, line, scale);
+    function measureLineWithSymbols(ctx, line, scale, isItalic = false) {
+        return measureTextWithSymbols(ctx, line, scale, isItalic);
     }
 
     // Helper to draw a line with inline mana symbols
-    function drawLineWithSymbols(ctx, line, x, y, scale) {
+    function drawLineWithSymbols(ctx, line, x, y, scale, isItalic = false) {
         if (!line) return;
         const parts = line.split(/(\{.+?\})/g);
         let currentX = x;
@@ -205,7 +209,7 @@
             }
             
             ctx.fillStyle = "#0c0b0b";
-            ctx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
+            ctx.font = `${isItalic ? 'italic ' : ''}${Math.round(12.5 * scale)}px "EB Garamond", serif`;
             ctx.textAlign = "left";
             ctx.fillText(part, currentX, y);
             currentX += ctx.measureText(part).width;
@@ -392,38 +396,80 @@
         tempCtx.stroke();
         
         tempCtx.fillStyle = "#0c0b0b";
-        tempCtx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
         
-        const fullRules = getCardFullRulesText(card);
-        const textLines = fullRules.split('\n');
+        // Build text blocks
+        const blocks = [];
+        
+        // 0. Custom description text
+        if (card.customDescription && card.customDescription.trim()) {
+            const isItalic = card.customDescriptionItalic !== false;
+            blocks.push({ text: card.customDescription.trim(), isItalic: isItalic });
+        }
+        
+        // 1. Keywords
+        if (card.keywords && card.keywords.length > 0) {
+            const keywordsStr = card.keywords.join(", ") + ".";
+            blocks.push({ text: keywordsStr, isItalic: false });
+        }
+        
+        // 2. Activated Abilities
+        if (card.activatedAbilities && card.activatedAbilities.length > 0) {
+            card.activatedAbilities.forEach(ability => {
+                const costStr = (ability.cost || []).map(sym => {
+                    if (sym.startsWith("C")) {
+                        return `{${sym.substring(1)}}`;
+                    }
+                    return `{${sym}}`;
+                }).join("");
+                
+                blocks.push({
+                    text: (ability.cost || []).length > 0 ? `${costStr}: ${ability.text}` : ability.text,
+                    isItalic: false
+                });
+            });
+        }
+        
+        // 3. Custom rules text
+        if (card.rulesText && card.rulesText.trim()) {
+            blocks.push({ text: card.rulesText.trim(), isItalic: false });
+        }
+        
         let textY = textBoxY + 14 * scale;
         const lineSpacing = 16 * scale;
         
         tempCtx.textAlign = "left";
         tempCtx.textBaseline = "top";
         
-        textLines.forEach(line => {
-            const words = line.split(' ');
-            let currentLine = '';
-            const maxTextWidth = artW - (20 * scale);
-            
-            for(let i = 0; i < words.length; i++) {
-                const testLine = currentLine + words[i] + ' ';
-                const lineWidth = measureLineWithSymbols(tempCtx, testLine, scale);
-                if(lineWidth > maxTextWidth && i > 0) {
-                    drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
-                    currentLine = words[i] + ' ';
-                    textY += lineSpacing;
-                } else {
-                    currentLine = testLine;
-                }
+        blocks.forEach((block, blockIndex) => {
+            // Add spacing between paragraphs/blocks
+            if (blockIndex > 0) {
+                textY += lineSpacing;
             }
-            drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
-            textY += lineSpacing;
+            
+            const lines = block.text.split('\n');
+            lines.forEach(line => {
+                const words = line.split(' ');
+                let currentLine = '';
+                const maxTextWidth = artW - (20 * scale);
+                
+                for(let i = 0; i < words.length; i++) {
+                    const testLine = currentLine + words[i] + ' ';
+                    const lineWidth = measureLineWithSymbols(tempCtx, testLine, scale, block.isItalic);
+                    if(lineWidth > maxTextWidth && i > 0) {
+                        drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale, block.isItalic);
+                        currentLine = words[i] + ' ';
+                        textY += lineSpacing;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale, block.isItalic);
+                textY += lineSpacing;
+            });
         });
         
-        // 6. Draw Power / Toughness badge in corner (if Creature)
-        if (card.cardType === "Creature") {
+        // 6. Draw Power / Toughness badge in corner (if Creature or Tower)
+        if (card.cardType === "Creature" || card.cardType === "Tower") {
             const ptBadgeW = 50 * scale;
             const ptBadgeH = 22 * scale;
             const ptBadgeX = artX + artW - ptBadgeW - (8 * scale);

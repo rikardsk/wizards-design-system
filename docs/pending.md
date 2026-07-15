@@ -5,7 +5,7 @@ I want to make webbased card generator for a future game. The card should be ide
 - Frame color
 - Name/Title
 - Mana cost (icons for Mountain, Swamp, Plain or Forrest)
-- Type (Creature, Artifact, Enchantment, spell)
+- Type (Artifact, Creature, Enchantment, Land, spell, Tower)
 - Card text (textbox for text)
 - Card art (drop area for the art)
 

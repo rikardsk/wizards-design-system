@@ -10,7 +10,7 @@ I have built a web-based, standalone MTG-style Card Generator in the workspace r
     *   **Right Sidebar (Deck Manager)**: Track and manage your card designs. Cards are automatically saved to your deck as soon as you type a Card Name, and all subsequent edits (mana cost, type, rules text, art, etc.) are saved in real-time to the IndexedDB database. Includes a "New Card" button to clear inputs and deselect cards, deck statistics, and deck JSON file export/import.
     *   **Interactive Deck Filters**: Added a premium-styled filters panel to the Deck Manager sidebar.
         *   **Filter by Mana**: Clean circular buttons representing each mana type (White, Blue, Black, Red, Green, and Colorless) utilizing the SVG mana icons from the page. Clicking toggles filtering.
-        *   **Filter by Type**: Interactive pills for Creature, Artifact, Enchantment, and Spell.
+        *   **Filter by Type**: Interactive pills for Artifact, Creature, Enchantment, Land, Spell, and Tower.
         *   **Clear Filters**: Inline buttons to quickly reset active filters when selections exist.
         *   **Dynamic Counter**: Updates the deck count text to show "X of Y Cards shown" when active filters are applied, with placeholder states for empty results.
     *   **High-Quality Downsampled PNG Exporter**: Draws the card components (vectors, borders, user's uploaded art, custom fonts) to an offline canvas at a high resolution (`750x1046 px`) and downsamples it using step-down smoothing to export a crisp, pixel-perfect PNG card image (`375x523 px`).
@@ -31,7 +31,7 @@ I have built a web-based, standalone MTG-style Card Generator in the workspace r
     *   Set **Card Name** to *"Infernal Drake"*. Notice that as soon as you type the name, a new card is added to the Deck Manager sidebar!
     *   Click the Red (**R**), Black (**B**), and Colorless (**2**) mana buttons. Verify that the mana symbols `2BR` appear in the top-right corner of the card preview, and verify that the deck list updates to show these symbols in real-time.
     *   Choose the **Gold** frame style.
-    *   Select **Creature** as the Card Type; verify that the Power/Toughness input fields appear. Set them to `5` and `5`.
+    *   Select **Creature** or **Tower** as the Card Type; verify that the Power/Toughness input fields appear. Set them to `5` and `5`.
     *   Drag and drop any picture into the **Card Illustration** dropzone (or click it to browse files). Verify the image fits the art window perfectly.
     *   Add rules text: *"Flying, Haste.\n\nAt the beginning of your upkeep, discard a card."*
 3.  **Start a New Card**:

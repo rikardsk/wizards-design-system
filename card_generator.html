@@ -812,6 +812,9 @@
         .rules-paragraph:last-child {
             margin-bottom: 0;
         }
+        .custom-description-paragraph {
+            font-style: italic;
+        }
 
         .activated-ability-preview-item {
             cursor: pointer;
@@ -1543,10 +1546,12 @@
                     <div class="input-container">
                         <label for="card-type-select">Card Type</label>
                         <select id="card-type-select">
-                            <option value="Creature">Creature</option>
                             <option value="Artifact">Artifact</option>
+                            <option value="Creature" selected>Creature</option>
                             <option value="Enchantment">Enchantment</option>
+                            <option value="Land">Land</option>
                             <option value="Spell">Spell (Sorcery/Instant)</option>
+                            <option value="Tower">Tower</option>
                         </select>
                     </div>
 
@@ -1613,6 +1618,14 @@
                     </h3>
                     <div class="input-container">
                         <textarea id="card-description-input" rows="2" placeholder="Enter custom description/introduction..."></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-light); cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="card-description-italic-input" checked style="cursor: pointer; accent-color: var(--accent-gold);"> Italicize Description
+                        </label>
+                        <button class="reset-panel-btn" id="mana-symbols-info-btn" title="Show inline mana symbols guide" style="opacity: 0.8; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); cursor: pointer;">
+                            <i class="fa-solid fa-circle-question"></i> Help
+                        </button>
                     </div>
                 </div>
 
@@ -1791,10 +1804,12 @@
                             <button class="clear-filters-btn" id="clear-type-filters-btn">Clear</button>
                         </div>
                         <div class="filter-buttons">
-                            <button class="type-filter-btn" data-type="Creature">Creature</button>
                             <button class="type-filter-btn" data-type="Artifact">Artifact</button>
+                            <button class="type-filter-btn" data-type="Creature">Creature</button>
                             <button class="type-filter-btn" data-type="Enchantment">Enchantment</button>
+                            <button class="type-filter-btn" data-type="Land">Land</button>
                             <button class="type-filter-btn" data-type="Spell">Spell</button>
+                            <button class="type-filter-btn" data-type="Tower">Tower</button>
                         </div>
                     </div>
                 </div>
@@ -1868,6 +1883,76 @@
         </div>
     </div>
 
+    <!-- Mana Symbols Guide Modal -->
+    <div class="modal-overlay" id="mana-symbols-guide-modal">
+        <div class="modal-content" style="width: 480px; max-width: 95%;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-circle-question"></i> Inline Mana Symbols Guide</h3>
+                <button type="button" class="close-modal-btn" id="close-mana-symbols-guide-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.88rem; color: var(--text-light); margin-bottom: 16px; line-height: 1.4;">
+                    You can insert inline mana symbols inside the <strong>Custom Description Text</strong> or <strong>Custom Rules Text</strong> fields using curly brackets:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 12px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{W}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">White Mana</span>
+                            <span class="mana-item" style="display: inline-flex;"><svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;"><use xlink:href="#mana-w"></use></svg></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{U}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Blue Mana</span>
+                            <span class="mana-item" style="display: inline-flex;"><svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;"><use xlink:href="#mana-u"></use></svg></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{B}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Black Mana</span>
+                            <span class="mana-item" style="display: inline-flex;"><svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;"><use xlink:href="#mana-b"></use></svg></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{R}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Red Mana</span>
+                            <span class="mana-item" style="display: inline-flex;"><svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;"><use xlink:href="#mana-r"></use></svg></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{G}</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Green Mana</span>
+                            <span class="mana-item" style="display: inline-flex;"><svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;"><use xlink:href="#mana-g"></use></svg></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px;">
+                        <span style="font-family: monospace; font-size: 0.95rem; color: var(--accent-gold); font-weight: bold;">{1}, {2}, {3} ...</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Colorless / Generic Mana</span>
+                            <span class="mana-item" style="display: inline-flex;">
+                                <svg class="mana-icon-svg" viewBox="0 0 18 18" style="width: 18px; height: 18px;">
+                                    <use xlink:href="#mana-c"></use>
+                                    <text x="9" y="13" font-family="sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#111111">2</text>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold; display: block; margin-bottom: 6px;">Example Usage:</span>
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.8rem; color: var(--text-light); line-height: 1.4;">
+                        This land yields {G} and {1}.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Feedback Toast -->
     <div id="toast" class="toast">
         <i class="fa-solid fa-circle-check"></i>
@@ -1884,7 +1969,7 @@
             frameStyle: "red", // red, green, black, white, blue, gold, artifact
             borderColor: "black", // black, white, gold, silver, none
             manaCost: ["C2", "R", "R"], // W, U, B, R, G, C1, C2...
-            cardType: "Creature", // Creature, Artifact, Enchantment, Spell
+            cardType: "Creature", // Creature, Artifact, Enchantment, Spell, Land, Tower
             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
             power: "4",
             toughness: "5",
@@ -1897,6 +1982,7 @@
             
             // New state fields
             customDescription: "",
+            customDescriptionItalic: true,
             keywords: ["Trample"],
             activatedAbilities: [],
             tempAbilityManaCost: [],
@@ -1937,8 +2023,12 @@
         const cardPowerInput = document.getElementById("card-power-input");
         const cardToughnessInput = document.getElementById("card-toughness-input");
         const cardDescriptionInput = document.getElementById("card-description-input");
+        const cardDescriptionItalicCheckbox = document.getElementById("card-description-italic-input");
         const cardTextInput = document.getElementById("card-text-input");
         const creatureStatsRow = document.getElementById("creature-stats-row");
+        const manaSymbolsInfoBtn = document.getElementById("mana-symbols-info-btn");
+        const manaSymbolsGuideModal = document.getElementById("mana-symbols-guide-modal");
+        const closeManaSymbolsGuideBtn = document.getElementById("close-mana-symbols-guide-btn");
         
         const manaDisplayContainer = document.getElementById("mana-display-container");
         const clearManaBtn = document.getElementById("clear-mana-btn");
@@ -2112,6 +2202,7 @@
             cardNameInput.value = state.cardName;
             cardTypeSelect.value = state.cardType;
             cardDescriptionInput.value = state.customDescription || "";
+            cardDescriptionItalicCheckbox.checked = state.customDescriptionItalic !== false;
             cardTextInput.value = state.rulesText;
             cardPowerInput.value = state.power;
             cardToughnessInput.value = state.toughness;
@@ -2180,10 +2271,31 @@
                 autoSaveCurrentCard();
             });
 
+            cardDescriptionItalicCheckbox.addEventListener("change", (e) => {
+                state.customDescriptionItalic = e.target.checked;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
             cardTextInput.addEventListener("input", (e) => {
                 state.rulesText = e.target.value;
                 updateCardPreview();
                 autoSaveCurrentCard();
+            });
+
+            // Mana Symbols Guide Modal events
+            manaSymbolsInfoBtn.addEventListener("click", () => {
+                manaSymbolsGuideModal.classList.add("show");
+            });
+
+            closeManaSymbolsGuideBtn.addEventListener("click", () => {
+                manaSymbolsGuideModal.classList.remove("show");
+            });
+
+            manaSymbolsGuideModal.addEventListener("click", (e) => {
+                if (e.target === manaSymbolsGuideModal) {
+                    manaSymbolsGuideModal.classList.remove("show");
+                }
             });
 
             // Frame color button click handler
@@ -2593,6 +2705,14 @@
 
             // Keyboard navigation listener
             document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    const openModal = document.querySelector(".modal-overlay.show");
+                    if (openModal) {
+                        openModal.classList.remove("show");
+                        return;
+                    }
+                }
+
                 // Ignore if user is writing in input/textarea
                 const activeEl = document.activeElement;
                 if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
@@ -2682,7 +2802,7 @@
 
         // Toggle P/T input visibility
         function updateCreatureStatsVisibility() {
-            if (state.cardType === "Creature") {
+            if (state.cardType === "Creature" || state.cardType === "Tower") {
                 creatureStatsRow.style.display = "flex";
             } else {
                 creatureStatsRow.style.display = "none";
@@ -2897,7 +3017,8 @@
                 paragraphs.forEach(paragraph => {
                     if (!paragraph.trim()) return;
                     const p = document.createElement("div");
-                    p.className = "rules-paragraph";
+                    const isItalic = state.customDescriptionItalic !== false;
+                    p.className = `rules-paragraph${isItalic ? " custom-description-paragraph" : ""}`;
                     p.innerHTML = formatRulesTextForHTML(paragraph);
                     cardPreviewRules.appendChild(p);
                 });
@@ -2960,7 +3081,7 @@
             cardPreviewType.textContent = state.cardType;
             
             // P/T Box
-            if (state.cardType === "Creature") {
+            if (state.cardType === "Creature" || state.cardType === "Tower") {
                 cardPreviewPt.style.display = "block";
                 cardPreviewPt.textContent = `${state.power || "0"}/${state.toughness || "0"}`;
             } else {
@@ -2998,6 +3119,7 @@
             state.cardType = "Creature";
             state.rulesText = "";
             state.customDescription = "";
+            state.customDescriptionItalic = true;
             state.power = "1";
             state.toughness = "1";
             state.artImage = null;
@@ -3046,6 +3168,7 @@
                 cardType: state.cardType,
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
+                customDescriptionItalic: state.customDescriptionItalic !== false,
                 power: state.power || "1",
                 toughness: state.toughness || "1",
                 artBase64: state.artImage ? state.artImage.src : "",
@@ -3097,6 +3220,7 @@
             state.cardType = card.cardType;
             state.rulesText = card.rulesText || "";
             state.customDescription = card.customDescription || "";
+            state.customDescriptionItalic = card.customDescriptionItalic !== false;
             state.power = card.power;
             state.toughness = card.toughness;
             state.keywords = [...(card.keywords || [])];
@@ -3557,6 +3681,7 @@
                 cardType: card.cardType || "Creature",
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
+                customDescriptionItalic: card.customDescriptionItalic !== false,
                 power: card.power || "1",
                 toughness: card.toughness || "1",
                 artBase64: card.artBase64 || "",
@@ -3602,6 +3727,7 @@
                 cardType: card.cardType || "Creature",
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
+                customDescriptionItalic: card.customDescriptionItalic !== false,
                 power: card.power || "1",
                 toughness: card.toughness || "1",
                 artBase64: card.artBase64 || "",
@@ -3869,39 +3995,80 @@
             
             // Draw card texts line by line inside box
             tempCtx.fillStyle = "#0c0b0b";
-            tempCtx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
             
-            const fullRules = getFullRulesText();
-            const textLines = fullRules.split('\n');
+            // Build text blocks
+            const blocks = [];
+            
+            // 0. Custom description text
+            if (state.customDescription && state.customDescription.trim()) {
+                const isItalic = state.customDescriptionItalic !== false;
+                blocks.push({ text: state.customDescription.trim(), isItalic: isItalic });
+            }
+            
+            // 1. Keywords
+            if (state.keywords && state.keywords.length > 0) {
+                const keywordsStr = state.keywords.join(", ") + ".";
+                blocks.push({ text: keywordsStr, isItalic: false });
+            }
+            
+            // 2. Activated Abilities
+            if (state.activatedAbilities && state.activatedAbilities.length > 0) {
+                state.activatedAbilities.forEach(ability => {
+                    const costStr = ability.cost.map(sym => {
+                        if (sym.startsWith("C")) {
+                            return `{${sym.substring(1)}}`;
+                        }
+                        return `{${sym}}`;
+                    }).join("");
+                    
+                    blocks.push({
+                        text: ability.cost.length > 0 ? `${costStr}: ${ability.text}` : ability.text,
+                        isItalic: false
+                    });
+                });
+            }
+            
+            // 3. Custom rules text
+            if (state.rulesText && state.rulesText.trim()) {
+                blocks.push({ text: state.rulesText.trim(), isItalic: false });
+            }
+            
             let textY = textBoxY + 14 * scale;
             const lineSpacing = 16 * scale;
             
             tempCtx.textAlign = "left";
             tempCtx.textBaseline = "top";
             
-            textLines.forEach(line => {
-                // Basic text wrapping utility
-                const words = line.split(' ');
-                let currentLine = '';
-                const maxTextWidth = artW - (20 * scale);
-                
-                for(let i = 0; i < words.length; i++) {
-                    const testLine = currentLine + words[i] + ' ';
-                    const lineWidth = measureLineWithSymbols(tempCtx, testLine, scale);
-                    if(lineWidth > maxTextWidth && i > 0) {
-                        drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
-                        currentLine = words[i] + ' ';
-                        textY += lineSpacing;
-                    } else {
-                        currentLine = testLine;
-                    }
+            blocks.forEach((block, blockIndex) => {
+                // Add spacing between paragraphs/blocks
+                if (blockIndex > 0) {
+                    textY += lineSpacing;
                 }
-                drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale);
-                textY += lineSpacing;
+                
+                const lines = block.text.split('\n');
+                lines.forEach(line => {
+                    const words = line.split(' ');
+                    let currentLine = '';
+                    const maxTextWidth = artW - (20 * scale);
+                    
+                    for(let i = 0; i < words.length; i++) {
+                        const testLine = currentLine + words[i] + ' ';
+                        const lineWidth = measureLineWithSymbols(tempCtx, testLine, scale, block.isItalic);
+                        if(lineWidth > maxTextWidth && i > 0) {
+                            drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale, block.isItalic);
+                            currentLine = words[i] + ' ';
+                            textY += lineSpacing;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    drawLineWithSymbols(tempCtx, currentLine.trim(), artX + 10 * scale, textY, scale, block.isItalic);
+                    textY += lineSpacing;
+                });
             });
             
-            // 6. Draw Power / Toughness badge in corner (if Creature)
-            if (state.cardType === "Creature") {
+            // 6. Draw Power / Toughness badge in corner (if Creature or Tower)
+            if (state.cardType === "Creature" || state.cardType === "Tower") {
                 const ptBadgeW = 50 * scale;
                 const ptBadgeH = 22 * scale;
                 const ptBadgeX = artX + artW - ptBadgeW - (8 * scale);
@@ -4029,11 +4196,14 @@
         }
 
         // Helper to measure text width considering inline mana symbols
-        function measureTextWithSymbols(ctx, word, scale) {
+        function measureTextWithSymbols(ctx, word, scale, isItalic = false) {
             if (!word) return 0;
             const parts = word.split(/(\{.+?\})/g);
             let width = 0;
             const diameter = 13 * scale;
+            
+            ctx.save();
+            ctx.font = `${isItalic ? 'italic ' : ''}${Math.round(12.5 * scale)}px "EB Garamond", serif`;
             
             parts.forEach(part => {
                 if (part.startsWith("{") && part.endsWith("}")) {
@@ -4047,16 +4217,17 @@
                 }
                 width += ctx.measureText(part).width;
             });
+            ctx.restore();
             return width;
         }
 
         // Helper to measure line width
-        function measureLineWithSymbols(ctx, line, scale) {
-            return measureTextWithSymbols(ctx, line, scale);
+        function measureLineWithSymbols(ctx, line, scale, isItalic = false) {
+            return measureTextWithSymbols(ctx, line, scale, isItalic);
         }
 
         // Helper to draw a line with inline mana symbols
-        function drawLineWithSymbols(ctx, line, x, y, scale) {
+        function drawLineWithSymbols(ctx, line, x, y, scale, isItalic = false) {
             if (!line) return;
             const parts = line.split(/(\{.+?\})/g);
             let currentX = x;
@@ -4083,7 +4254,7 @@
                 }
                 
                 ctx.fillStyle = "#0c0b0b";
-                ctx.font = `${Math.round(12.5 * scale)}px "EB Garamond", serif`;
+                ctx.font = `${isItalic ? 'italic ' : ''}${Math.round(12.5 * scale)}px "EB Garamond", serif`;
                 ctx.textAlign = "left";
                 ctx.fillText(part, currentX, y);
                 currentX += ctx.measureText(part).width;
