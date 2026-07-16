@@ -218,6 +218,74 @@
         ctx.restore();
     }
 
+    // Helper to parse any CSS color format to an RGBA object
+    function colorToRGBA(colorStr) {
+        if (!colorStr) return { r: 0, g: 0, b: 0, a: 1 };
+        
+        let normalized = colorStr.trim();
+        // Check if it's just raw numbers like "255, 0, 0, 0.5" or "255 0 0 0.5"
+        if (/^[\d\s.,/]+$/.test(normalized)) {
+            const parts = normalized.split(/[\s,/]+/).filter(Boolean);
+            if (parts.length === 3) {
+                normalized = `rgb(${parts[0]}, ${parts[1]}, ${parts[2]})`;
+            } else if (parts.length === 4) {
+                normalized = `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${parts[3]})`;
+            }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = normalized;
+        const resolved = ctx.fillStyle;
+
+        if (resolved.startsWith("#")) {
+            const r = parseInt(resolved.substring(1, 3), 16);
+            const g = parseInt(resolved.substring(3, 5), 16);
+            const b = parseInt(resolved.substring(5, 7), 16);
+            return { r, g, b, a: 1 };
+        }
+        const match = resolved.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (match) {
+            return {
+                r: parseInt(match[1], 10),
+                g: parseInt(match[2], 10),
+                b: parseInt(match[3], 10),
+                a: match[4] !== undefined ? parseFloat(match[4]) : 1
+            };
+        }
+        return { r: 0, g: 0, b: 0, a: 1 };
+    }
+
+    // Helper to normalize any input color string to a browser-safe rgba format
+    function normalizeColor(colorStr) {
+        const rgba = colorToRGBA(colorStr);
+        return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`;
+    }
+
+    // Helper to darken a color (by percent < 0) or lighten it (by percent > 0)
+    function adjustColorBrightness(colorStr, percent) {
+        const rgba = colorToRGBA(colorStr);
+
+        rgba.r = Math.max(0, Math.min(255, Math.round(rgba.r * (100 + percent) / 100)));
+        rgba.g = Math.max(0, Math.min(255, Math.round(rgba.g * (100 + percent) / 100)));
+        rgba.b = Math.max(0, Math.min(255, Math.round(rgba.b * (100 + percent) / 100)));
+
+        return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`;
+    }
+
+    // Helper to mix a custom color with white (to create a pastel tint)
+    function mixColorWithWhite(colorStr, weight) {
+        const rgba = colorToRGBA(colorStr);
+
+        rgba.r = Math.round(rgba.r * weight + 255 * (1 - weight));
+        rgba.g = Math.round(rgba.g * weight + 255 * (1 - weight));
+        rgba.b = Math.round(rgba.b * weight + 255 * (1 - weight));
+
+        return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`;
+    }
+
     /**
      * Main card drawing function.
      * Renders a full MTG card style vector/canvas composition onto canvas.
@@ -235,12 +303,17 @@
         // 1. Draw frame borders and background texture gradient
         let gradColors = ["#ae3d24", "#6e1c0d"]; // Red default
         const frameStyle = card.frameStyle || "red";
+        const presets = ["red", "green", "black", "white", "blue", "gold", "artifact"];
         if (frameStyle === "green") gradColors = ["#275924", "#112d0e"];
         else if (frameStyle === "black") gradColors = ["#37333d", "#151119"];
         else if (frameStyle === "white") gradColors = ["#e7ddc4", "#a49673"];
         else if (frameStyle === "blue") gradColors = ["#2c5c8e", "#122846"];
         else if (frameStyle === "gold") gradColors = ["#cb9b3c", "#7d591b"];
         else if (frameStyle === "artifact") gradColors = ["#8d9299", "#4b4e54"];
+        else if (!presets.includes(frameStyle)) {
+            const resolvedColor = normalizeColor(frameStyle);
+            gradColors = [resolvedColor, adjustColorBrightness(resolvedColor, -40)];
+        }
         
         const gradient = tempCtx.createLinearGradient(0, 0, targetW, targetH);
         gradient.addColorStop(0, gradColors[0]);
@@ -264,6 +337,7 @@
             else if (borderColor === "blue") borderFill = "#2c5c8e";
             else if (borderColor === "gold") borderFill = "#cb9b3c";
             else if (borderColor === "artifact") borderFill = "#8d9299";
+            else if (!presets.includes(borderColor)) borderFill = normalizeColor(borderColor);
             
             tempCtx.fillStyle = borderFill;
             tempCtx.fillRect(0, 0, targetW, targetH);
@@ -294,6 +368,9 @@
         else if (frameStyle === "blue") barFill = "#c7dcef";
         else if (frameStyle === "gold") barFill = "#eae1c9";
         else if (frameStyle === "artifact") barFill = "#dcdfe3";
+        else if (!presets.includes(frameStyle)) {
+            barFill = mixColorWithWhite(normalizeColor(frameStyle), 0.3);
+        }
         
         tempCtx.fillStyle = barFill;
         tempCtx.beginPath();
