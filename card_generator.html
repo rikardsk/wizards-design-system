@@ -403,6 +403,30 @@
             color: var(--danger-hover);
         }
 
+        .art-transparency-badge {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .art-transparency-badge.transparent {
+            display: inline-flex;
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+        .art-transparency-badge.opaque {
+            display: inline-flex;
+            background: rgba(52, 211, 153, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.25);
+        }
+
         /* Sliders */
         .slider-container {
             margin-bottom: 12px;
@@ -745,7 +769,7 @@
         .card-art-frame {
             height: 220px;
             border: 2px solid #332b1d;
-            background: transparent;
+            background: inherit;
             position: relative;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0,0,0,0.4);
@@ -1613,6 +1637,7 @@
                     </div>
                     <div class="dropzone-preview" id="art-filename-preview" style="display: none;">
                         <span class="filename-display" id="art-filename">No file selected</span>
+                        <span class="art-transparency-badge" id="art-transparency-badge"></span>
                         <button class="remove-file-btn" id="remove-art-btn" title="Remove art"><i class="fa-solid fa-xmark"></i></button>
                     </div>
 
@@ -3151,6 +3176,32 @@
             });
         }
 
+        // Check if an image has any transparent pixels
+        function checkImageTransparency(imgEl) {
+            const badge = document.getElementById("art-transparency-badge");
+            if (!badge) return;
+
+            const sampleSize = 128;
+            const c = document.createElement("canvas");
+            const w = Math.min(imgEl.width, sampleSize);
+            const h = Math.min(imgEl.height, sampleSize);
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext("2d");
+            ctx.drawImage(imgEl, 0, 0, w, h);
+            const data = ctx.getImageData(0, 0, w, h).data;
+
+            let hasAlpha = false;
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] < 250) { hasAlpha = true; break; }
+            }
+
+            badge.className = "art-transparency-badge " + (hasAlpha ? "transparent" : "opaque");
+            badge.innerHTML = hasAlpha
+                ? '<i class="fa-solid fa-eye"></i> Transparent'
+                : '<i class="fa-solid fa-fill"></i> Opaque';
+        }
+
         // Process dropped/selected card art
         function processArtFile(file) {
             if (!file || !file.type.startsWith("image/")) {
@@ -3166,6 +3217,7 @@
                     state.artFilename = file.name;
                     artFilename.textContent = file.name;
                     artFilenamePreview.style.display = "flex";
+                    checkImageTransparency(img);
                     
                     // Reset offsets when new image is loaded
                     state.artScale = 1.0;
@@ -3451,11 +3503,14 @@
             const presets = ["red", "green", "black", "white", "blue", "gold", "artifact"];
             const frameCustomBtn = document.getElementById("frame-custom-btn");
             const isCustomFrame = frameCustomBtn && frameCustomBtn.classList.contains("active");
+            const cardArtFrameEl = document.getElementById("card-art-frame");
             if (state.frameStyle && (!presets.includes(state.frameStyle) || isCustomFrame)) {
                 cardPreviewFrame.className = `mtg-card-frame`;
                 const resolvedColor = normalizeColor(state.frameStyle);
                 const darkerColor = adjustColorBrightness(resolvedColor, -40);
-                cardPreviewFrame.style.background = `linear-gradient(135deg, ${resolvedColor} 0%, ${darkerColor} 100%)`;
+                const frameGradient = `linear-gradient(135deg, ${resolvedColor} 0%, ${darkerColor} 100%)`;
+                cardPreviewFrame.style.background = frameGradient;
+                if (cardArtFrameEl) cardArtFrameEl.style.background = frameGradient;
                 
                 const rgba = colorToRGBA(resolvedColor);
                 cardPreviewFrame.style.boxShadow = `0 0 20px rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, 0.4), 0 15px 40px rgba(0,0,0,0.8)`;
@@ -3467,6 +3522,7 @@
             } else {
                 cardPreviewFrame.className = `mtg-card-frame style-${state.frameStyle}`;
                 cardPreviewFrame.style.background = "";
+                if (cardArtFrameEl) cardArtFrameEl.style.background = "";
                 cardPreviewFrame.style.boxShadow = "";
                 document.querySelectorAll(".card-header-bar, .card-type-bar").forEach(bar => {
                     bar.style.backgroundColor = "";
@@ -3746,6 +3802,7 @@
                         cardPreviewArt.style.height = "auto";
                     }
                     
+                    checkImageTransparency(img);
                     updateCardPreview();
                 };
                 img.src = card.artBase64;
@@ -4402,6 +4459,12 @@
             tempCtx.strokeStyle = "#332b1d";
             tempCtx.lineWidth = 2 * scale;
             tempCtx.strokeRect(artX, artY, artW, artH);
+
+            // Fill art area with frame gradient so transparent images show the card color
+            tempCtx.save();
+            tempCtx.fillStyle = gradient;
+            tempCtx.fillRect(artX, artY, artW, artH);
+            tempCtx.restore();
 
             if (state.artImage) {
                 tempCtx.save();

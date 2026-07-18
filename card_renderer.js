@@ -408,6 +408,12 @@
         tempCtx.lineWidth = 2 * scale;
         tempCtx.strokeRect(artX, artY, artW, artH);
 
+        // Fill art area with frame gradient so transparent images show the card color
+        tempCtx.save();
+        tempCtx.fillStyle = gradient;
+        tempCtx.fillRect(artX, artY, artW, artH);
+        tempCtx.restore();
+
         if (artImageElement) {
             tempCtx.save();
             tempCtx.beginPath();
