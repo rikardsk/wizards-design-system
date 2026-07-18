@@ -854,8 +854,8 @@
         }
 
         .card-rules-text .mana-icon-svg {
-            width: 14px;
-            height: 14px;
+            width: var(--ability-mana-size, 14px);
+            height: var(--ability-mana-size, 14px);
             vertical-align: middle;
             margin: 0 1px;
             position: relative;
@@ -1582,6 +1582,7 @@
                             <option value="Enchantment">Enchantment</option>
                             <option value="Land">Land</option>
                             <option value="Spell">Spell (Sorcery/Instant)</option>
+                            <option value="Quest">Quest</option>
                             <option value="Tower">Tower</option>
                         </select>
                     </div>
@@ -1704,6 +1705,19 @@
                         <i class="fa-solid fa-plus"></i> Add Ability
                     </button>
                     <div id="abilities-list-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;"></div>
+
+                    <!-- Ability Mana Size Slider -->
+                    <div class="slider-container" style="margin-top: 12px;">
+                        <div class="slider-header">
+                            <span>Ability Mana Size</span>
+                            <span class="val-display" id="ability-mana-size-val">14px</span>
+                        </div>
+                        <div class="slider-control-wrapper">
+                            <button class="slider-btn dec-btn" data-target="ability-mana-size-slider" title="Decrease Size"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" id="ability-mana-size-slider" min="8" max="24" value="14">
+                            <button class="slider-btn inc-btn" data-target="ability-mana-size-slider" title="Increase Size"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Card Rules Text -->
@@ -1840,6 +1854,7 @@
                             <button class="type-filter-btn" data-type="Enchantment">Enchantment</button>
                             <button class="type-filter-btn" data-type="Land">Land</button>
                             <button class="type-filter-btn" data-type="Spell">Spell</button>
+                            <button class="type-filter-btn" data-type="Quest">Quest</button>
                             <button class="type-filter-btn" data-type="Tower">Tower</button>
                         </div>
                     </div>
@@ -2000,7 +2015,7 @@
             frameStyle: "red", // red, green, black, white, blue, gold, artifact
             borderColor: "black", // black, white, gold, silver, none
             manaCost: ["C2", "R", "R"], // W, U, B, R, G, C1, C2...
-            cardType: "Creature", // Creature, Artifact, Enchantment, Spell, Land, Tower
+            cardType: "Creature", // Creature, Artifact, Enchantment, Spell, Land, Quest, Tower
             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
             power: "4",
             toughness: "5",
@@ -2017,6 +2032,7 @@
             keywords: ["Trample"],
             activatedAbilities: [],
             tempAbilityManaCost: [],
+            abilityManaSize: 14,
             
             // Full deck database
             deck: [],
@@ -2273,6 +2289,8 @@
         const artScaleVal = document.getElementById("art-scale-val");
         const artRotateSlider = document.getElementById("art-rotate-slider");
         const artRotateVal = document.getElementById("art-rotate-val");
+        const abilityManaSizeSlider = document.getElementById("ability-mana-size-slider");
+        const abilityManaSizeVal = document.getElementById("ability-mana-size-val");
         
         const newCardBtn = document.getElementById("new-card-btn");
         const deckNameInput = document.getElementById("deck-name-input");
@@ -2440,6 +2458,11 @@
             artScaleVal.textContent = `${Math.round((state.artScale || 1.0) * 100)}%`;
             artRotateSlider.value = state.artRotation || 0;
             artRotateVal.textContent = `${state.artRotation || 0}°`;
+            
+            // Sync Ability Mana Size Slider
+            const manaSize = state.abilityManaSize !== undefined ? state.abilityManaSize : 14;
+            abilityManaSizeSlider.value = manaSize;
+            abilityManaSizeVal.textContent = `${manaSize}px`;
             
             // Sync keyword buttons
             renderKeywordButtons();
@@ -2750,6 +2773,14 @@
             artRotateSlider.addEventListener("input", (e) => {
                 state.artRotation = parseInt(e.target.value);
                 artRotateVal.textContent = `${e.target.value}°`;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Ability Mana Size Slider
+            abilityManaSizeSlider.addEventListener("input", (e) => {
+                state.abilityManaSize = parseInt(e.target.value);
+                abilityManaSizeVal.textContent = `${e.target.value}px`;
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -3460,6 +3491,9 @@
             
             // Rules Text
             cardPreviewRules.innerHTML = "";
+            // Apply ability mana size CSS variable
+            const abilityManaSizePx = (state.abilityManaSize !== undefined ? state.abilityManaSize : 14) + "px";
+            cardPreviewRules.style.setProperty("--ability-mana-size", abilityManaSizePx);
             
             // 0. Custom Description Text
             if (state.customDescription && state.customDescription.trim()) {
@@ -3576,6 +3610,7 @@
             state.artFilename = "";
             state.artScale = 1.0;
             state.artRotation = 0;
+            state.abilityManaSize = 14;
             state.artX = 0;
             state.artY = 0;
             state.selectedCardId = null;
@@ -3627,7 +3662,8 @@
                 artX: state.artX !== undefined ? state.artX : 0,
                 artY: state.artY !== undefined ? state.artY : 0,
                 keywords: [...(state.keywords || [])],
-                activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || []))
+                activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || [])),
+                abilityManaSize: state.abilityManaSize !== undefined ? state.abilityManaSize : 14
             };
 
             const idx = state.deck.findIndex(c => c.id === state.selectedCardId);
@@ -3679,6 +3715,7 @@
                 cost: mergeColorlessMana(ability.cost || []),
                 text: ability.text || ""
             }));
+            state.abilityManaSize = card.abilityManaSize !== undefined ? card.abilityManaSize : 14;
             state.tempAbilityManaCost = [];
             abilityDescInput.value = "";
             state.artScale = card.artScale !== undefined ? card.artScale : 1.0;
@@ -4124,7 +4161,8 @@
                 artX: card.artX !== undefined ? card.artX : 0,
                 artY: card.artY !== undefined ? card.artY : 0,
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
-                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : []
+                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
+                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14
             }));
 
             const exportData = {
@@ -4170,7 +4208,8 @@
                 artX: card.artX !== undefined ? card.artX : 0,
                 artY: card.artY !== undefined ? card.artY : 0,
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
-                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : []
+                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
+                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14
             };
         }
 
@@ -4644,7 +4683,9 @@
             if (!word) return 0;
             const parts = word.split(/(\{.+?\})/g);
             let width = 0;
-            const diameter = 13 * scale;
+            // Match the radius used in drawLineWithSymbols
+            const htmlSize = state.abilityManaSize !== undefined ? state.abilityManaSize : 14;
+            const diameter = ((htmlSize / 14) * 6.5 * 2) * scale;
             
             ctx.save();
             ctx.font = `${isItalic ? 'italic ' : ''}${Math.round(12.5 * scale)}px "EB Garamond", serif`;
@@ -4675,7 +4716,9 @@
             if (!line) return;
             const parts = line.split(/(\{.+?\})/g);
             let currentX = x;
-            const radius = 6.5 * scale; // slightly smaller than header mana cost
+            // Map abilityManaSize (8–24 px in HTML) to a canvas radius (default 6.5 at 14px)
+            const htmlSize = state.abilityManaSize !== undefined ? state.abilityManaSize : 14;
+            const radius = (htmlSize / 14) * 6.5 * scale;
             const diameter = radius * 2;
             
             ctx.save();
