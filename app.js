@@ -83,7 +83,8 @@ const state = {
     selectedMapId: null,                        // Currently selected map ID
     isNewSessionMap: true,                      // Whether this is a new session map
     maps: [],                                   // Saved maps list
-    activeFilters: { size: null, players: null } // Active filter state
+    activeFilters: { size: null, players: null }, // Active filter state
+    hiddenTiles: new Set()                          // Tiles hidden from the paint brush palette
 };
 
 // UI Elements
@@ -151,6 +152,14 @@ const importMapsFileInput = document.getElementById("import-maps-file");
 const clearMapsBtn = document.getElementById("clear-maps-btn");
 const mapManagerToggleBtn = document.getElementById("map-manager-toggle-btn");
 const mapManagerSidebar = document.getElementById("map-manager-sidebar");
+
+// Tile Visibility Modal Elements
+const manageTilesBtn = document.getElementById("manage-tiles-btn");
+const tileVisibilityModal = document.getElementById("tile-visibility-modal");
+const closeTileVisibilityBtn = document.getElementById("close-tile-visibility-btn");
+const tileVisibilityList = document.getElementById("tile-visibility-list");
+const tileVisShowAllBtn = document.getElementById("tile-vis-show-all");
+const tileVisHideAllBtn = document.getElementById("tile-vis-hide-all");
 
 
 // Initialize application
@@ -220,6 +229,10 @@ async function init() {
     updatePlayerDropdowns();
     centerMap();
     updateCanvasCursor();
+
+    // Load hidden tiles from localStorage
+    loadHiddenTiles();
+
     draw();
 }
 
@@ -569,6 +582,46 @@ function setupEventListeners() {
             localStorage.setItem("mapManagerCollapsed", isCollapsed ? "true" : "false");
         });
     }
+
+    // Tile Visibility Modal Listeners
+    if (manageTilesBtn) {
+        manageTilesBtn.addEventListener("click", () => {
+            renderTileVisibilityList();
+            tileVisibilityModal.style.display = "flex";
+        });
+    }
+
+    if (closeTileVisibilityBtn) {
+        closeTileVisibilityBtn.addEventListener("click", () => {
+            tileVisibilityModal.style.display = "none";
+        });
+    }
+
+    if (tileVisibilityModal) {
+        tileVisibilityModal.addEventListener("click", (e) => {
+            if (e.target === tileVisibilityModal) {
+                tileVisibilityModal.style.display = "none";
+            }
+        });
+    }
+
+    if (tileVisShowAllBtn) {
+        tileVisShowAllBtn.addEventListener("click", () => {
+            state.hiddenTiles.clear();
+            saveHiddenTiles();
+            renderTileVisibilityList();
+            renderPalette();
+        });
+    }
+
+    if (tileVisHideAllBtn) {
+        tileVisHideAllBtn.addEventListener("click", () => {
+            TILE_MANIFEST.forEach(tile => state.hiddenTiles.add(tile.id));
+            saveHiddenTiles();
+            renderTileVisibilityList();
+            renderPalette();
+        });
+    }
 }
 
 // Render available tiles to bottom palette
@@ -611,6 +664,9 @@ function renderPalette() {
     tilePalette.appendChild(eraserItem);
     
     TILE_MANIFEST.forEach(tile => {
+        // Skip tiles that are hidden
+        if (state.hiddenTiles.has(tile.id)) return;
+
         const item = document.createElement("div");
         item.className = "palette-item";
         item.dataset.id = tile.id;
@@ -718,6 +774,67 @@ function renderPalette() {
         centerToggle.checked = false;
         
         draw();
+    });
+}
+
+// Load hidden tiles from localStorage
+function loadHiddenTiles() {
+    const stored = localStorage.getItem("hex_hidden_tiles");
+    if (stored) {
+        try {
+            const arr = JSON.parse(stored);
+            state.hiddenTiles = new Set(arr);
+        } catch (e) {
+            state.hiddenTiles = new Set();
+        }
+    }
+    renderPalette();
+}
+
+// Save hidden tiles to localStorage
+function saveHiddenTiles() {
+    localStorage.setItem("hex_hidden_tiles", JSON.stringify([...state.hiddenTiles]));
+}
+
+// Render the tile visibility checklist inside the modal
+function renderTileVisibilityList() {
+    if (!tileVisibilityList) return;
+    tileVisibilityList.innerHTML = "";
+
+    TILE_MANIFEST.forEach(tile => {
+        const isHidden = state.hiddenTiles.has(tile.id);
+
+        const row = document.createElement("label");
+        row.className = "tile-vis-item" + (isHidden ? " hidden-tile" : "");
+
+        const img = document.createElement("img");
+        img.src = `game tiles/${tile.file}`;
+        img.alt = tile.label;
+
+        const label = document.createElement("span");
+        label.className = "tile-vis-label";
+        label.textContent = tile.label;
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = !isHidden;
+
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+                state.hiddenTiles.delete(tile.id);
+                row.classList.remove("hidden-tile");
+            } else {
+                state.hiddenTiles.add(tile.id);
+                row.classList.add("hidden-tile");
+            }
+            saveHiddenTiles();
+            renderPalette();
+        });
+
+        row.appendChild(img);
+        row.appendChild(label);
+        row.appendChild(checkbox);
+        tileVisibilityList.appendChild(row);
     });
 }
 

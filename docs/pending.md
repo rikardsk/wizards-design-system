@@ -18,3 +18,8 @@ I want to make webbased card generator for a future game. The card should be ide
 ## Done
 ~~Can you write a python program that extracts the inner hexagon shapes from the .png files in the folder concept_art, without the border and make sure they are all the same size? Make the background transparent. I want to be able to use them as assets in my game and save them in a folder called "game tiles".~~
 - The map should be able to export a svg image. 
+
+
+## Latest
+In the hex map generator can you do a new button in the manual paint brush panel that opens a modal with all the tile names and a check box for each to show them or not. 
+

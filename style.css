@@ -1244,5 +1244,84 @@ button:active {
     right: 24px; /* Pull to edge when sidebar is hidden */
 }
 
+/* Tile Visibility Modal */
+.tile-visibility-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.tile-visibility-actions button {
+    flex: 1;
+}
+
+.tile-visibility-list {
+    max-height: 360px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 4px;
+}
+
+.tile-visibility-list::-webkit-scrollbar {
+    width: 4px;
+}
+.tile-visibility-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tile-visibility-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.tile-vis-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.tile-vis-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tile-vis-item img {
+    width: 36px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.tile-vis-item .tile-vis-label {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-main);
+}
+
+.tile-vis-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-gold);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tile-vis-item.hidden-tile .tile-vis-label {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+.tile-vis-item.hidden-tile img {
+    opacity: 0.3;
+}
 
 
