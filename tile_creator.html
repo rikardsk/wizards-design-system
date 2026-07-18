@@ -660,10 +660,6 @@
                         <input type="text" id="tile-name" placeholder="e.g. Volcano Tower" value="Volcano Tower">
                     </div>
                     <div class="input-container">
-                        <label for="tile-id">Tile ID</label>
-                        <input type="text" id="tile-id" placeholder="e.g. Volcano_Tower" value="Volcano_Tower">
-                    </div>
-                    <div class="input-container">
                         <label>Tile Shape</label>
                         <div class="segment-control" style="width: 100%;">
                             <button class="segment-btn active" id="shape-hexagon" style="flex: 1;"><i class="fa-solid fa-draw-polygon"></i> Hexagon</button>
@@ -922,7 +918,6 @@
         const ctx = previewCanvas.getContext("2d");
         const canvasWrapper = document.getElementById("canvas-wrapper");
         const tileNameInput = document.getElementById("tile-name");
-        const tileIdInput = document.getElementById("tile-id");
         
         // Background elements
         const bgDropzone = document.getElementById("bg-dropzone");
@@ -970,24 +965,9 @@
         const toast = document.getElementById("toast");
         const toastText = document.getElementById("toast-text");
 
-        // Helper to update slug/ID
+        // Update tile name from input
         tileNameInput.addEventListener("input", (e) => {
-            const val = e.target.value;
-            state.tileName = val;
-            
-            // Auto slugify Name into ID
-            const slug = val
-                .trim()
-                .replace(/\s+/g, '_')         // Replace spaces with underscores
-                .replace(/[^a-zA-Z0-9_]/g, ''); // Remove special characters
-            
-            tileIdInput.value = slug;
-            state.tileId = slug;
-        });
-
-        tileIdInput.addEventListener("input", (e) => {
-            state.tileId = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
-            tileIdInput.value = state.tileId;
+            state.tileName = e.target.value;
         });
 
         // Initialize drag-and-drop & preset handlers
@@ -1305,13 +1285,29 @@
                         state.bgFilename = file.name;
                         bgFilename.textContent = file.name;
                         bgPreview.style.display = "flex";
+
+                        // Auto-populate tile name from filename (strip extension)
+                        const nameFromFile = file.name.replace(/\.[^.]+$/, "");
+                        tileNameInput.value = nameFromFile;
+                        state.tileName = nameFromFile;
+
+                        // Switch drag mode to Background
+                        state.dragMode = "bg";
+                        dragModeBg.classList.add("active");
+                        dragModeFg.classList.remove("active");
+
                         redraw();
                     } else {
                         state.fgImage = img;
                         state.fgFilename = file.name;
                         fgFilename.textContent = file.name;
                         fgPreview.style.display = "flex";
-                        
+
+                        // Auto-populate tile name from filename (strip extension)
+                        const fgNameFromFile = file.name.replace(/\.[^.]+$/, "");
+                        tileNameInput.value = fgNameFromFile;
+                        state.tileName = fgNameFromFile;
+
                         // Switch to circle shape for creature/game tiles
                         updateShapeUI("circle");
                         const circleBtn = document.getElementById("shape-circle");
@@ -1320,6 +1316,11 @@
                             hexBtn.classList.remove("active");
                             circleBtn.classList.add("active");
                         }
+
+                        // Switch drag mode to Creature
+                        state.dragMode = "fg";
+                        dragModeFg.classList.add("active");
+                        dragModeBg.classList.remove("active");
                         
                         redraw();
                     }
