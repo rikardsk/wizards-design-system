@@ -25,7 +25,18 @@ const TILE_MANIFEST = [
     { id: "Wizards Tower L1", label: "Tower I", file: "Wizards Tower L1.png" },
     { id: "Wizards Tower L2", label: "Tower II", file: "Wizards Tower L2.png" },
     { id: "Wizards Tower L3", label: "Tower III", file: "Wizards Tower L3.png" },
-    { id: "Wizards Tower L4", label: "Tower IV", file: "Wizards Tower L4.png" }
+    { id: "Wizards Tower L4", label: "Tower IV", file: "Wizards Tower L4.png" },
+    { id: "Active Volcanic Forge", label: "Volcanic Forge", file: "Active Volcanic Forge.png" },
+    { id: "Cave Network", label: "Cave Network", file: "Cave Network.png" },
+    { id: "Coastal Fort", label: "Coastal Fort", file: "Coastal Fort.png" },
+    { id: "Dragons Peak", label: "Dragon's Peak", file: "Dragons Peak.png" },
+    { id: "Forest", label: "Forest", file: "Forest.png" },
+    { id: "Grove Temple", label: "Grove Temple", file: "Grove Temple.png" },
+    { id: "Misty Swamp", label: "Misty Swamp", file: "Misty Swamp.png" },
+    { id: "Plains Town", label: "Plains Town", file: "Plains Town.png" },
+    { id: "Ruined Mountain Pass", label: "Ruined Pass", file: "Ruined Mountain Pass.png" },
+    { id: "Scorched Earth", label: "Scorched Earth", file: "Scorched Earth.png" },
+    { id: "Tower of terror", label: "Tower of Terror", file: "Tower of terror.png" }
 ];
 
 // Hexagon Dimensions (Perfect flat-topped regular hexagon)
@@ -161,6 +172,12 @@ const tileVisibilityList = document.getElementById("tile-visibility-list");
 const tileVisShowAllBtn = document.getElementById("tile-vis-show-all");
 const tileVisHideAllBtn = document.getElementById("tile-vis-hide-all");
 
+// Left Sidebar Toggle Elements
+const leftSidebar = document.getElementById("left-sidebar");
+const leftSidebarToggleBtn = document.getElementById("left-sidebar-toggle-btn");
+const viewportHeader = document.querySelector(".viewport-header");
+const paletteContainer = document.querySelector(".palette-container");
+
 
 // Initialize application
 async function init() {
@@ -217,6 +234,20 @@ async function init() {
             const icon = mapManagerToggleBtn.querySelector("i");
             if (icon) icon.className = "fa-solid fa-chevron-right";
         }
+    }
+
+    // Sync Left Sidebar collapse state from localStorage
+    const leftSidebarCollapsed = localStorage.getItem("leftSidebarCollapsed") === "true";
+    if (leftSidebarCollapsed) {
+        if (leftSidebar) leftSidebar.classList.add("collapsed");
+        if (leftSidebarToggleBtn) leftSidebarToggleBtn.classList.add("collapsed");
+        if (viewportHeader) viewportHeader.classList.add("sidebar-hidden");
+        if (paletteContainer) paletteContainer.classList.add("sidebar-hidden");
+        const icon = leftSidebarToggleBtn?.querySelector("i");
+        if (icon) icon.className = "fa-solid fa-chevron-right";
+    } else {
+        const icon = leftSidebarToggleBtn?.querySelector("i");
+        if (icon) icon.className = "fa-solid fa-chevron-left";
     }
     
     // Setup filter listeners
@@ -583,6 +614,23 @@ function setupEventListeners() {
         });
     }
 
+    // Left Sidebar Toggle
+    if (leftSidebarToggleBtn && leftSidebar) {
+        leftSidebarToggleBtn.addEventListener("click", () => {
+            const isCollapsed = leftSidebar.classList.toggle("collapsed");
+            leftSidebarToggleBtn.classList.toggle("collapsed", isCollapsed);
+            if (viewportHeader) viewportHeader.classList.toggle("sidebar-hidden", isCollapsed);
+            if (paletteContainer) paletteContainer.classList.toggle("sidebar-hidden", isCollapsed);
+
+            const icon = leftSidebarToggleBtn.querySelector("i");
+            if (icon) {
+                icon.className = isCollapsed ? "fa-solid fa-chevron-right" : "fa-solid fa-chevron-left";
+            }
+
+            localStorage.setItem("leftSidebarCollapsed", isCollapsed ? "true" : "false");
+        });
+    }
+
     // Tile Visibility Modal Listeners
     if (manageTilesBtn) {
         manageTilesBtn.addEventListener("click", () => {
@@ -627,6 +675,11 @@ function setupEventListeners() {
 // Render available tiles to bottom palette
 function renderPalette() {
     tilePalette.innerHTML = "";
+
+    // Update visible tile count badge
+    const visibleCount = TILE_MANIFEST.filter(t => !state.hiddenTiles.has(t.id)).length;
+    const tileCountBadge = document.getElementById("tile-count");
+    if (tileCountBadge) tileCountBadge.textContent = `(${visibleCount})`;
     
     // Add Eraser Tool at the beginning of the palette
     const eraserItem = document.createElement("div");

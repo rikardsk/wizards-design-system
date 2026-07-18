@@ -16,7 +16,7 @@
 <body>
     <div class="app-container">
         <!-- Sidebar Controls -->
-        <aside class="sidebar glass-panel">
+        <aside id="left-sidebar" class="sidebar glass-panel">
             <div class="sidebar-header">
                 <i class="fa-solid fa-map-location-dot logo-icon"></i>
                 <h2>Wizards of the North</h2>
@@ -229,6 +229,11 @@
             </div>
         </aside>
 
+        <!-- Toggle Button for Left Sidebar -->
+        <button id="left-sidebar-toggle-btn" class="left-sidebar-toggle-btn" title="Toggle Controls">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
         <!-- Main Viewport containing the Interactive Canvas -->
         <main class="viewport">
             <!-- Instructions and status indicator -->
@@ -253,7 +258,7 @@
             <!-- Floating Brush Palette at the Bottom -->
             <div class="palette-container glass-panel">
                 <div class="palette-header">
-                    <h3><i class="fa-solid fa-palette"></i> Manual Paint Brush</h3>
+                    <h3><i class="fa-solid fa-palette"></i> Manual Paint Brush <span id="tile-count" class="tile-count-badge"></span></h3>
                     <div class="palette-controls">
                         <button id="manage-tiles-btn" class="secondary-btn btn-sm" title="Show/Hide Tiles in Palette">
                             <i class="fa-solid fa-eye"></i> Manage Tiles

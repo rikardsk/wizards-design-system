@@ -70,6 +70,23 @@ body {
     flex-shrink: 0;
 }
 
+#left-sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 20;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    background: rgba(13, 17, 33, 1.0);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+#left-sidebar.collapsed {
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+}
+
 .sidebar-header {
     text-align: center;
     padding-bottom: 20px;
@@ -431,20 +448,35 @@ button:active {
     flex: 1;
     height: 100vh;
     padding: 12px 0;
+    margin-left: 12px;
     margin-right: 12px;
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow: hidden;
 }
 
 .viewport-header {
     height: 54px;
     padding: 0 20px;
+    margin-left: 332px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     z-index: 5;
     margin-bottom: 12px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 16px;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.viewport-header.sidebar-hidden {
+    margin-left: 12px;
+}
+
+.tool-status, .tool-tips {
     flex-shrink: 0;
 }
 
@@ -548,12 +580,20 @@ button:active {
 .palette-container {
     min-height: 120px;
     margin-top: 12px;
+    margin-left: 332px;
+    margin-right: 12px;
     padding: 14px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     z-index: 5;
     flex-shrink: 0;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.palette-container.sidebar-hidden {
+    margin-left: 12px;
+    margin-right: 12px;
 }
 
 .palette-header {
@@ -561,6 +601,21 @@ button:active {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 16px;
+}
+
+.palette-header h3, .palette-controls {
+    flex-shrink: 0;
+}
+
+.tile-count-badge {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0;
 }
 
 .palette-header h3 {
@@ -609,6 +664,7 @@ button:active {
     gap: 4px;
     cursor: pointer;
     flex-shrink: 0;
+    width: 60px;
     transition: transform 0.2s;
     position: relative;
 }
@@ -1212,7 +1268,7 @@ button:active {
     pointer-events: none;
 }
 
-/* Toggle Button for Map Manager */
+/* Toggle Button for Map Manager (Right) */
 .sidebar-toggle-btn {
     position: absolute;
     right: 344px; /* Width of sidebar (320px) + margin (12px) + gap (12px) */
@@ -1229,7 +1285,7 @@ button:active {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 30; /* High z-index to stay on top */
+    z-index: 30;
     box-shadow: var(--panel-glow);
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
@@ -1241,7 +1297,39 @@ button:active {
 }
 
 .sidebar-toggle-btn.collapsed {
-    right: 24px; /* Pull to edge when sidebar is hidden */
+    right: 24px;
+}
+
+/* Toggle Button for Left Sidebar */
+.left-sidebar-toggle-btn {
+    position: absolute;
+    left: 344px; /* Width of sidebar (320px) + margin (12px) + gap (12px) */
+    top: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--panel-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--panel-border);
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    box-shadow: var(--panel-glow);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.left-sidebar-toggle-btn:hover {
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.left-sidebar-toggle-btn.collapsed {
+    left: 24px;
 }
 
 /* Tile Visibility Modal */
@@ -1322,6 +1410,25 @@ button:active {
 
 .tile-vis-item.hidden-tile img {
     opacity: 0.3;
+}
+
+/* Custom Scrollbars for Viewport Header and Palette Header */
+.viewport-header::-webkit-scrollbar,
+.palette-header::-webkit-scrollbar {
+    height: 4px;
+}
+.viewport-header::-webkit-scrollbar-track,
+.palette-header::-webkit-scrollbar-track {
+    background: transparent;
+}
+.viewport-header::-webkit-scrollbar-thumb,
+.palette-header::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+.viewport-header::-webkit-scrollbar-thumb:hover,
+.palette-header::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 
