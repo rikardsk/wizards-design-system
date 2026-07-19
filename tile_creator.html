@@ -1551,7 +1551,7 @@
             const dataUrl = finalCanvas.toDataURL("image/png");
             const link = document.createElement("a");
             link.href = dataUrl;
-            link.download = `${state.tileId}${isHires ? "_hires" : ""}.png`;
+            link.download = `${state.tileName}${isHires ? " hires" : ""}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
