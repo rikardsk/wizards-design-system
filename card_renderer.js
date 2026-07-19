@@ -551,8 +551,8 @@
             });
         });
         
-        // 6. Draw Power / Toughness badge in corner (if Creature or Tower)
-        if (card.cardType === "Creature" || card.cardType === "Tower") {
+        // 6. Draw Power / Toughness badge in corner (if card has P/T)
+        if (card.hasPt || (card.hasPt === undefined && (card.cardType === "Creature" || card.cardType === "Tower"))) {
             const ptBadgeW = 50 * scale;
             const ptBadgeH = 22 * scale;
             const ptBadgeX = artX + artW - ptBadgeW - (8 * scale);

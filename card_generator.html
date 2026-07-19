@@ -1447,6 +1447,32 @@
             font-size: 0.88rem;
         }
         
+        .pt-toggle-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .pt-toggle-btn:hover {
+            border-color: var(--text-main);
+        }
+
+        .pt-toggle-btn.active {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(226, 183, 71, 0.05);
+            box-shadow: 0 0 10px rgba(226, 183, 71, 0.1);
+        }
+        
         .delete-keyword-btn {
             background: none;
             border: none;
@@ -2330,19 +2356,45 @@
         }
 
         // Available Card Types (loaded from localStorage with defaults)
-        const DEFAULT_CARD_TYPES = ["Artifact", "Creature", "Enchantment", "Land", "Spell", "Quest", "Tower"];
-        let availableCardTypes = [...DEFAULT_CARD_TYPES];
+        const DEFAULT_CARD_TYPES = [
+            { name: "Artifact", hasPt: false },
+            { name: "Creature", hasPt: true },
+            { name: "Enchantment", hasPt: false },
+            { name: "Land", hasPt: false },
+            { name: "Spell", hasPt: false },
+            { name: "Quest", hasPt: false },
+            { name: "Tower", hasPt: true }
+        ];
+        let availableCardTypes = DEFAULT_CARD_TYPES.map(t => ({ ...t }));
 
         function loadAvailableCardTypes() {
             const stored = localStorage.getItem("mtg_available_card_types");
             if (stored) {
                 try {
-                    availableCardTypes = JSON.parse(stored);
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        availableCardTypes = parsed.map(item => {
+                            if (typeof item === 'string') {
+                                return {
+                                    name: item,
+                                    hasPt: (item === "Creature" || item === "Tower")
+                                };
+                            } else if (item && typeof item === 'object' && item.name) {
+                                return {
+                                    name: item.name,
+                                    hasPt: !!item.hasPt
+                                };
+                            }
+                            return null;
+                        }).filter(Boolean);
+                    } else {
+                        availableCardTypes = DEFAULT_CARD_TYPES.map(t => ({ ...t }));
+                    }
                 } catch(e) {
-                    availableCardTypes = [...DEFAULT_CARD_TYPES];
+                    availableCardTypes = DEFAULT_CARD_TYPES.map(t => ({ ...t }));
                 }
             } else {
-                availableCardTypes = [...DEFAULT_CARD_TYPES];
+                availableCardTypes = DEFAULT_CARD_TYPES.map(t => ({ ...t }));
                 saveAvailableCardTypes();
             }
         }
@@ -2554,19 +2606,20 @@
             cardTypeSelect.innerHTML = "";
             availableCardTypes.forEach(type => {
                 const option = document.createElement("option");
-                option.value = type;
-                if (type === "Spell") {
+                option.value = type.name;
+                if (type.name === "Spell") {
                     option.textContent = "Spell (Sorcery/Instant)";
                 } else {
-                    option.textContent = type;
+                    option.textContent = type.name;
                 }
                 cardTypeSelect.appendChild(option);
             });
-            if (availableCardTypes.includes(currentValue)) {
+            const typeNames = availableCardTypes.map(t => t.name);
+            if (typeNames.includes(currentValue)) {
                 cardTypeSelect.value = currentValue;
             } else if (availableCardTypes.length > 0) {
-                cardTypeSelect.value = availableCardTypes[0];
-                state.cardType = availableCardTypes[0];
+                cardTypeSelect.value = availableCardTypes[0].name;
+                state.cardType = availableCardTypes[0].name;
             }
         }
 
@@ -2576,17 +2629,17 @@
             availableCardTypes.forEach(type => {
                 const btn = document.createElement("button");
                 btn.className = "type-filter-btn";
-                if (activeTypeFilters.has(type)) {
+                if (activeTypeFilters.has(type.name)) {
                     btn.classList.add("active");
                 }
-                btn.dataset.type = type;
-                btn.textContent = type;
+                btn.dataset.type = type.name;
+                btn.textContent = type.name;
                 btn.addEventListener("click", () => {
-                    if (activeTypeFilters.has(type)) {
-                        activeTypeFilters.delete(type);
+                    if (activeTypeFilters.has(type.name)) {
+                        activeTypeFilters.delete(type.name);
                         btn.classList.remove("active");
                     } else {
-                        activeTypeFilters.add(type);
+                        activeTypeFilters.add(type.name);
                         btn.classList.add("active");
                     }
                     updateClearFilterButtonsVisibility();
@@ -2604,21 +2657,44 @@
                 item.className = "keyword-manager-item";
                 
                 const nameSpan = document.createElement("span");
-                nameSpan.textContent = type;
+                nameSpan.textContent = type.name;
+                
+                const controlsDiv = document.createElement("div");
+                controlsDiv.style.display = "flex";
+                controlsDiv.style.alignItems = "center";
+                controlsDiv.style.gap = "12px";
+                
+                const ptBtn = document.createElement("button");
+                ptBtn.type = "button";
+                ptBtn.className = `pt-toggle-btn ${type.hasPt ? 'active' : ''}`;
+                ptBtn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> P/T';
+                ptBtn.title = "Toggle Power/Toughness";
+                ptBtn.addEventListener("click", () => {
+                    type.hasPt = !type.hasPt;
+                    saveAvailableCardTypes();
+                    
+                    if (state.cardType === type.name) {
+                        updateCreatureStatsVisibility();
+                        updateCardPreview();
+                    }
+                    
+                    renderTypesManagerList();
+                    autoSaveCurrentCard();
+                });
                 
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "delete-keyword-btn";
                 deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                deleteBtn.title = `Delete "${type}"`;
+                deleteBtn.title = `Delete "${type.name}"`;
                 deleteBtn.addEventListener("click", () => {
-                    availableCardTypes = availableCardTypes.filter(t => t !== type);
+                    availableCardTypes = availableCardTypes.filter(t => t.name !== type.name);
                     saveAvailableCardTypes();
                     
-                    if (state.cardType === type) {
-                        state.cardType = availableCardTypes[0] || "Creature";
+                    if (state.cardType === type.name) {
+                        state.cardType = availableCardTypes[0]?.name || "Creature";
                     }
-                    activeTypeFilters.delete(type);
+                    activeTypeFilters.delete(type.name);
                     
                     renderTypesManagerList();
                     populateCardTypeSelect();
@@ -2628,8 +2704,11 @@
                     autoSaveCurrentCard();
                 });
                 
+                controlsDiv.appendChild(ptBtn);
+                controlsDiv.appendChild(deleteBtn);
+                
                 item.appendChild(nameSpan);
-                item.appendChild(deleteBtn);
+                item.appendChild(controlsDiv);
                 typesManagerList.appendChild(item);
             });
         }
@@ -3230,12 +3309,12 @@
                 // Format: Capitalize each word
                 const formattedType = type.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
                 
-                if (availableCardTypes.includes(formattedType)) {
+                if (availableCardTypes.some(t => t.name === formattedType)) {
                     alert("This card type already exists.");
                     return;
                 }
                 
-                availableCardTypes.push(formattedType);
+                availableCardTypes.push({ name: formattedType, hasPt: false });
                 saveAvailableCardTypes();
                 
                 newTypeInput.value = "";
@@ -3514,7 +3593,9 @@
 
         // Toggle P/T input visibility
         function updateCreatureStatsVisibility() {
-            if (state.cardType === "Creature" || state.cardType === "Tower") {
+            const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
+            const hasPt = currentTypeObj ? currentTypeObj.hasPt : (state.cardType === "Creature" || state.cardType === "Tower");
+            if (hasPt) {
                 creatureStatsRow.style.display = "flex";
             } else {
                 creatureStatsRow.style.display = "none";
@@ -3884,7 +3965,9 @@
             cardPreviewType.textContent = state.cardType;
             
             // P/T Box
-            if (state.cardType === "Creature" || state.cardType === "Tower") {
+            const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
+            const hasPt = currentTypeObj ? currentTypeObj.hasPt : (state.cardType === "Creature" || state.cardType === "Tower");
+            if (hasPt) {
                 cardPreviewPt.style.display = "block";
                 cardPreviewPt.textContent = `${state.power || "0"}/${state.toughness || "0"}`;
             } else {
@@ -3971,6 +4054,7 @@
                 borderColor: state.borderColor || "black",
                 manaCost: [...state.manaCost],
                 cardType: state.cardType,
+                hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
                 customDescriptionItalic: state.customDescriptionItalic !== false,
@@ -4540,13 +4624,18 @@
         // Helper to normalize card properties on import
         function normalizeImportedCard(card) {
             const cardName = card.cardName || "Unnamed Card";
+            const cardType = card.cardType || "Creature";
+            const defaultHasPt = (cardType === "Creature" || cardType === "Tower");
+            const hasPt = card.hasPt !== undefined ? !!card.hasPt : defaultHasPt;
+
             return {
                 id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
                 cardName: cardName,
                 frameStyle: card.frameStyle || "red",
                 borderColor: card.borderColor || "black",
                 manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
-                cardType: card.cardType || "Creature",
+                cardType: cardType,
+                hasPt: hasPt,
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
                 customDescriptionItalic: card.customDescriptionItalic !== false,
@@ -4599,8 +4688,9 @@
                     
                     const formattedType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
                     
-                    if (!availableCardTypes.includes(formattedType)) {
-                        availableCardTypes.push(formattedType);
+                    if (!availableCardTypes.some(t => t.name === formattedType)) {
+                        const hasPt = card.hasPt !== undefined ? !!card.hasPt : ((card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "") || (formattedType === "Creature" || formattedType === "Tower"));
+                        availableCardTypes.push({ name: formattedType, hasPt: hasPt });
                         updated = true;
                     }
                 }
@@ -4932,8 +5022,10 @@
                 });
             });
             
-            // 6. Draw Power / Toughness badge in corner (if Creature or Tower)
-            if (state.cardType === "Creature" || state.cardType === "Tower") {
+            // 6. Draw Power / Toughness badge in corner (if has P/T)
+            const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
+            const hasPt = currentTypeObj ? currentTypeObj.hasPt : (state.cardType === "Creature" || state.cardType === "Tower");
+            if (hasPt) {
                 const ptBadgeW = 50 * scale;
                 const ptBadgeH = 22 * scale;
                 const ptBadgeX = artX + artW - ptBadgeW - (8 * scale);
