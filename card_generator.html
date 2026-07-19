@@ -1595,7 +1595,10 @@
                 <div class="control-group">
                     <h3>
                         <span><i class="fa-solid fa-gears"></i> Type & Stats</span>
-                        <button class="reset-panel-btn" id="reset-type-stats-btn" title="Reset Type & Stats"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="reset-panel-btn" id="manage-types-btn" title="Manage Card Types" style="opacity: 0.8;"><i class="fa-solid fa-gear"></i> Edit</button>
+                            <button class="reset-panel-btn" id="reset-type-stats-btn" title="Reset Type & Stats"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                        </div>
                     </h3>
                     
                     <div class="input-container">
@@ -1876,14 +1879,8 @@
                             <span>Filter by Type</span>
                             <button class="clear-filters-btn" id="clear-type-filters-btn">Clear</button>
                         </div>
-                        <div class="filter-buttons">
-                            <button class="type-filter-btn" data-type="Artifact">Artifact</button>
-                            <button class="type-filter-btn" data-type="Creature">Creature</button>
-                            <button class="type-filter-btn" data-type="Enchantment">Enchantment</button>
-                            <button class="type-filter-btn" data-type="Land">Land</button>
-                            <button class="type-filter-btn" data-type="Spell">Spell</button>
-                            <button class="type-filter-btn" data-type="Quest">Quest</button>
-                            <button class="type-filter-btn" data-type="Tower">Tower</button>
+                        <div class="filter-buttons" id="type-filters-container">
+                            <!-- Dynamically generated type filter buttons -->
                         </div>
                     </div>
                 </div>
@@ -1959,6 +1956,25 @@
                 </div>
                 <div class="keywords-manager-list" id="keywords-manager-list">
                     <!-- Dynamically generated list of keywords -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Card Types Modal -->
+    <div class="modal-overlay" id="types-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gear"></i> Manage Card Types</h3>
+                <button type="button" class="close-modal-btn" id="close-types-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="keyword-input-row">
+                    <input type="text" id="new-type-input" placeholder="Enter new card type (e.g. Planeswalker)..." maxlength="30">
+                    <button type="button" id="add-type-btn">Add</button>
+                </div>
+                <div class="keywords-manager-list" id="types-manager-list">
+                    <!-- Dynamically generated list of card types -->
                 </div>
             </div>
         </div>
@@ -2313,6 +2329,28 @@
             localStorage.setItem("mtg_available_keywords", JSON.stringify(availableKeywords));
         }
 
+        // Available Card Types (loaded from localStorage with defaults)
+        const DEFAULT_CARD_TYPES = ["Artifact", "Creature", "Enchantment", "Land", "Spell", "Quest", "Tower"];
+        let availableCardTypes = [...DEFAULT_CARD_TYPES];
+
+        function loadAvailableCardTypes() {
+            const stored = localStorage.getItem("mtg_available_card_types");
+            if (stored) {
+                try {
+                    availableCardTypes = JSON.parse(stored);
+                } catch(e) {
+                    availableCardTypes = [...DEFAULT_CARD_TYPES];
+                }
+            } else {
+                availableCardTypes = [...DEFAULT_CARD_TYPES];
+                saveAvailableCardTypes();
+            }
+        }
+
+        function saveAvailableCardTypes() {
+            localStorage.setItem("mtg_available_card_types", JSON.stringify(availableCardTypes));
+        }
+
         // DOM elements
         const cardNameInput = document.getElementById("card-name-input");
         const cardTypeSelect = document.getElementById("card-type-select");
@@ -2390,6 +2428,14 @@
         const newKeywordInput = document.getElementById("new-keyword-input");
         const addKeywordBtn = document.getElementById("add-keyword-btn");
         const keywordsManagerList = document.getElementById("keywords-manager-list");
+        
+        const manageTypesBtn = document.getElementById("manage-types-btn");
+        const typesModal = document.getElementById("types-modal");
+        const closeTypesModalBtn = document.getElementById("close-types-modal-btn");
+        const newTypeInput = document.getElementById("new-type-input");
+        const addTypeBtn = document.getElementById("add-type-btn");
+        const typesManagerList = document.getElementById("types-manager-list");
+        const typeFiltersContainer = document.getElementById("type-filters-container");
         
         const clearAbilityManaBtn = document.getElementById("clear-ability-mana-btn");
         const abilityManaDisplay = document.getElementById("ability-mana-display");
@@ -2502,9 +2548,96 @@
             });
         }
 
+        function populateCardTypeSelect() {
+            if (!cardTypeSelect) return;
+            const currentValue = state.cardType || "Creature";
+            cardTypeSelect.innerHTML = "";
+            availableCardTypes.forEach(type => {
+                const option = document.createElement("option");
+                option.value = type;
+                if (type === "Spell") {
+                    option.textContent = "Spell (Sorcery/Instant)";
+                } else {
+                    option.textContent = type;
+                }
+                cardTypeSelect.appendChild(option);
+            });
+            if (availableCardTypes.includes(currentValue)) {
+                cardTypeSelect.value = currentValue;
+            } else if (availableCardTypes.length > 0) {
+                cardTypeSelect.value = availableCardTypes[0];
+                state.cardType = availableCardTypes[0];
+            }
+        }
+
+        function renderTypeFilterButtons() {
+            if (!typeFiltersContainer) return;
+            typeFiltersContainer.innerHTML = "";
+            availableCardTypes.forEach(type => {
+                const btn = document.createElement("button");
+                btn.className = "type-filter-btn";
+                if (activeTypeFilters.has(type)) {
+                    btn.classList.add("active");
+                }
+                btn.dataset.type = type;
+                btn.textContent = type;
+                btn.addEventListener("click", () => {
+                    if (activeTypeFilters.has(type)) {
+                        activeTypeFilters.delete(type);
+                        btn.classList.remove("active");
+                    } else {
+                        activeTypeFilters.add(type);
+                        btn.classList.add("active");
+                    }
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+                typeFiltersContainer.appendChild(btn);
+            });
+        }
+
+        function renderTypesManagerList() {
+            if (!typesManagerList) return;
+            typesManagerList.innerHTML = "";
+            availableCardTypes.forEach(type => {
+                const item = document.createElement("div");
+                item.className = "keyword-manager-item";
+                
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = type;
+                
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "delete-keyword-btn";
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.title = `Delete "${type}"`;
+                deleteBtn.addEventListener("click", () => {
+                    availableCardTypes = availableCardTypes.filter(t => t !== type);
+                    saveAvailableCardTypes();
+                    
+                    if (state.cardType === type) {
+                        state.cardType = availableCardTypes[0] || "Creature";
+                    }
+                    activeTypeFilters.delete(type);
+                    
+                    renderTypesManagerList();
+                    populateCardTypeSelect();
+                    renderTypeFilterButtons();
+                    updateCreatureStatsVisibility();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+                
+                item.appendChild(nameSpan);
+                item.appendChild(deleteBtn);
+                typesManagerList.appendChild(item);
+            });
+        }
+
         // Set default values from state on load
         function initFormValues() {
             cardNameInput.value = state.cardName;
+            populateCardTypeSelect();
             cardTypeSelect.value = state.cardType;
             cardDescriptionInput.value = state.customDescription || "";
             cardDescriptionItalicCheckbox.checked = state.customDescriptionItalic !== false;
@@ -3011,6 +3144,30 @@
                 }
             });
 
+            // Manage Card Types modal controls
+            if (manageTypesBtn) {
+                manageTypesBtn.addEventListener("click", () => {
+                    newTypeInput.value = "";
+                    renderTypesManagerList();
+                    typesModal.classList.add("show");
+                    newTypeInput.focus();
+                });
+            }
+
+            if (closeTypesModalBtn) {
+                closeTypesModalBtn.addEventListener("click", () => {
+                    typesModal.classList.remove("show");
+                });
+            }
+
+            if (typesModal) {
+                typesModal.addEventListener("click", (e) => {
+                    if (e.target === typesModal) {
+                        typesModal.classList.remove("show");
+                    }
+                });
+            }
+
             // Affirmation Modal event listeners
             if (closeAffirmationModalBtn) {
                 closeAffirmationModalBtn.addEventListener("click", closeAffirmationModal);
@@ -3063,6 +3220,42 @@
                     handleAddKeyword();
                 }
             });
+
+            // Function to handle adding card type
+            const handleAddType = () => {
+                if (!newTypeInput) return;
+                const type = newTypeInput.value.trim();
+                if (!type) return;
+                
+                // Format: Capitalize each word
+                const formattedType = type.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                
+                if (availableCardTypes.includes(formattedType)) {
+                    alert("This card type already exists.");
+                    return;
+                }
+                
+                availableCardTypes.push(formattedType);
+                saveAvailableCardTypes();
+                
+                newTypeInput.value = "";
+                renderTypesManagerList();
+                populateCardTypeSelect();
+                renderTypeFilterButtons();
+            };
+
+            if (addTypeBtn) {
+                addTypeBtn.addEventListener("click", handleAddType);
+            }
+
+            if (newTypeInput) {
+                newTypeInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddType();
+                    }
+                });
+            }
 
             // Mini mana buttons click handler for activated abilities
             document.querySelectorAll(".mini-mana-btn").forEach(btn => {
@@ -4084,20 +4277,7 @@
                 });
             });
 
-            document.querySelectorAll(".type-filter-btn").forEach(btn => {
-                const type = btn.dataset.type;
-                btn.addEventListener("click", () => {
-                    if (activeTypeFilters.has(type)) {
-                        activeTypeFilters.delete(type);
-                        btn.classList.remove("active");
-                    } else {
-                        activeTypeFilters.add(type);
-                        btn.classList.add("active");
-                    }
-                    updateClearFilterButtonsVisibility();
-                    renderDeckList();
-                });
-            });
+            renderTypeFilterButtons();
 
             document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
                 activeManaFilters.clear();
@@ -4409,6 +4589,29 @@
             }
         }
 
+        // Add any card types from imported cards to the available card types list
+        function addImportedCardTypesToAvailable(cards) {
+            let updated = false;
+            cards.forEach(card => {
+                if (card.cardType) {
+                    const trimmed = card.cardType.trim();
+                    if (!trimmed) return;
+                    
+                    const formattedType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                    
+                    if (!availableCardTypes.includes(formattedType)) {
+                        availableCardTypes.push(formattedType);
+                        updated = true;
+                    }
+                }
+            });
+            if (updated) {
+                saveAvailableCardTypes();
+                populateCardTypeSelect();
+                renderTypeFilterButtons();
+            }
+        }
+
         // Import Deck database from a uploaded JSON file
         function importDeckFromJson(e) {
             const file = e.target.files[0];
@@ -4421,6 +4624,7 @@
                     if (Array.isArray(imported)) {
                         state.deck = imported.map(normalizeImportedCard);
                         addImportedKeywordsToAvailable(state.deck);
+                        addImportedCardTypesToAvailable(state.deck);
                         state.deckName = "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
@@ -4430,6 +4634,7 @@
                     } else if (imported && Array.isArray(imported.cards)) {
                         state.deck = imported.cards.map(normalizeImportedCard);
                         addImportedKeywordsToAvailable(state.deck);
+                        addImportedCardTypesToAvailable(state.deck);
                         state.deckName = imported.deckName || "Imported Deck";
                         deckNameInput.value = state.deckName;
                         saveDeckToStorage();
@@ -5175,6 +5380,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             setupManaButtonIcons();
             loadAvailableKeywords();
+            loadAvailableCardTypes();
             initFormValues();
             initEvents();
             initFilters();
