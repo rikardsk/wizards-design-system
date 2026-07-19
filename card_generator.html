@@ -1780,6 +1780,9 @@
                     <button class="secondary-btn" id="download-art-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
                         <i class="fa-solid fa-image"></i> Save Art Only (PNG)
                     </button>
+                    <button class="secondary-btn" id="preview-card-json" style="width: auto; padding: 6px 14px; font-size: 0.75rem;" title="Preview Card JSON">
+                        <i class="fa-solid fa-code"></i> Preview JSON
+                    </button>
                 </div>
             </div>
 
@@ -1918,6 +1921,30 @@
             <!-- Hidden input for file importing -->
             <input type="file" id="import-deck-file" accept=".json" style="display: none;">
         </aside>
+    <!-- JSON Preview Modal -->
+    <div class="modal-overlay" id="json-preview-modal">
+        <div class="modal-content" style="width: 600px; max-width: 95%;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-code"></i> Card JSON Preview</h3>
+                <button type="button" class="close-modal-btn" id="close-json-preview-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-top: 10px;">
+                <p style="font-size: 0.88rem; color: var(--text-light); margin-bottom: 12px; line-height: 1.4;">
+                    Here is the JSON configuration for the current card:
+                </p>
+                <div style="position: relative; margin-bottom: 16px;">
+                    <textarea id="json-preview-textarea" readonly style="width: 100%; height: 320px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; padding: 12px; background: #1a1b26; color: #a9b1d6; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; resize: none; outline: none;"></textarea>
+                    <button type="button" class="secondary-btn" id="copy-json-btn" style="position: absolute; right: 10px; top: 10px; padding: 4px 8px; font-size: 0.72rem; width: auto; margin: 0; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <i class="fa-solid fa-copy"></i> Copy
+                    </button>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="button" class="primary-btn" id="close-json-preview-ok-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; margin: 0;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Manage Keywords Modal -->
     <div class="modal-overlay" id="keywords-modal">
         <div class="modal-content">
@@ -2329,6 +2356,13 @@
         const importDeckBtn = document.getElementById("import-deck-btn");
         const importDeckFile = document.getElementById("import-deck-file");
         const clearDeckBtn = document.getElementById("clear-deck-btn");
+        
+        const previewCardJsonBtn = document.getElementById("preview-card-json");
+        const jsonPreviewModal = document.getElementById("json-preview-modal");
+        const closeJsonPreviewModalBtn = document.getElementById("close-json-preview-modal-btn");
+        const closeJsonPreviewOkBtn = document.getElementById("close-json-preview-ok-btn");
+        const jsonPreviewTextarea = document.getElementById("json-preview-textarea");
+        const copyJsonBtn = document.getElementById("copy-json-btn");
         
         // Card Preview DOM Elements
         const cardPreviewFrame = document.getElementById("mtg-card-preview");
@@ -2902,6 +2936,42 @@
             }
             importDeckBtn.addEventListener("click", () => importDeckFile.click());
             importDeckFile.addEventListener("change", importDeckFromJson);
+
+            // JSON Preview Modal events
+            if (previewCardJsonBtn) {
+                previewCardJsonBtn.addEventListener("click", showCardJsonPreview);
+            }
+            if (closeJsonPreviewModalBtn) {
+                closeJsonPreviewModalBtn.addEventListener("click", () => {
+                    jsonPreviewModal.classList.remove("show");
+                });
+            }
+            if (closeJsonPreviewOkBtn) {
+                closeJsonPreviewOkBtn.addEventListener("click", () => {
+                    jsonPreviewModal.classList.remove("show");
+                });
+            }
+            if (jsonPreviewModal) {
+                jsonPreviewModal.addEventListener("click", (e) => {
+                    if (e.target === jsonPreviewModal) {
+                        jsonPreviewModal.classList.remove("show");
+                    }
+                });
+            }
+            if (copyJsonBtn) {
+                copyJsonBtn.addEventListener("click", () => {
+                    jsonPreviewTextarea.select();
+                    try {
+                        document.execCommand("copy");
+                    } catch (err) {
+                        console.error("execCommand fallback failed", err);
+                    }
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(jsonPreviewTextarea.value);
+                    }
+                    showToast("JSON copied to clipboard!");
+                });
+            }
 
             // Keyword buttons click handler (event delegation)
             keywordBtnsContainer.addEventListener("click", (e) => {
@@ -3700,9 +3770,10 @@
                 state.selectedCardId = 'card_' + Date.now();
             }
 
+            const cardName = state.cardName.trim() || "Unnamed Card";
             const cardData = {
                 id: state.selectedCardId,
-                cardName: state.cardName.trim() || "Unnamed Card",
+                cardName: cardName,
                 frameStyle: state.frameStyle,
                 borderColor: state.borderColor || "black",
                 manaCost: [...state.manaCost],
@@ -3719,7 +3790,8 @@
                 artY: state.artY !== undefined ? state.artY : 0,
                 keywords: [...(state.keywords || [])],
                 activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || [])),
-                abilityManaSize: state.abilityManaSize !== undefined ? state.abilityManaSize : 14
+                abilityManaSize: state.abilityManaSize !== undefined ? state.abilityManaSize : 14,
+                illustration: cardName + ".png"
             };
 
             const idx = state.deck.findIndex(c => c.id === state.selectedCardId);
@@ -3890,7 +3962,8 @@
                             toughness: "5",
                             artBase64: "",
                             keywords: ["Trample"],
-                            activatedAbilities: []
+                            activatedAbilities: [],
+                            illustration: "Volcano Elemental.png"
                         }
                     ];
                     saveDeckToStorage();
@@ -4192,6 +4265,41 @@
             showToast("Deck cleared!");
         }
 
+        // Get JSON config for the current card under edit
+        function getCurrentCardJson() {
+            const cardName = state.cardName.trim() || "Unnamed Card";
+            return {
+                id: state.selectedCardId || ('card_' + Date.now()),
+                cardName: cardName,
+                frameStyle: state.frameStyle || "red",
+                borderColor: state.borderColor || "black",
+                manaCost: [...(state.manaCost || [])],
+                cardType: state.cardType || "Creature",
+                rulesText: state.rulesText || "",
+                customDescription: state.customDescription || "",
+                customDescriptionItalic: state.customDescriptionItalic !== false,
+                power: state.power || "1",
+                toughness: state.toughness || "1",
+                artBase64: state.artImage ? state.artImage.src : "",
+                artScale: state.artScale !== undefined ? state.artScale : 1.0,
+                artRotation: state.artRotation !== undefined ? state.artRotation : 0,
+                artX: state.artX !== undefined ? state.artX : 0,
+                artY: state.artY !== undefined ? state.artY : 0,
+                keywords: [...(state.keywords || [])],
+                activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || [])),
+                abilityManaSize: state.abilityManaSize !== undefined ? state.abilityManaSize : 14,
+                illustration: cardName + ".png"
+            };
+        }
+
+        // Show single card JSON preview modal
+        function showCardJsonPreview() {
+            const cardJson = getCurrentCardJson();
+            delete cardJson.artBase64;
+            jsonPreviewTextarea.value = JSON.stringify(cardJson, null, 2);
+            jsonPreviewModal.classList.add("show");
+        }
+
         // Export Deck database to a JSON file download
         function exportDeckToJson() {
             if (state.deck.length === 0) {
@@ -4200,27 +4308,31 @@
             }
             
             // Normalize all cards to ensure keywords and activatedAbilities are present
-            const normalizedCards = state.deck.map(card => ({
-                id: card.id,
-                cardName: card.cardName || "Unnamed Card",
-                frameStyle: card.frameStyle || "red",
-                borderColor: card.borderColor || "black",
-                manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
-                cardType: card.cardType || "Creature",
-                rulesText: card.rulesText || "",
-                customDescription: card.customDescription || "",
-                customDescriptionItalic: card.customDescriptionItalic !== false,
-                power: card.power || "1",
-                toughness: card.toughness || "1",
-                artBase64: card.artBase64 || "",
-                artScale: card.artScale !== undefined ? card.artScale : 1.0,
-                artRotation: card.artRotation !== undefined ? card.artRotation : 0,
-                artX: card.artX !== undefined ? card.artX : 0,
-                artY: card.artY !== undefined ? card.artY : 0,
-                keywords: Array.isArray(card.keywords) ? card.keywords : [],
-                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
-                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14
-            }));
+            const normalizedCards = state.deck.map(card => {
+                const cardName = card.cardName || "Unnamed Card";
+                return {
+                    id: card.id,
+                    cardName: cardName,
+                    frameStyle: card.frameStyle || "red",
+                    borderColor: card.borderColor || "black",
+                    manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
+                    cardType: card.cardType || "Creature",
+                    rulesText: card.rulesText || "",
+                    customDescription: card.customDescription || "",
+                    customDescriptionItalic: card.customDescriptionItalic !== false,
+                    power: card.power || "1",
+                    toughness: card.toughness || "1",
+                    artBase64: card.artBase64 || "",
+                    artScale: card.artScale !== undefined ? card.artScale : 1.0,
+                    artRotation: card.artRotation !== undefined ? card.artRotation : 0,
+                    artX: card.artX !== undefined ? card.artX : 0,
+                    artY: card.artY !== undefined ? card.artY : 0,
+                    keywords: Array.isArray(card.keywords) ? card.keywords : [],
+                    activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
+                    abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14,
+                    illustration: cardName + ".png"
+                };
+            });
 
             const exportData = {
                 deckName: state.deckName || "Wizards Deck",
@@ -4247,9 +4359,10 @@
 
         // Helper to normalize card properties on import
         function normalizeImportedCard(card) {
+            const cardName = card.cardName || "Unnamed Card";
             return {
                 id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
-                cardName: card.cardName || "Unnamed Card",
+                cardName: cardName,
                 frameStyle: card.frameStyle || "red",
                 borderColor: card.borderColor || "black",
                 manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
@@ -4266,7 +4379,8 @@
                 artY: card.artY !== undefined ? card.artY : 0,
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
                 activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
-                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14
+                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14,
+                illustration: card.illustration || (cardName + ".png")
             };
         }
 
