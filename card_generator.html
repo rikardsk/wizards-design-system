@@ -4571,38 +4571,40 @@
                 return;
             }
             
-            // Normalize all cards to ensure keywords and activatedAbilities are present
+            // Normalize & optimize cards by stripping artBase64, omitting default properties, and minifying output
             const normalizedCards = state.deck.map(card => {
                 const cardName = card.cardName || "Unnamed Card";
-                return {
+                const c = {
                     id: card.id,
                     cardName: cardName,
                     frameStyle: card.frameStyle || "red",
                     borderColor: card.borderColor || "black",
                     manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                     cardType: card.cardType || "Creature",
-                    rulesText: card.rulesText || "",
-                    customDescription: card.customDescription || "",
-                    customDescriptionItalic: card.customDescriptionItalic !== false,
-                    power: card.power || "1",
-                    toughness: card.toughness || "1",
-                    artBase64: card.artBase64 || "",
-                    artScale: card.artScale !== undefined ? card.artScale : 1.0,
-                    artRotation: card.artRotation !== undefined ? card.artRotation : 0,
-                    artX: card.artX !== undefined ? card.artX : 0,
-                    artY: card.artY !== undefined ? card.artY : 0,
-                    keywords: Array.isArray(card.keywords) ? card.keywords : [],
-                    activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
-                    abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14,
-                    illustration: cardName + ".png"
+                    illustration: card.illustration || (cardName + ".png")
                 };
+
+                if (card.rulesText) c.rulesText = card.rulesText;
+                if (card.customDescription) c.customDescription = card.customDescription;
+                if (card.customDescriptionItalic === false) c.customDescriptionItalic = false;
+                if (card.power && card.power !== "1") c.power = card.power;
+                if (card.toughness && card.toughness !== "1") c.toughness = card.toughness;
+                if (card.artScale && card.artScale !== 1.0) c.artScale = card.artScale;
+                if (card.artRotation) c.artRotation = card.artRotation;
+                if (card.artX) c.artX = card.artX;
+                if (card.artY) c.artY = card.artY;
+                if (Array.isArray(card.keywords) && card.keywords.length > 0) c.keywords = card.keywords;
+                if (Array.isArray(card.activatedAbilities) && card.activatedAbilities.length > 0) c.activatedAbilities = card.activatedAbilities;
+                if (card.abilityManaSize && card.abilityManaSize !== 14) c.abilityManaSize = card.abilityManaSize;
+
+                return c;
             });
 
             const exportData = {
                 deckName: state.deckName || "Wizards Deck",
                 cards: normalizedCards
             };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData));
             const downloadAnchor = document.createElement("a");
             downloadAnchor.setAttribute("href", dataStr);
             
