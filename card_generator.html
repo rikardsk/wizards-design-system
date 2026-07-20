@@ -4137,7 +4137,6 @@
                     artFilename.textContent = "Loaded Art";
                     artFilenamePreview.style.display = "flex";
                     
-                    // Set width/height style of cardPreviewArt to match "cover" without clipping
                     const frameW = 347;
                     const frameH = 220;
                     const aspectFrame = frameW / frameH;
@@ -4155,6 +4154,47 @@
                     updateCardPreview();
                 };
                 img.src = card.artBase64;
+            } else if (card.illustration) {
+                const sources = [
+                    card.illustration,
+                    `creatures/${card.illustration}`,
+                    `creatures small/${card.illustration}`,
+                    `assets/${card.illustration}`
+                ];
+                let srcIndex = 0;
+                const tryNextSrc = () => {
+                    if (srcIndex >= sources.length) {
+                        state.artImage = null;
+                        state.artFilename = "";
+                        artFilenamePreview.style.display = "none";
+                        updateCardPreview();
+                        return;
+                    }
+                    const altImg = new Image();
+                    const currentSrc = sources[srcIndex++];
+                    altImg.onload = () => {
+                        state.artImage = altImg;
+                        state.artFilename = card.illustration;
+                        artFilename.textContent = card.illustration;
+                        artFilenamePreview.style.display = "flex";
+                        const frameW = 347;
+                        const frameH = 220;
+                        const aspectFrame = frameW / frameH;
+                        const aspectImg = altImg.width / altImg.height;
+                        if (aspectImg > aspectFrame) {
+                            cardPreviewArt.style.height = "100%";
+                            cardPreviewArt.style.width = "auto";
+                        } else {
+                            cardPreviewArt.style.width = "100%";
+                            cardPreviewArt.style.height = "auto";
+                        }
+                        checkImageTransparency(altImg);
+                        updateCardPreview();
+                    };
+                    altImg.onerror = tryNextSrc;
+                    altImg.src = currentSrc;
+                };
+                tryNextSrc();
             } else {
                 state.artImage = null;
                 state.artFilename = "";
@@ -4627,8 +4667,10 @@
         function normalizeImportedCard(card) {
             const cardName = card.cardName || "Unnamed Card";
             const cardType = card.cardType || "Creature";
-            const defaultHasPt = (cardType === "Creature" || cardType === "Tower");
-            const hasPt = card.hasPt !== undefined ? !!card.hasPt : defaultHasPt;
+            const matchType = availableCardTypes.find(t => t.name.toLowerCase() === cardType.toLowerCase());
+            const defaultHasPt = matchType ? matchType.hasPt : (cardType === "Creature" || cardType === "Tower");
+            const hasExplicitPt = (card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "");
+            const hasPt = card.hasPt !== undefined ? !!card.hasPt : (defaultHasPt || hasExplicitPt);
 
             return {
                 id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
@@ -4641,16 +4683,16 @@
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
                 customDescriptionItalic: card.customDescriptionItalic !== false,
-                power: card.power || "1",
-                toughness: card.toughness || "1",
+                power: card.power !== undefined ? String(card.power) : "1",
+                toughness: card.toughness !== undefined ? String(card.toughness) : "1",
                 artBase64: card.artBase64 || "",
-                artScale: card.artScale !== undefined ? card.artScale : 1.0,
-                artRotation: card.artRotation !== undefined ? card.artRotation : 0,
-                artX: card.artX !== undefined ? card.artX : 0,
-                artY: card.artY !== undefined ? card.artY : 0,
+                artScale: card.artScale !== undefined ? Number(card.artScale) : 1.0,
+                artRotation: card.artRotation !== undefined ? Number(card.artRotation) : 0,
+                artX: card.artX !== undefined ? Number(card.artX) : 0,
+                artY: card.artY !== undefined ? Number(card.artY) : 0,
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
                 activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
-                abilityManaSize: card.abilityManaSize !== undefined ? card.abilityManaSize : 14,
+                abilityManaSize: card.abilityManaSize !== undefined ? Number(card.abilityManaSize) : 14,
                 illustration: card.illustration || (cardName + ".png")
             };
         }
@@ -4690,7 +4732,7 @@
                     
                     const formattedType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
                     
-                    if (!availableCardTypes.some(t => t.name === formattedType)) {
+                    if (!availableCardTypes.some(t => t.name.toLowerCase() === formattedType.toLowerCase())) {
                         const hasPt = card.hasPt !== undefined ? !!card.hasPt : ((card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "") || (formattedType === "Creature" || formattedType === "Tower"));
                         availableCardTypes.push({ name: formattedType, hasPt: hasPt });
                         updated = true;
@@ -4713,29 +4755,27 @@
             reader.onload = (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
+                    let rawCards = [];
                     if (Array.isArray(imported)) {
-                        state.deck = imported.map(normalizeImportedCard);
-                        addImportedKeywordsToAvailable(state.deck);
-                        addImportedCardTypesToAvailable(state.deck);
-                        state.deckName = "Imported Deck";
-                        deckNameInput.value = state.deckName;
-                        saveDeckToStorage();
-                        renderDeckList();
-                        resetForm();
-                        showToast("Deck imported successfully!");
+                        rawCards = imported;
                     } else if (imported && Array.isArray(imported.cards)) {
-                        state.deck = imported.cards.map(normalizeImportedCard);
-                        addImportedKeywordsToAvailable(state.deck);
-                        addImportedCardTypesToAvailable(state.deck);
+                        rawCards = imported.cards;
                         state.deckName = imported.deckName || "Imported Deck";
-                        deckNameInput.value = state.deckName;
-                        saveDeckToStorage();
-                        renderDeckList();
-                        resetForm();
-                        showToast("Deck imported successfully!");
+                        if (deckNameInput) deckNameInput.value = state.deckName;
+                    } else if (imported && (imported.cardName || imported.cardType)) {
+                        rawCards = [imported];
                     } else {
                         alert("Invalid deck configuration format.");
+                        return;
                     }
+
+                    addImportedCardTypesToAvailable(rawCards);
+                    state.deck = rawCards.map(normalizeImportedCard);
+                    addImportedKeywordsToAvailable(state.deck);
+                    saveDeckToStorage();
+                    renderDeckList();
+                    resetForm();
+                    showToast("Deck imported successfully!");
                 } catch(err) {
                     alert("Failed to parse deck JSON file.");
                 }
