@@ -1837,9 +1837,9 @@
                         <!-- Art Box -->
                         <div class="card-art-frame" id="card-art-frame">
                             <img class="card-art-img" id="card-preview-art" style="display: none;">
-                            <div class="card-art-placeholder" id="card-art-placeholder">
+                            <div class="card-art-placeholder" id="card-art-placeholder" title="No illustration selected">
                                 <i class="fa-solid fa-wand-magic"></i>
-                                <span>No Illustration Selected</span>
+                                <span id="card-art-placeholder-text">No Illustration Selected</span>
                             </div>
                         </div>
 
@@ -2089,6 +2089,17 @@
                         This land yields {G} and {1}.
                     </div>
                 </div>
+            </div>
+        </div>
+    <!-- Artwork Error Diagnostics Modal -->
+    <div class="modal-overlay" id="art-error-modal">
+        <div class="modal-content" style="width: 520px; max-width: 95%;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-triangle-exclamation" style="color: #e06c75;"></i> Artwork Load Diagnostics</h3>
+                <button type="button" class="close-modal-btn" id="close-art-error-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="art-error-modal-body">
+                <!-- Dynamically populated by openArtErrorModal() -->
             </div>
         </div>
     </div>
@@ -4123,15 +4134,28 @@
             state.abilityManaSize = card.abilityManaSize !== undefined ? card.abilityManaSize : 14;
             state.tempAbilityManaCost = [];
             abilityDescInput.value = "";
-            state.artScale = card.artScale !== undefined ? card.artScale : 1.0;
-            state.artRotation = card.artRotation !== undefined ? card.artRotation : 0;
-            state.artX = card.artX !== undefined ? card.artX : 0;
-            state.artY = card.artY !== undefined ? card.artY : 0;
+            state.artScale = 1.0;
+            state.artRotation = 0;
+            state.artX = 0;
+            state.artY = 0;
             
+            // Synchronously reset art state so previous card images don't linger
+            state.artImage = null;
+            state.artFilename = "";
+            state.missingArtInfo = null;
+            artFilenamePreview.style.display = "none";
+            const artPlaceholderEl = document.getElementById("card-art-placeholder");
+            const artPlaceholderTextEl = document.getElementById("card-art-placeholder-text");
+            if (artPlaceholderEl) artPlaceholderEl.title = "No illustration selected";
+            if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = "No Illustration Selected";
+
+            const targetIllustration = card.illustration || (card.cardName + ".png");
+
             // Load art image
             if (card.artBase64) {
                 const img = new Image();
                 img.onload = () => {
+                    if (state.selectedCardId !== card.id) return;
                     state.artImage = img;
                     state.artFilename = "Loaded Art";
                     artFilename.textContent = "Loaded Art";
@@ -4154,18 +4178,72 @@
                     updateCardPreview();
                 };
                 img.src = card.artBase64;
-            } else if (card.illustration) {
-                const sources = [
-                    card.illustration,
-                    `creatures/${card.illustration}`,
-                    `creatures small/${card.illustration}`,
-                    `assets/${card.illustration}`
-                ];
+            } else if (targetIllustration) {
+                const rawName = decodeURIComponent(targetIllustration.replace(/^.*[\\\/]/, ''));
+                const cleanName = card.cardName ? (card.cardName + ".png") : rawName;
+                
+                const getVariants = (nameStr) => {
+                    if (!nameStr) return [];
+                    const extMatch = nameStr.match(/\.[a-z0-9]+$/i);
+                    const ext = extMatch ? extMatch[0] : '.png';
+                    const base = nameStr.replace(/\.[a-z0-9]+$/i, '');
+                    const withSpaces = base.replace(/[_]/g, ' ').replace(/-/g, ' ');
+                    const withUnderscores = base.replace(/\s+/g, '_').replace(/-/g, '_');
+                    const withHyphens = base.replace(/\s+/g, '-').replace(/_/g, '-');
+                    return [
+                        nameStr,
+                        base + ext,
+                        withSpaces + ext,
+                        withUnderscores + ext,
+                        withHyphens + ext,
+                        withSpaces.toLowerCase() + ext,
+                        withUnderscores.toLowerCase() + ext,
+                        withHyphens.toLowerCase() + ext
+                    ];
+                };
+
+                const nameVariants = Array.from(new Set([
+                    ...getVariants(targetIllustration),
+                    ...getVariants(rawName),
+                    ...getVariants(cleanName)
+                ]));
+
+                const folders = ['', 'creatures/', 'spells/', 'assets/', 'creatures small/', 'assets/creatures/', 'assets/spells/'];
+                const basePaths = [];
+                folders.forEach(f => {
+                    nameVariants.forEach(v => {
+                        basePaths.push(f + v);
+                    });
+                });
+                
+                const sources = [];
+                basePaths.forEach(p => {
+                    if (!p) return;
+                    const cleanP = p.replace(/^\.\//, '');
+                    if (!sources.includes(cleanP)) sources.push(cleanP);
+                    const encP = encodeURI(cleanP);
+                    if (!sources.includes(encP)) sources.push(encP);
+                    const dotP = `./${cleanP}`;
+                    if (!sources.includes(dotP)) sources.push(dotP);
+                    const dotEncP = `./${encP}`;
+                    if (!sources.includes(dotEncP)) sources.push(dotEncP);
+                });
+                
                 let srcIndex = 0;
                 const tryNextSrc = () => {
+                    if (state.selectedCardId !== card.id) return;
                     if (srcIndex >= sources.length) {
                         state.artImage = null;
                         state.artFilename = "";
+                        state.missingArtInfo = { cardName: card.cardName || "Card", file: rawName, basePaths: Array.from(new Set(basePaths)), paths: sources };
+                        const tooltipMsg = `Missing file: "${rawName}"\n(Click card placeholder for detailed report)\n\nChecked locations:\n • ` + Array.from(new Set(basePaths)).join('\n • ');
+                        if (artPlaceholderEl) {
+                            artPlaceholderEl.title = tooltipMsg;
+                            artPlaceholderEl.style.cursor = "pointer";
+                        }
+                        if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = `Missing: ${rawName} (Click Info)`;
+                        const artDropzoneEl = document.getElementById("card-art-dropzone");
+                        if (artDropzoneEl) artDropzoneEl.title = tooltipMsg;
                         artFilenamePreview.style.display = "none";
                         updateCardPreview();
                         return;
@@ -4173,9 +4251,13 @@
                     const altImg = new Image();
                     const currentSrc = sources[srcIndex++];
                     altImg.onload = () => {
+                        if (state.selectedCardId !== card.id) return;
                         state.artImage = altImg;
-                        state.artFilename = card.illustration;
-                        artFilename.textContent = card.illustration;
+                        state.artFilename = rawName;
+                        state.missingArtInfo = null;
+                        if (artPlaceholderEl) artPlaceholderEl.title = rawName;
+                        if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = rawName;
+                        artFilename.textContent = rawName;
                         artFilenamePreview.style.display = "flex";
                         const frameW = 347;
                         const frameH = 220;
@@ -4188,17 +4270,18 @@
                             cardPreviewArt.style.width = "100%";
                             cardPreviewArt.style.height = "auto";
                         }
+                        cardPreviewArt.src = altImg.src;
+                        cardPreviewArt.style.display = "block";
+                        if (artPlaceholderEl) artPlaceholderEl.style.display = "none";
                         checkImageTransparency(altImg);
                         updateCardPreview();
                     };
                     altImg.onerror = tryNextSrc;
-                    altImg.src = currentSrc;
+                    // Append timestamp parameter to bypass cached 404 responses
+                    const cacheBuster = (currentSrc.includes("?") ? "&" : "?") + "v=" + Date.now();
+                    altImg.src = currentSrc + cacheBuster;
                 };
                 tryNextSrc();
-            } else {
-                state.artImage = null;
-                state.artFilename = "";
-                artFilenamePreview.style.display = "none";
             }
 
             // (Real-time auto-saving active)
@@ -4600,6 +4683,10 @@
         function showCardJsonPreview() {
             const cardJson = getCurrentCardJson();
             delete cardJson.artBase64;
+            delete cardJson.artScale;
+            delete cardJson.artRotation;
+            delete cardJson.artX;
+            delete cardJson.artY;
             jsonPreviewTextarea.value = JSON.stringify(cardJson, null, 2);
             jsonPreviewModal.classList.add("show");
         }
@@ -4629,10 +4716,6 @@
                 if (card.customDescriptionItalic === false) c.customDescriptionItalic = false;
                 if (card.power && card.power !== "1") c.power = card.power;
                 if (card.toughness && card.toughness !== "1") c.toughness = card.toughness;
-                if (card.artScale && card.artScale !== 1.0) c.artScale = card.artScale;
-                if (card.artRotation) c.artRotation = card.artRotation;
-                if (card.artX) c.artX = card.artX;
-                if (card.artY) c.artY = card.artY;
                 if (Array.isArray(card.keywords) && card.keywords.length > 0) c.keywords = card.keywords;
                 if (Array.isArray(card.activatedAbilities) && card.activatedAbilities.length > 0) c.activatedAbilities = card.activatedAbilities;
                 if (card.abilityManaSize && card.abilityManaSize !== 14) c.abilityManaSize = card.abilityManaSize;
@@ -4659,9 +4742,73 @@
             
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
-            document.body.removeChild(downloadAnchor);
             showToast("Exported deck config JSON!");
         }
+
+        // Open Artwork Diagnostics Modal
+        function openArtErrorModal() {
+            const modal = document.getElementById("art-error-modal");
+            const modalBody = document.getElementById("art-error-modal-body");
+            if (!modal || !modalBody) return;
+
+            const info = state.missingArtInfo;
+            if (!info) {
+                modalBody.innerHTML = `<p style="color: var(--text-muted); padding: 10px;">No missing illustration diagnostic data available for this card.</p>`;
+            } else {
+                const pathsListHtml = info.basePaths.map(p => `<div style="margin-bottom: 4px;"><span style="color:#e06c75; font-weight:bold;">[NOT FOUND]</span> ${p}</div>`).join("");
+                modalBody.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div style="background: rgba(224, 108, 117, 0.12); border: 1px solid rgba(224, 108, 117, 0.3); border-radius: 8px; padding: 12px;">
+                            <div style="font-weight: bold; color: #ff6b6b; font-size: 0.95rem; margin-bottom: 4px;">
+                                <i class="fa-solid fa-circle-xmark"></i> Image File Not Found
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-light); line-height: 1.5;">
+                                Card: <strong style="color: var(--accent-gold);">${info.cardName}</strong><br>
+                                Expected Filename: <code style="color: #61afef; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">${info.file}</code>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span style="font-weight: bold; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Checked Locations & Relative Paths:</span>
+                            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 10px; font-family: monospace; font-size: 0.78rem; max-height: 180px; overflow-y: auto; color: #abb2bf;">
+                                ${pathsListHtml}
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+                            <span style="font-weight: bold; font-size: 0.85rem; color: var(--accent-gold); display: block; margin-bottom: 6px;"><i class="fa-solid fa-folder-open"></i> How to resolve:</span>
+                            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin: 0 0 8px 0;">
+                                Place the file <strong>${info.file}</strong> inside your project folder at:
+                            </p>
+                            <div style="font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 4px; color: var(--text-color); border: 1px dashed rgba(255,255,255,0.2);">
+                                Wizards Design System/creatures/${info.file}
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+                            <button type="button" class="primary-btn" id="close-art-error-footer-btn" style="width: auto; padding: 8px 20px;">Close Report</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById("close-art-error-footer-btn")?.addEventListener("click", () => {
+                    modal.classList.remove("active");
+                });
+            }
+
+            modal.classList.add("active");
+        }
+
+        // Bind click events for Artwork Error Modal
+        document.getElementById("close-art-error-modal-btn")?.addEventListener("click", () => {
+            document.getElementById("art-error-modal")?.classList.remove("active");
+        });
+
+        document.getElementById("card-art-placeholder")?.addEventListener("click", () => {
+            if (!state.artImage && state.missingArtInfo) {
+                openArtErrorModal();
+            }
+        });
 
         // Helper to normalize card properties on import
         function normalizeImportedCard(card) {
@@ -4686,10 +4833,10 @@
                 power: card.power !== undefined ? String(card.power) : "1",
                 toughness: card.toughness !== undefined ? String(card.toughness) : "1",
                 artBase64: card.artBase64 || "",
-                artScale: card.artScale !== undefined ? Number(card.artScale) : 1.0,
-                artRotation: card.artRotation !== undefined ? Number(card.artRotation) : 0,
-                artX: card.artX !== undefined ? Number(card.artX) : 0,
-                artY: card.artY !== undefined ? Number(card.artY) : 0,
+                artScale: 1.0,
+                artRotation: 0,
+                artX: 0,
+                artY: 0,
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
                 activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
                 abilityManaSize: card.abilityManaSize !== undefined ? Number(card.abilityManaSize) : 14,
@@ -4953,11 +5100,12 @@
                 tempCtx.restore();
             } else {
                 // Placeholder illustration drawing
-                tempCtx.fillStyle = "#3a4058";
-                tempCtx.font = `italic ${Math.round(12 * scale)}px "Inter", sans-serif`;
+                tempCtx.fillStyle = "#e06c75";
+                tempCtx.font = `italic ${Math.round(11 * scale)}px "Inter", sans-serif`;
                 tempCtx.textAlign = "center";
                 tempCtx.textBaseline = "middle";
-                tempCtx.fillText("No Illustration Selected", artX + (artW/2), artY + (artH/2));
+                const label = state.missingArtInfo ? `Missing: ${state.missingArtInfo.file}` : "No Illustration Selected";
+                tempCtx.fillText(label, artX + (artW/2), artY + (artH/2));
             }
             
             // 4. Draw Card Type Bar
