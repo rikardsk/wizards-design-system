@@ -4666,6 +4666,7 @@
                 borderColor: state.borderColor || "black",
                 manaCost: [...(state.manaCost || [])],
                 cardType: state.cardType || "Creature",
+                hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
                 customDescriptionItalic: state.customDescriptionItalic !== false,
@@ -4702,29 +4703,27 @@
                 return;
             }
             
-            // Normalize & optimize cards by stripping artBase64, omitting default properties, and minifying output
+            // Normalize cards by stripping artBase64, scale, and offset properties, and including all other fields explicitly
             const normalizedCards = state.deck.map(card => {
                 const cardName = card.cardName || "Unnamed Card";
-                const c = {
+                return {
                     id: card.id,
                     cardName: cardName,
                     frameStyle: card.frameStyle || "red",
                     borderColor: card.borderColor || "black",
                     manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                     cardType: card.cardType || "Creature",
+                    hasPt: card.hasPt !== undefined ? !!card.hasPt : true,
+                    rulesText: card.rulesText || "",
+                    customDescription: card.customDescription || "",
+                    customDescriptionItalic: card.customDescriptionItalic !== false,
+                    power: card.power !== undefined ? String(card.power) : "1",
+                    toughness: card.toughness !== undefined ? String(card.toughness) : "1",
+                    keywords: Array.isArray(card.keywords) ? card.keywords : [],
+                    activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
+                    abilityManaSize: card.abilityManaSize !== undefined ? Number(card.abilityManaSize) : 14,
                     illustration: card.illustration || (cardName + ".png")
                 };
-
-                if (card.rulesText) c.rulesText = card.rulesText;
-                if (card.customDescription) c.customDescription = card.customDescription;
-                if (card.customDescriptionItalic === false) c.customDescriptionItalic = false;
-                if (card.power && card.power !== "1") c.power = card.power;
-                if (card.toughness && card.toughness !== "1") c.toughness = card.toughness;
-                if (Array.isArray(card.keywords) && card.keywords.length > 0) c.keywords = card.keywords;
-                if (Array.isArray(card.activatedAbilities) && card.activatedAbilities.length > 0) c.activatedAbilities = card.activatedAbilities;
-                if (card.abilityManaSize && card.abilityManaSize !== 14) c.abilityManaSize = card.abilityManaSize;
-
-                return c;
             });
 
             const exportData = {
