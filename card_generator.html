@@ -7,7 +7,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -4231,6 +4231,7 @@
                 });
                 
                 let srcIndex = 0;
+                let triedCORS = false;
                 const tryNextSrc = () => {
                     if (state.selectedCardId !== card.id) return;
                     if (srcIndex >= sources.length) {
@@ -4249,8 +4250,11 @@
                         updateCardPreview();
                         return;
                     }
+                    const currentSrc = sources[srcIndex];
                     const altImg = new Image();
-                    const currentSrc = sources[srcIndex++];
+                    if (!triedCORS) {
+                        altImg.crossOrigin = "anonymous";
+                    }
                     altImg.onload = () => {
                         if (state.selectedCardId !== card.id) return;
                         state.artImage = altImg;
@@ -4280,7 +4284,16 @@
                             updateCardPreview();
                         });
                     };
-                    altImg.onerror = tryNextSrc;
+                    altImg.onerror = () => {
+                        if (!triedCORS) {
+                            triedCORS = true;
+                            tryNextSrc();
+                        } else {
+                            triedCORS = false;
+                            srcIndex++;
+                            tryNextSrc();
+                        }
+                    };
                     // Append timestamp parameter to bypass cached 404 responses
                     const cacheBuster = (currentSrc.includes("?") ? "&" : "?") + "v=" + Date.now();
                     altImg.src = currentSrc + cacheBuster;
@@ -4936,8 +4949,8 @@
 
         // Canvas Drawing Engine for Card Downloads
         function renderCardToCanvas(tempCtx, targetW, targetH) {
-            if (typeof window.renderCardToCanvas === "function") {
-                window.renderCardToCanvas(state, tempCtx, targetW, targetH, state.artImage);
+            if (typeof window.renderCardToCanvasCtx === "function") {
+                window.renderCardToCanvasCtx(state, tempCtx, targetW, targetH, state.artImage);
                 return;
             }
             const scale = targetW / 375; // Ratio to scale card contents
@@ -5419,32 +5432,37 @@
 
         // Trigger file download (Uses High-Quality Step-down Downsampling)
         function downloadCardImage() {
-            // High-res source canvas
-            const srcCanvas = document.createElement("canvas");
-            srcCanvas.width = 750;
-            srcCanvas.height = 1046;
-            const srcCtx = srcCanvas.getContext("2d");
-            
-            // Background is left transparent to preserve transparent rounded corners
-            
-            // Draw full quality composition
-            renderCardToCanvas(srcCtx, 750, 1046);
-            
-            // Use multi-pass step-down resizer to produce clean 375x523 PNG
-            const finalCanvas = downsampleCanvas(srcCanvas, 375, 523);
-            
-            const dataUrl = finalCanvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.href = dataUrl;
-            
-            // File download naming
-            const name = state.cardName ? state.cardName.replace(/\s+/g, '_') : 'card';
-            link.download = `${name}.png`;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Card image downloaded!");
+            try {
+                // High-res source canvas
+                const srcCanvas = document.createElement("canvas");
+                srcCanvas.width = 750;
+                srcCanvas.height = 1046;
+                const srcCtx = srcCanvas.getContext("2d");
+                
+                // Background is left transparent to preserve transparent rounded corners
+                
+                // Draw full quality composition
+                renderCardToCanvas(srcCtx, 750, 1046);
+                
+                // Use multi-pass step-down resizer to produce clean 375x523 PNG
+                const finalCanvas = downsampleCanvas(srcCanvas, 375, 523);
+                
+                const dataUrl = finalCanvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = dataUrl;
+                
+                // File download naming
+                const name = state.cardName ? state.cardName.trim() : 'card';
+                link.download = `${name}.png`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Card image downloaded!");
+            } catch (err) {
+                console.error("Canvas export failed:", err);
+                alert("Canvas export failed!\n\nError: " + err.name + " - " + err.message + "\n\nIf this is a CORS/SecurityError, please ensure your local server is running and you have refreshed the page. If it is a different error, please let us know.");
+            }
         }
 
         // Trigger illustration only file download (Uses High-Quality Step-down Downsampling)
@@ -5454,62 +5472,67 @@
                 return;
             }
             
-            // High-res source canvas
-            const scale = 2;
-            const targetW = 327 * scale;
-            const targetH = 220 * scale;
-            
-            const srcCanvas = document.createElement("canvas");
-            srcCanvas.width = targetW;
-            srcCanvas.height = targetH;
-            const srcCtx = srcCanvas.getContext("2d");
-            
-            srcCtx.save();
-            
-            // Base fit dimensions (equivalent to object-fit: cover)
-            const imgW = state.artImage.width;
-            const imgH = state.artImage.height;
-            const scaleW = targetW / imgW;
-            const scaleH = targetH / imgH;
-            const fitScale = Math.max(scaleW, scaleH);
-            
-            const drawW = imgW * fitScale;
-            const drawH = imgH * fitScale;
-            
-            // Translate to center of the canvas
-            const centerX = targetW / 2;
-            const centerY = targetH / 2;
-            srcCtx.translate(centerX, centerY);
-            
-            // Apply drag offsets (scaled according to canvas resolution)
-            srcCtx.translate((state.artX || 0) * scale, (state.artY || 0) * scale);
-            
-            // Apply rotation
-            srcCtx.rotate((state.artRotation || 0) * Math.PI / 180);
-            
-            // Apply scale
-            const customScale = state.artScale || 1.0;
-            srcCtx.scale(customScale, customScale);
-            
-            // Draw centered at the origin
-            srcCtx.drawImage(state.artImage, -drawW / 2, -drawH / 2, drawW, drawH);
-            srcCtx.restore();
-            
-            // Use multi-pass step-down resizer to produce clean 327x220 PNG
-            const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
-            
-            const dataUrl = finalCanvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.href = dataUrl;
-            
-            // File download naming
-            const name = state.cardName ? state.cardName.replace(/\s+/g, '_') : 'card';
-            link.download = `${name}_art.png`;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Illustration image downloaded!");
+            try {
+                // High-res source canvas
+                const scale = 2;
+                const targetW = 327 * scale;
+                const targetH = 220 * scale;
+                
+                const srcCanvas = document.createElement("canvas");
+                srcCanvas.width = targetW;
+                srcCanvas.height = targetH;
+                const srcCtx = srcCanvas.getContext("2d");
+                
+                srcCtx.save();
+                
+                // Base fit dimensions (equivalent to object-fit: cover)
+                const imgW = state.artImage.width;
+                const imgH = state.artImage.height;
+                const scaleW = targetW / imgW;
+                const scaleH = targetH / imgH;
+                const fitScale = Math.max(scaleW, scaleH);
+                
+                const drawW = imgW * fitScale;
+                const drawH = imgH * fitScale;
+                
+                // Translate to center of the canvas
+                const centerX = targetW / 2;
+                const centerY = targetH / 2;
+                srcCtx.translate(centerX, centerY);
+                
+                // Apply drag offsets (scaled according to canvas resolution)
+                srcCtx.translate((state.artX || 0) * scale, (state.artY || 0) * scale);
+                
+                // Apply rotation
+                srcCtx.rotate((state.artRotation || 0) * Math.PI / 180);
+                
+                // Apply scale
+                const customScale = state.artScale || 1.0;
+                srcCtx.scale(customScale, customScale);
+                
+                // Draw centered at the origin
+                srcCtx.drawImage(state.artImage, -drawW / 2, -drawH / 2, drawW, drawH);
+                srcCtx.restore();
+                
+                // Use multi-pass step-down resizer to produce clean 327x220 PNG
+                const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
+                
+                const dataUrl = finalCanvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = dataUrl;
+                
+                // File download naming
+                const name = state.artFilename ? state.artFilename.replace(/\.[^/.]+$/, "") : (state.cardName ? state.cardName.trim() : 'card');
+                link.download = `${name}.png`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Illustration image downloaded!");
+            } catch (err) {
+                console.error("Canvas export failed:", err);
+                alert("Canvas export failed!\n\nError: " + err.name + " - " + err.message + "\n\nIf this is a CORS/SecurityError, please ensure your local server is running and you have refreshed the page. If it is a different error, please let us know.");
+            }
         }
 
         // Download art for a single card in the deck (asynchronously)
@@ -5571,8 +5594,8 @@
                     link.href = dataUrl;
                     
                     // File download naming
-                    const name = card.cardName ? card.cardName.replace(/\s+/g, '_') : 'card';
-                    link.download = `${name}_art.png`;
+                    const name = card.illustration ? card.illustration.replace(/\.[^/.]+$/, "") : (card.cardName ? card.cardName.trim() : 'card');
+                    link.download = `${name}.png`;
                     
                     document.body.appendChild(link);
                     link.click();

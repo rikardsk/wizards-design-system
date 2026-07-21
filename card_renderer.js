@@ -629,6 +629,6 @@
     }
 
     global.drawMTGCard = drawMTGCard;
-    global.renderCardToCanvas = renderCardToCanvasCtx;
+    global.renderCardToCanvasCtx = renderCardToCanvasCtx;
 
 })(typeof window !== 'undefined' ? window : this);
