@@ -4987,6 +4987,31 @@
                             state.deck.push(...defaultQuest);
                             saveDeckToStorage();
                         }
+                        // Enforce correct illustration paths for default/ability/quest cards
+                        let deckUpdated = false;
+                        state.deck.forEach(card => {
+                            const name = (card.cardName || "").trim().toLowerCase();
+                            const id = (card.id || "").toLowerCase();
+                            if (card.id === "default_volcano" && card.illustration !== "Volcano Elemental.png") {
+                                card.illustration = "Volcano Elemental.png";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("tower_ability") || (name.includes("tower") && name.includes("ability"))) && card.illustration !== "Tower Ability.png") {
+                                card.illustration = "Tower Ability.png";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("wizard_ability") || (name.includes("wizard") && name.includes("ability"))) && card.illustration !== "Wizard Ability.png") {
+                                card.illustration = "Wizard Ability.png";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("tower_of_terror_quest") || name.includes("tower of terror quest") || (name.includes("tower of terror") && name.includes("quest"))) && card.illustration !== "Tower of Terror Quest.png") {
+                                card.illustration = "Tower of Terror Quest.png";
+                                deckUpdated = true;
+                            }
+                        });
+                        if (deckUpdated) {
+                            saveDeckToStorage();
+                        }
                         state.deckName = result.name || "Wizards Deck";
                         deckNameInput.value = state.deckName;
                         renderDeckList();
@@ -5426,6 +5451,19 @@
             const hasExplicitPt = (card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "");
             const hasPt = card.hasPt !== undefined ? !!card.hasPt : (defaultHasPt || hasExplicitPt);
 
+            let illustration = card.illustration || (cardName + ".png");
+            const nameLower = cardName.trim().toLowerCase();
+            const idLower = (card.id || "").toLowerCase();
+            if (card.id === "default_volcano") {
+                illustration = "Volcano Elemental.png";
+            } else if (idLower.includes("tower_ability") || (nameLower.includes("tower") && nameLower.includes("ability"))) {
+                illustration = "Tower Ability.png";
+            } else if (idLower.includes("wizard_ability") || (nameLower.includes("wizard") && nameLower.includes("ability"))) {
+                illustration = "Wizard Ability.png";
+            } else if (idLower.includes("tower_of_terror_quest") || nameLower.includes("tower of terror quest") || (nameLower.includes("tower of terror") && nameLower.includes("quest"))) {
+                illustration = "Tower of Terror Quest.png";
+            }
+
             return {
                 id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
                 cardName: cardName,
@@ -5448,7 +5486,7 @@
                 keywords: Array.isArray(card.keywords) ? card.keywords : [],
                 activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
                 abilityManaSize: card.abilityManaSize !== undefined ? Number(card.abilityManaSize) : 14,
-                illustration: card.illustration || (cardName + ".png")
+                illustration: illustration
             };
         }
 
