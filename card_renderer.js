@@ -463,8 +463,12 @@
         tempCtx.fillStyle = "#111111";
         tempCtx.textAlign = "left";
         tempCtx.textBaseline = "middle";
+        let fullTypeString = card.cardType || "Creature";
+        if (card.cardSubType && card.cardSubType.trim()) {
+            fullTypeString += " — " + card.cardSubType;
+        }
         tempCtx.font = `bold ${Math.round(13 * scale)}px "EB Garamond", serif`;
-        tempCtx.fillText(card.cardType || "Creature", artX + 8*scale, typeY + (typeH/2));
+        tempCtx.fillText(fullTypeString, artX + 8*scale, typeY + (typeH/2));
         
         // 5. Draw Rules Text Box
         const textBoxY = typeY + typeH + 4*scale;

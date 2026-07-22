@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic: The Gathering Card Creator</title>
+    <title>Wizards Card Creator</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1641,6 +1641,19 @@
                         </select>
                     </div>
 
+                    <div class="input-container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label for="card-subtype-select" style="margin: 0;">Card Sub Type</label>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <button class="reset-panel-btn" id="manage-subtypes-btn" title="Manage Card Sub Types" style="opacity: 0.8;"><i class="fa-solid fa-gear"></i> Edit</button>
+                                <button class="reset-panel-btn" id="reset-subtype-btn" title="Reset Card Sub Type"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                            </div>
+                        </div>
+                        <select id="card-subtype-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
                     <!-- Creature Stats row (Dynamic visibility) -->
                     <div class="input-row" id="creature-stats-row">
                         <div class="input-container">
@@ -2007,6 +2020,25 @@
         </div>
     </div>
 
+    <!-- Manage Card Sub Types Modal -->
+    <div class="modal-overlay" id="subtypes-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gear"></i> Manage Card Sub Types</h3>
+                <button type="button" class="close-modal-btn" id="close-subtypes-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="keyword-input-row">
+                    <input type="text" id="new-subtype-input" placeholder="Enter new card sub type (e.g. Dragon)..." maxlength="30">
+                    <button type="button" id="add-subtype-btn">Add</button>
+                </div>
+                <div class="keywords-manager-list" id="subtypes-manager-list">
+                    <!-- Dynamically generated list of card sub types -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Affirmation Modal for Deleting/Activating Activated Abilities -->
     <div class="modal-overlay" id="affirmation-modal">
         <div class="modal-content" style="width: 380px;">
@@ -2122,6 +2154,7 @@
             borderColor: "black", // black, white, gold, silver, none
             manaCost: ["C2", "R", "R"], // W, U, B, R, G, C1, C2...
             cardType: "Creature", // Creature, Artifact, Enchantment, Spell, Land, Quest, Tower
+            cardSubType: "Elemental",
             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
             power: "4",
             toughness: "5",
@@ -2415,9 +2448,64 @@
             localStorage.setItem("mtg_available_card_types", JSON.stringify(availableCardTypes));
         }
 
+        // Available Card Sub Types (loaded from localStorage with defaults)
+        const DEFAULT_SUB_TYPES = [
+            "Angel",
+            "Aura",
+            "Beast",
+            "Cleric",
+            "Demon",
+            "Dragon",
+            "Elder",
+            "Elemental",
+            "Elf",
+            "Equipment",
+            "Goblin",
+            "Human",
+            "Mage",
+            "Rogue",
+            "Shaman",
+            "Soldier",
+            "Spirit",
+            "Warrior",
+            "Wizard",
+            "Zombie"
+        ];
+        let availableSubTypes = [...DEFAULT_SUB_TYPES];
+
+        function loadAvailableSubTypes() {
+            const stored = localStorage.getItem("mtg_available_subtypes");
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        availableSubTypes = parsed.map(item => {
+                            if (typeof item === 'string') {
+                                return item;
+                            }
+                            return null;
+                        }).filter(Boolean);
+                        availableSubTypes.sort((a, b) => a.localeCompare(b));
+                    } else {
+                        availableSubTypes = [...DEFAULT_SUB_TYPES];
+                    }
+                } catch(e) {
+                    availableSubTypes = [...DEFAULT_SUB_TYPES];
+                }
+            } else {
+                availableSubTypes = [...DEFAULT_SUB_TYPES];
+                saveAvailableSubTypes();
+            }
+        }
+
+        function saveAvailableSubTypes() {
+            localStorage.setItem("mtg_available_subtypes", JSON.stringify(availableSubTypes));
+        }
+
         // DOM elements
         const cardNameInput = document.getElementById("card-name-input");
         const cardTypeSelect = document.getElementById("card-type-select");
+        const cardSubTypeSelect = document.getElementById("card-subtype-select");
         const cardPowerInput = document.getElementById("card-power-input");
         const cardToughnessInput = document.getElementById("card-toughness-input");
         const cardDescriptionInput = document.getElementById("card-description-input");
@@ -2500,6 +2588,14 @@
         const addTypeBtn = document.getElementById("add-type-btn");
         const typesManagerList = document.getElementById("types-manager-list");
         const typeFiltersContainer = document.getElementById("type-filters-container");
+        
+        const manageSubTypesBtn = document.getElementById("manage-subtypes-btn");
+        const subtypesModal = document.getElementById("subtypes-modal");
+        const closeSubtypesModalBtn = document.getElementById("close-subtypes-modal-btn");
+        const newSubtypeInput = document.getElementById("new-subtype-input");
+        const addSubtypeBtn = document.getElementById("add-subtype-btn");
+        const subtypesManagerList = document.getElementById("subtypes-manager-list");
+        const resetSubTypeBtn = document.getElementById("reset-subtype-btn");
         
         const clearAbilityManaBtn = document.getElementById("clear-ability-mana-btn");
         const abilityManaDisplay = document.getElementById("ability-mana-display");
@@ -2725,11 +2821,74 @@
             });
         }
 
+        function populateCardSubTypeSelect() {
+            if (!cardSubTypeSelect) return;
+            const currentValue = state.cardSubType || "";
+            cardSubTypeSelect.innerHTML = '<option value="">-- None --</option>';
+            const sortedSubTypes = [...availableSubTypes].sort((a, b) => a.localeCompare(b));
+            sortedSubTypes.forEach(subtype => {
+                const option = document.createElement("option");
+                option.value = subtype;
+                option.textContent = subtype;
+                cardSubTypeSelect.appendChild(option);
+            });
+            if (currentValue === "" || availableSubTypes.includes(currentValue)) {
+                cardSubTypeSelect.value = currentValue;
+            } else {
+                cardSubTypeSelect.value = "";
+                state.cardSubType = "";
+            }
+        }
+
+        function renderSubTypesManagerList() {
+            if (!subtypesManagerList) return;
+            subtypesManagerList.innerHTML = "";
+            const sortedSubTypes = [...availableSubTypes].sort((a, b) => a.localeCompare(b));
+            sortedSubTypes.forEach(subtype => {
+                const item = document.createElement("div");
+                item.className = "keyword-manager-item";
+                
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = subtype;
+                
+                const controlsDiv = document.createElement("div");
+                controlsDiv.style.display = "flex";
+                controlsDiv.style.alignItems = "center";
+                controlsDiv.style.gap = "12px";
+                
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "delete-keyword-btn";
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.title = `Delete "${subtype}"`;
+                deleteBtn.addEventListener("click", () => {
+                    availableSubTypes = availableSubTypes.filter(s => s !== subtype);
+                    saveAvailableSubTypes();
+                    
+                    if (state.cardSubType === subtype) {
+                        state.cardSubType = "";
+                    }
+                    
+                    renderSubTypesManagerList();
+                    populateCardSubTypeSelect();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+                
+                controlsDiv.appendChild(deleteBtn);
+                item.appendChild(nameSpan);
+                item.appendChild(controlsDiv);
+                subtypesManagerList.appendChild(item);
+            });
+        }
+
         // Set default values from state on load
         function initFormValues() {
             cardNameInput.value = state.cardName;
             populateCardTypeSelect();
             cardTypeSelect.value = state.cardType;
+            populateCardSubTypeSelect();
+            cardSubTypeSelect.value = state.cardSubType || "";
             cardDescriptionInput.value = state.customDescription || "";
             cardDescriptionItalicCheckbox.checked = state.customDescriptionItalic !== false;
             cardTextInput.value = state.rulesText;
@@ -2821,6 +2980,12 @@
             cardTypeSelect.addEventListener("change", (e) => {
                 state.cardType = e.target.value;
                 updateCreatureStatsVisibility();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardSubTypeSelect.addEventListener("change", (e) => {
+                state.cardSubType = e.target.value;
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -3259,6 +3424,30 @@
                 });
             }
 
+            // Manage Card Sub Types modal controls
+            if (manageSubTypesBtn) {
+                manageSubTypesBtn.addEventListener("click", () => {
+                    newSubtypeInput.value = "";
+                    renderSubTypesManagerList();
+                    subtypesModal.classList.add("show");
+                    newSubtypeInput.focus();
+                });
+            }
+
+            if (closeSubtypesModalBtn) {
+                closeSubtypesModalBtn.addEventListener("click", () => {
+                    subtypesModal.classList.remove("show");
+                });
+            }
+
+            if (subtypesModal) {
+                subtypesModal.addEventListener("click", (e) => {
+                    if (e.target === subtypesModal) {
+                        subtypesModal.classList.remove("show");
+                    }
+                });
+            }
+
             // Affirmation Modal event listeners
             if (closeAffirmationModalBtn) {
                 closeAffirmationModalBtn.addEventListener("click", closeAffirmationModal);
@@ -3348,6 +3537,42 @@
                 });
             }
 
+            // Function to handle adding card sub type
+            const handleAddSubType = () => {
+                if (!newSubtypeInput) return;
+                const subtype = newSubtypeInput.value.trim();
+                if (!subtype) return;
+                
+                // Format: Capitalize each word
+                const formattedSubType = subtype.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                
+                if (availableSubTypes.includes(formattedSubType)) {
+                    alert("This card sub type already exists.");
+                    return;
+                }
+                
+                availableSubTypes.push(formattedSubType);
+                availableSubTypes.sort((a, b) => a.localeCompare(b));
+                saveAvailableSubTypes();
+                
+                newSubtypeInput.value = "";
+                renderSubTypesManagerList();
+                populateCardSubTypeSelect();
+            };
+
+            if (addSubtypeBtn) {
+                addSubtypeBtn.addEventListener("click", handleAddSubType);
+            }
+
+            if (newSubtypeInput) {
+                newSubtypeInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddSubType();
+                    }
+                });
+            }
+
             // Mini mana buttons click handler for activated abilities
             document.querySelectorAll(".mini-mana-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -3417,11 +3642,20 @@
             document.getElementById("reset-type-stats-btn").addEventListener("click", () => {
                 state.cardType = "Creature";
                 cardTypeSelect.value = "Creature";
+                state.cardSubType = "";
+                if (cardSubTypeSelect) cardSubTypeSelect.value = "";
                 state.power = "1";
                 cardPowerInput.value = "1";
                 state.toughness = "1";
                 cardToughnessInput.value = "1";
                 updateCreatureStatsVisibility();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            resetSubTypeBtn.addEventListener("click", () => {
+                state.cardSubType = "";
+                if (cardSubTypeSelect) cardSubTypeSelect.value = "";
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -3974,7 +4208,11 @@
             }
             
             // Type Box
-            cardPreviewType.textContent = state.cardType;
+            let fullTypeString = state.cardType;
+            if (state.cardSubType && state.cardSubType.trim()) {
+                fullTypeString += " — " + state.cardSubType;
+            }
+            cardPreviewType.textContent = fullTypeString;
             
             // P/T Box
             const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
@@ -4015,6 +4253,7 @@
             state.borderColor = "black";
             state.manaCost = [];
             state.cardType = "Creature";
+            state.cardSubType = "";
             state.rulesText = "";
             state.customDescription = "";
             state.customDescriptionItalic = true;
@@ -4066,6 +4305,7 @@
                 borderColor: state.borderColor || "black",
                 manaCost: [...state.manaCost],
                 cardType: state.cardType,
+                cardSubType: state.cardSubType || "",
                 hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
@@ -4121,6 +4361,7 @@
             state.borderColor = card.borderColor || "black";
             state.manaCost = mergeColorlessMana(card.manaCost || []);
             state.cardType = card.cardType;
+            state.cardSubType = card.cardSubType || "";
             state.rulesText = card.rulesText || "";
             state.customDescription = card.customDescription || "";
             state.customDescriptionItalic = card.customDescriptionItalic !== false;
@@ -4594,7 +4835,11 @@
 
                 const typeSpan = document.createElement("span");
                 typeSpan.className = "deck-card-type";
-                typeSpan.textContent = card.cardType;
+                let typeString = card.cardType;
+                if (card.cardSubType) {
+                    typeString += " — " + card.cardSubType;
+                }
+                typeSpan.textContent = typeString;
 
                 const manaDiv = document.createElement("div");
                 manaDiv.className = "deck-card-mana";
@@ -4726,6 +4971,7 @@
                     borderColor: card.borderColor || "black",
                     manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                     cardType: card.cardType || "Creature",
+                    cardSubType: card.cardSubType || "",
                     hasPt: card.hasPt !== undefined ? !!card.hasPt : true,
                     rulesText: card.rulesText || "",
                     customDescription: card.customDescription || "",
@@ -4842,6 +5088,7 @@
                 borderColor: card.borderColor || "black",
                 manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                 cardType: cardType,
+                cardSubType: card.cardSubType || "",
                 hasPt: hasPt,
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
@@ -4909,6 +5156,28 @@
             }
         }
 
+        function addImportedCardSubTypesToAvailable(cards) {
+            let updated = false;
+            cards.forEach(card => {
+                if (card.cardSubType) {
+                    const trimmed = card.cardSubType.trim();
+                    if (!trimmed) return;
+                    
+                    const formattedSubType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                    
+                    if (!availableSubTypes.includes(formattedSubType)) {
+                        availableSubTypes.push(formattedSubType);
+                        updated = true;
+                    }
+                }
+            });
+            if (updated) {
+                availableSubTypes.sort((a, b) => a.localeCompare(b));
+                saveAvailableSubTypes();
+                populateCardSubTypeSelect();
+            }
+        }
+
         // Import Deck database from a uploaded JSON file
         function importDeckFromJson(e) {
             const file = e.target.files[0];
@@ -4933,6 +5202,7 @@
                     }
 
                     addImportedCardTypesToAvailable(rawCards);
+                    addImportedCardSubTypesToAvailable(rawCards);
                     state.deck = rawCards.map(normalizeImportedCard);
                     addImportedKeywordsToAvailable(state.deck);
                     saveDeckToStorage();
@@ -5139,8 +5409,12 @@
             tempCtx.fillStyle = "#111111";
             tempCtx.textAlign = "left";
             tempCtx.textBaseline = "middle";
+            let fullTypeString = state.cardType;
+            if (state.cardSubType && state.cardSubType.trim()) {
+                fullTypeString += " — " + state.cardSubType;
+            }
             tempCtx.font = `bold ${Math.round(13 * scale)}px "EB Garamond", serif`;
-            tempCtx.fillText(state.cardType, artX + 8*scale, typeY + (typeH/2));
+            tempCtx.fillText(fullTypeString, artX + 8*scale, typeY + (typeH/2));
             
             // 5. Draw Rules Text Box
             const textBoxY = typeY + typeH + 4*scale;
@@ -5689,6 +5963,7 @@
             setupManaButtonIcons();
             loadAvailableKeywords();
             loadAvailableCardTypes();
+            loadAvailableSubTypes();
             initFormValues();
             initEvents();
             initFilters();
