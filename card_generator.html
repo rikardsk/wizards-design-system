@@ -1684,6 +1684,11 @@
                         <button class="remove-file-btn" id="remove-art-btn" title="Remove art"><i class="fa-solid fa-xmark"></i></button>
                     </div>
 
+                    <div class="input-container" style="margin-top: 12px;">
+                        <label for="card-illustration-input">Illustration Filename</label>
+                        <input type="text" id="card-illustration-input" placeholder="e.g. Tower Ability.png">
+                    </div>
+
                     <!-- Illustration Scale & Rotation Sliders -->
                     <div class="slider-container" style="margin-top: 12px;">
                         <div class="slider-header">
@@ -2164,6 +2169,7 @@
             artRotation: 0,
             artX: 0,
             artY: 0,
+            illustration: "Volcano Elemental.png",
             
             // New state fields
             customDescription: "",
@@ -2523,6 +2529,7 @@
         
         const cardArtDropzone = document.getElementById("card-art-dropzone");
         const cardArtFile = document.getElementById("card-art-file");
+        const cardIllustrationInput = document.getElementById("card-illustration-input");
         const artFilenamePreview = document.getElementById("art-filename-preview");
         const artFilename = document.getElementById("art-filename");
         const removeArtBtn = document.getElementById("remove-art-btn");
@@ -3018,6 +3025,14 @@
                 state.rulesText = e.target.value;
                 updateCardPreview();
                 autoSaveCurrentCard();
+            });
+
+            cardIllustrationInput.addEventListener("input", (e) => {
+                const card = state.deck.find(c => c.id === state.selectedCardId);
+                if (!card) return;
+                card.illustration = e.target.value;
+                autoSaveCurrentCard();
+                loadIllustrationForCard(card);
             });
 
             // Mana Symbols Guide Modal events
@@ -3669,7 +3684,16 @@
                 state.artRotation = 0;
                 state.artX = 0;
                 state.artY = 0;
+                state.illustration = state.cardName + ".png";
+                if (cardIllustrationInput) {
+                    cardIllustrationInput.value = state.illustration;
+                }
                 initFormValues();
+                const card = state.deck.find(c => c.id === state.selectedCardId);
+                if (card) {
+                    card.illustration = state.illustration;
+                    loadIllustrationForCard(card);
+                }
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -4275,6 +4299,10 @@
             
             cardArtFile.value = "";
             artFilenamePreview.style.display = "none";
+            state.illustration = "";
+            if (cardIllustrationInput) {
+                cardIllustrationInput.value = "";
+            }
             
             colorPresetBtns.forEach(b => b.classList.remove("active"));
             const redPreset = document.querySelector('.color-preset-btn[data-style="red"]');
@@ -4320,7 +4348,7 @@
                 keywords: [...(state.keywords || [])],
                 activatedAbilities: JSON.parse(JSON.stringify(state.activatedAbilities || [])),
                 abilityManaSize: state.abilityManaSize !== undefined ? state.abilityManaSize : 14,
-                illustration: cardName + ".png"
+                illustration: state.illustration || (cardName + ".png")
             };
 
             const idx = state.deck.findIndex(c => c.id === state.selectedCardId);
@@ -4380,12 +4408,22 @@
             state.artRotation = 0;
             state.artX = 0;
             state.artY = 0;
+            state.illustration = card.illustration || (card.cardName + ".png");
             
+            // Sync Illustration Filename input value
+            if (cardIllustrationInput) {
+                cardIllustrationInput.value = card.illustration || "";
+            }
+            
+            loadIllustrationForCard(card);
+        }
+
+        function loadIllustrationForCard(card) {
             // Synchronously reset art state so previous card images don't linger
             state.artImage = null;
             state.artFilename = "";
             state.missingArtInfo = null;
-            artFilenamePreview.style.display = "none";
+            if (artFilenamePreview) artFilenamePreview.style.display = "none";
             const artPlaceholderEl = document.getElementById("card-art-placeholder");
             const artPlaceholderTextEl = document.getElementById("card-art-placeholder-text");
             if (artPlaceholderEl) artPlaceholderEl.title = "No illustration selected";
@@ -4401,7 +4439,7 @@
                     state.artImage = img;
                     state.artFilename = "Loaded Art";
                     artFilename.textContent = "Loaded Art";
-                    artFilenamePreview.style.display = "flex";
+                    if (artFilenamePreview) artFilenamePreview.style.display = "flex";
                     
                     const frameW = 347;
                     const frameH = 220;
@@ -4438,6 +4476,7 @@
                         withSpaces + ext,
                         withUnderscores + ext,
                         withHyphens + ext,
+                        base.toLowerCase() + ext,
                         withSpaces.toLowerCase() + ext,
                         withUnderscores.toLowerCase() + ext,
                         withHyphens.toLowerCase() + ext
@@ -4487,7 +4526,7 @@
                         if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = `Missing: ${rawName} (Click Info)`;
                         const artDropzoneEl = document.getElementById("card-art-dropzone");
                         if (artDropzoneEl) artDropzoneEl.title = tooltipMsg;
-                        artFilenamePreview.style.display = "none";
+                        if (artFilenamePreview) artFilenamePreview.style.display = "none";
                         updateCardPreview();
                         return;
                     }
@@ -4503,8 +4542,8 @@
                         state.missingArtInfo = null;
                         if (artPlaceholderEl) artPlaceholderEl.title = rawName;
                         if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = rawName;
-                        artFilename.textContent = rawName;
-                        artFilenamePreview.style.display = "flex";
+                        if (artFilename) artFilename.textContent = rawName;
+                        if (artFilenamePreview) artFilenamePreview.style.display = "flex";
                         const frameW = 347;
                         const frameH = 220;
                         const aspectFrame = frameW / frameH;
