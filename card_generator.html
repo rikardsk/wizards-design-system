@@ -4622,6 +4622,168 @@
                             keywords: ["Trample"],
                             activatedAbilities: [],
                             illustration: "Volcano Elemental.png"
+                        },
+                        {
+                            id: "default_tower_ability_l1",
+                            cardName: "Tower L1 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C3"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Draw 1 card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower Ability.png"
+                        },
+                        {
+                            id: "default_tower_ability_l2",
+                            cardName: "Tower L2 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C2"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Draw 1 card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower Ability.png"
+                        },
+                        {
+                            id: "default_tower_ability_l3",
+                            cardName: "Tower L3 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C3"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Draw 2 cards.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower Ability.png"
+                        },
+                        {
+                            id: "default_tower_ability_l4",
+                            cardName: "Tower L4 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C1"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Draw 1 card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower Ability.png"
+                        },
+                        {
+                            id: "default_wizard_ability_l1",
+                            cardName: "Wizard L1 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C3"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Add a mana of any color.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Wizard Ability.png"
+                        },
+                        {
+                            id: "default_wizard_ability_l2",
+                            cardName: "Wizard L2 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C2"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Add a mana of any color.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Wizard Ability.png"
+                        },
+                        {
+                            id: "default_wizard_ability_l3",
+                            cardName: "Wizard L3 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C3"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Add 2 mana of any color.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Wizard Ability.png"
+                        },
+                        {
+                            id: "default_wizard_ability_l4",
+                            cardName: "Wizard L4 Ability",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["C1"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Add a mana of any color.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Wizard Ability.png"
+                        },
+                        {
+                            id: "default_tower_of_terror_quest",
+                            cardName: "Tower of Terror Quest",
+                            frameStyle: "black",
+                            borderColor: "black",
+                            manaCost: ["B", "B"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Visit the ancient ruins of the Tower of Terror (the old mage tower) to learn about the dark arts.\n\nReward: Receive a monster card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower of Terror Quest.png"
                         }
                     ];
                     saveDeckToStorage();
@@ -4642,6 +4804,189 @@
                     const result = e.target.result;
                     if (result && result.cards) {
                         state.deck = result.cards;
+                        const hasTowerAbilities = state.deck.some(card => card.id && card.id.includes("tower_ability"));
+                        if (!hasTowerAbilities) {
+                            const defaultAbilities = [
+                                {
+                                    id: "default_tower_ability_l1",
+                                    cardName: "Tower L1 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C3"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Draw 1 card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower Ability.png"
+                                },
+                                {
+                                    id: "default_tower_ability_l2",
+                                    cardName: "Tower L2 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C2"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Draw 1 card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower Ability.png"
+                                },
+                                {
+                                    id: "default_tower_ability_l3",
+                                    cardName: "Tower L3 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C3"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Draw 2 cards.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower Ability.png"
+                                },
+                                {
+                                    id: "default_tower_ability_l4",
+                                    cardName: "Tower L4 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C1"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Draw 1 card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower Ability.png"
+                                }
+                            ];
+                            state.deck.push(...defaultAbilities);
+                            saveDeckToStorage();
+                        }
+                        const hasWizardAbilities = state.deck.some(card => card.id && card.id.includes("wizard_ability"));
+                        if (!hasWizardAbilities) {
+                            const defaultWizardAbilities = [
+                                {
+                                    id: "default_wizard_ability_l1",
+                                    cardName: "Wizard L1 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C3"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Add a mana of any color.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Wizard Ability.png"
+                                },
+                                {
+                                    id: "default_wizard_ability_l2",
+                                    cardName: "Wizard L2 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C2"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Add a mana of any color.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Wizard Ability.png"
+                                },
+                                {
+                                    id: "default_wizard_ability_l3",
+                                    cardName: "Wizard L3 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C3"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Add 2 mana of any color.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Wizard Ability.png"
+                                },
+                                {
+                                    id: "default_wizard_ability_l4",
+                                    cardName: "Wizard L4 Ability",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["C1"],
+                                    cardType: "Spell",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Add a mana of any color.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Wizard Ability.png"
+                                }
+                            ];
+                            state.deck.push(...defaultWizardAbilities);
+                            saveDeckToStorage();
+                        }
+                        const hasTowerOfTerrorQuest = state.deck.some(card => card.id && card.id.includes("tower_of_terror_quest"));
+                        if (!hasTowerOfTerrorQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_tower_of_terror_quest",
+                                    cardName: "Tower of Terror Quest",
+                                    frameStyle: "black",
+                                    borderColor: "black",
+                                    manaCost: ["B", "B"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Visit the ancient ruins of the Tower of Terror (the old mage tower) to learn about the dark arts.\n\nReward: Receive a monster card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower of Terror Quest.png"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
                         state.deckName = result.name || "Wizards Deck";
                         deckNameInput.value = state.deckName;
                         renderDeckList();
