@@ -95,7 +95,8 @@ const state = {
     isNewSessionMap: true,                      // Whether this is a new session map
     maps: [],                                   // Saved maps list
     activeFilters: { size: null, players: null }, // Active filter state
-    hiddenTiles: new Set()                          // Tiles hidden from the paint brush palette
+    hiddenTiles: new Set(),                          // Tiles hidden from the paint brush palette
+    quests: []                                      // Active quests configuration (each with name, tileId, x, y)
 };
 
 // UI Elements
@@ -171,6 +172,11 @@ const closeTileVisibilityBtn = document.getElementById("close-tile-visibility-bt
 const tileVisibilityList = document.getElementById("tile-visibility-list");
 const tileVisShowAllBtn = document.getElementById("tile-vis-show-all");
 const tileVisHideAllBtn = document.getElementById("tile-vis-hide-all");
+
+// Settings Quest UI elements
+const addQuestBtn = document.getElementById("add-quest-btn");
+const questsListContainer = document.getElementById("quests-list");
+
 
 // Left Sidebar Toggle Elements
 const leftSidebar = document.getElementById("left-sidebar");
@@ -325,9 +331,155 @@ function setupEventListeners() {
     });
 
     // Settings Modal Listeners
+    let tempQuests = [];
+
+    // Settings tab buttons event handlers
+    document.querySelectorAll(".settings-tab-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.querySelectorAll(".settings-tab-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".settings-tab-content").forEach(c => c.style.display = "none");
+            
+            e.target.classList.add("active");
+            const tabContentId = e.target.getAttribute("data-tab");
+            document.getElementById(tabContentId).style.display = "block";
+        });
+    });
+
+    // Render Quests list inside modal
+    function renderSettingsQuests() {
+        if (!questsListContainer) return;
+        questsListContainer.innerHTML = "";
+        
+        if (tempQuests.length === 0) {
+            const emptyMsg = document.createElement("div");
+            emptyMsg.style.textAlign = "center";
+            emptyMsg.style.padding = "20px";
+            emptyMsg.style.color = "var(--text-muted)";
+            emptyMsg.style.fontSize = "0.85rem";
+            emptyMsg.innerHTML = '<i class="fa-solid fa-folder-open" style="display:block;font-size:1.5rem;margin-bottom:8px;opacity:0.5;"></i> No quests configured yet.';
+            questsListContainer.appendChild(emptyMsg);
+            return;
+        }
+        
+        tempQuests.forEach((quest, index) => {
+            const row = document.createElement("div");
+            row.className = "quest-row";
+            
+            // Quest Name Input
+            const nameInput = document.createElement("input");
+            nameInput.type = "text";
+            nameInput.className = "modal-input quest-name-input";
+            nameInput.value = quest.name;
+            nameInput.placeholder = "Quest Card Name";
+            nameInput.addEventListener("input", (e) => {
+                tempQuests[index].name = e.target.value;
+            });
+            
+            // Tile Select dropdown
+            const tileSelect = document.createElement("select");
+            tileSelect.className = "quest-tile-select";
+            TILE_MANIFEST.forEach(tile => {
+                const opt = document.createElement("option");
+                opt.value = tile.id;
+                opt.textContent = tile.label;
+                tileSelect.appendChild(opt);
+            });
+            tileSelect.value = quest.tileId;
+            tileSelect.addEventListener("change", (e) => {
+                tempQuests[index].tileId = e.target.value;
+            });
+            
+            // X (Col) input
+            const xContainer = document.createElement("div");
+            xContainer.className = "quest-coord-container";
+            const xLabel = document.createElement("span");
+            xLabel.className = "quest-coord-label";
+            xLabel.textContent = "Col:";
+            const xInput = document.createElement("input");
+            xInput.type = "number";
+            xInput.className = "modal-input quest-coord-input quest-x-input";
+            xInput.value = quest.x;
+            xInput.min = 0;
+            xInput.max = state.cols - 1;
+            xInput.addEventListener("input", (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 0) val = 0;
+                if (val >= state.cols) val = state.cols - 1;
+                tempQuests[index].x = val;
+            });
+            xContainer.appendChild(xLabel);
+            xContainer.appendChild(xInput);
+            
+            // Y (Row) input
+            const yContainer = document.createElement("div");
+            yContainer.className = "quest-coord-container";
+            const yLabel = document.createElement("span");
+            yLabel.className = "quest-coord-label";
+            yLabel.textContent = "Row:";
+            const yInput = document.createElement("input");
+            yInput.type = "number";
+            yInput.className = "modal-input quest-coord-input quest-y-input";
+            yInput.value = quest.y;
+            yInput.min = 0;
+            yInput.max = state.rows - 1;
+            yInput.addEventListener("input", (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 0) val = 0;
+                if (val >= state.rows) val = state.rows - 1;
+                tempQuests[index].y = val;
+            });
+            yContainer.appendChild(yLabel);
+            yContainer.appendChild(yInput);
+            
+            // Delete button
+            const delBtn = document.createElement("button");
+            delBtn.className = "delete-quest-btn";
+            delBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+            delBtn.title = "Delete Quest";
+            delBtn.addEventListener("click", () => {
+                tempQuests.splice(index, 1);
+                renderSettingsQuests();
+            });
+            
+            row.appendChild(nameInput);
+            row.appendChild(tileSelect);
+            row.appendChild(xContainer);
+            row.appendChild(yContainer);
+            row.appendChild(delBtn);
+            
+            questsListContainer.appendChild(row);
+        });
+    }
+
+    // Add New Quest button listener
+    if (addQuestBtn) {
+        addQuestBtn.addEventListener("click", () => {
+            tempQuests.push({ name: "", tileId: "Tower of terror", x: 0, y: 0 });
+            renderSettingsQuests();
+            setTimeout(() => {
+                if (questsListContainer) {
+                    questsListContainer.scrollTop = questsListContainer.scrollHeight;
+                }
+            }, 50);
+        });
+    }
+
     gridSettingsBtn.addEventListener("click", () => {
         maxColsInput.value = state.maxCols;
         maxRowsInput.value = state.maxRows;
+        
+        // Reset tabs in modal to active "Grid Limits"
+        document.querySelectorAll(".settings-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".settings-tab-content").forEach(c => c.style.display = "none");
+        const defaultTabBtn = document.querySelector('.settings-tab-btn[data-tab="grid-tab"]');
+        if (defaultTabBtn) defaultTabBtn.classList.add("active");
+        const defaultTabContent = document.getElementById("grid-tab");
+        if (defaultTabContent) defaultTabContent.style.display = "block";
+        
+        // Load copy of state quests to temp
+        tempQuests = JSON.parse(JSON.stringify(state.quests || []));
+        renderSettingsQuests();
+        
         settingsModal.style.display = "flex";
     });
 
@@ -370,6 +522,21 @@ function setupEventListeners() {
             rowsVal.value = state.rows;
             rowsSlider.value = state.rows;
         }
+        
+        // Save Quests from temp, filtering empty names and out-of-bound coords
+        const validatedQuests = [];
+        tempQuests.forEach(q => {
+            const name = (q.name || "").trim();
+            if (!name) return;
+            let x = parseInt(q.x) || 0;
+            let y = parseInt(q.y) || 0;
+            if (x < 0) x = 0;
+            if (x >= state.cols) x = state.cols - 1;
+            if (y < 0) y = 0;
+            if (y >= state.rows) y = state.rows - 1;
+            validatedQuests.push({ name, tileId: q.tileId, x, y });
+        });
+        state.quests = validatedQuests;
         
         // Regenerate or resize the map grid
         if (state.mode === "auto") {
@@ -1068,47 +1235,66 @@ function chooseTerrainByNoise(val) {
     }
 }
 
+// Apply configured quest tiles at their locations
+function enforceQuestTiles() {
+    if (!state.quests || state.quests.length === 0) return;
+    state.quests.forEach(quest => {
+        const c = quest.x;
+        const r = quest.y;
+        if (c >= 0 && c < state.cols && r >= 0 && r < state.rows) {
+            if (!state.mapData[c]) {
+                state.mapData[c] = [];
+            }
+            state.mapData[c][r] = quest.tileId;
+        }
+    });
+}
+
 // Apply Wizards Towers to the start cells
 function enforceStartTowers() {
     if (state.cols === 0 || state.rows === 0) return;
-    if (state.manualTowers) return; // Do nothing if towers are manual
     
-    // Clear existing Wizards Tower L1 starting locations first
-    for (let c = 0; c < state.cols; c++) {
-        for (let r = 0; r < state.rows; r++) {
-            if (state.mapData[c]?.[r] === "Wizards Tower L1") {
-                state.mapData[c][r] = "Grass";
+    if (!state.manualTowers) {
+        // Clear existing Wizards Tower L1 starting locations first
+        for (let c = 0; c < state.cols; c++) {
+            for (let r = 0; r < state.rows; r++) {
+                if (state.mapData[c]?.[r] === "Wizards Tower L1") {
+                    state.mapData[c][r] = "Grass";
+                }
             }
         }
-    }
-    
-    const midRow = Math.floor(state.rows / 2);
-    const midCol = Math.floor(state.cols / 2);
-    
-    if (state.playerCount === 2) {
-        if (state.startVertical) {
+        
+        const midRow = Math.floor(state.rows / 2);
+        const midCol = Math.floor(state.cols / 2);
+        
+        if (state.playerCount === 2) {
+            if (state.startVertical) {
+                state.mapData[0][midRow] = "Wizards Tower L1";
+                state.mapData[state.cols - 1][midRow] = "Wizards Tower L1";
+            } else {
+                state.mapData[midCol][0] = "Wizards Tower L1";
+                state.mapData[midCol][state.rows - 1] = "Wizards Tower L1";
+            }
+        } else if (state.playerCount === 3) {
+            if (state.startVertical) {
+                state.mapData[0][midRow] = "Wizards Tower L1";
+                state.mapData[state.cols - 1][midRow] = "Wizards Tower L1";
+                state.mapData[midCol][0] = "Wizards Tower L1";
+            } else {
+                state.mapData[midCol][0] = "Wizards Tower L1";
+                state.mapData[midCol][state.rows - 1] = "Wizards Tower L1";
+                state.mapData[0][midRow] = "Wizards Tower L1";
+            }
+        } else if (state.playerCount === 4) {
             state.mapData[0][midRow] = "Wizards Tower L1";
             state.mapData[state.cols - 1][midRow] = "Wizards Tower L1";
-        } else {
             state.mapData[midCol][0] = "Wizards Tower L1";
             state.mapData[midCol][state.rows - 1] = "Wizards Tower L1";
         }
-    } else if (state.playerCount === 3) {
-        if (state.startVertical) {
-            state.mapData[0][midRow] = "Wizards Tower L1";
-            state.mapData[state.cols - 1][midRow] = "Wizards Tower L1";
-            state.mapData[midCol][0] = "Wizards Tower L1";
-        } else {
-            state.mapData[midCol][0] = "Wizards Tower L1";
-            state.mapData[midCol][state.rows - 1] = "Wizards Tower L1";
-            state.mapData[0][midRow] = "Wizards Tower L1";
-        }
-    } else if (state.playerCount === 4) {
-        state.mapData[0][midRow] = "Wizards Tower L1";
-        state.mapData[state.cols - 1][midRow] = "Wizards Tower L1";
-        state.mapData[midCol][0] = "Wizards Tower L1";
-        state.mapData[midCol][state.rows - 1] = "Wizards Tower L1";
     }
+    
+    // Always enforce quest tiles placement
+    enforceQuestTiles();
 }
 
 // Resize manual grid keeping existing painted tiles
@@ -1554,7 +1740,15 @@ function handleMouseMove(e) {
                 if (displayLabel.startsWith("Forrest")) {
                     displayLabel = displayLabel.replace("Forrest", "Forest");
                 }
-                mapTooltip.innerHTML = `<strong>${displayLabel}</strong><br><span style="color: var(--text-muted); font-size: 0.65rem;">Col: ${cell.col}, Row: ${cell.row}</span>`;
+                
+                const quest = state.quests?.find(q => q.x === cell.col && q.y === cell.row);
+                let tooltipHtml = `<strong>${displayLabel}</strong>`;
+                if (quest) {
+                    tooltipHtml = `<strong style="color: var(--accent-gold);">${quest.name}</strong><br><span style="font-size: 0.75rem; color: #fff;">(Tile: ${displayLabel})</span>`;
+                }
+                tooltipHtml += `<br><span style="color: var(--text-muted); font-size: 0.65rem;">Col: ${cell.col}, Row: ${cell.row}</span>`;
+                
+                mapTooltip.innerHTML = tooltipHtml;
                 mapTooltip.style.display = "block";
             } else {
                 coordinatesDisplay.textContent = "Hover a tile to see coordinates";
@@ -1876,7 +2070,8 @@ function saveMapJSON() {
         maxRows: state.maxRows,
         playerCount: state.playerCount,
         playerStartCells: state.playerStartCells,
-        mapData: state.mapData
+        mapData: state.mapData,
+        quests: state.quests || []
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -1919,6 +2114,7 @@ function loadMapJSON(event) {
             state.playerCount = data.playerCount !== undefined ? parseInt(data.playerCount) : 2;
             state.playerStartCells = data.playerStartCells !== undefined ? data.playerStartCells : [null, null, null, null];
             state.mapData = data.mapData;
+            state.quests = data.quests !== undefined ? data.quests : [];
             
             // Extract map name from file name
             const fileName = file.name;
@@ -1952,6 +2148,7 @@ function loadMapJSON(event) {
                 playerCount: state.playerCount,
                 playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
                 mapData: JSON.parse(JSON.stringify(state.mapData)),
+                quests: JSON.parse(JSON.stringify(state.quests)),
                 lastModified: Date.now()
             };
             state.maps.unshift(newMap);
@@ -2722,6 +2919,7 @@ function autoSaveCurrentMap() {
                     playerCount: state.playerCount,
                     playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
                     mapData: JSON.parse(JSON.stringify(state.mapData)),
+                    quests: JSON.parse(JSON.stringify(state.quests)),
                     lastModified: Date.now()
                 };
             }
@@ -2747,6 +2945,7 @@ function autoSaveCurrentMap() {
                         playerCount: state.playerCount,
                         playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
                         mapData: JSON.parse(JSON.stringify(state.mapData)),
+                        quests: JSON.parse(JSON.stringify(state.quests)),
                         lastModified: Date.now()
                     };
                 }
@@ -2771,6 +2970,7 @@ function autoSaveCurrentMap() {
                     playerCount: state.playerCount,
                     playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
                     mapData: JSON.parse(JSON.stringify(state.mapData)),
+                    quests: JSON.parse(JSON.stringify(state.quests)),
                     lastModified: Date.now()
                 };
                 state.maps.unshift(newMap);
@@ -2894,6 +3094,7 @@ function loadMapDetails(id) {
     state.playerCount = map.playerCount !== undefined ? parseInt(map.playerCount) : 2;
     state.playerStartCells = map.playerStartCells !== undefined ? JSON.parse(JSON.stringify(map.playerStartCells)) : [null, null, null, null];
     state.mapData = JSON.parse(JSON.stringify(map.mapData));
+    state.quests = map.quests !== undefined ? JSON.parse(JSON.stringify(map.quests)) : [];
     
     // Sync UI elements
     colsSlider.max = state.maxCols;

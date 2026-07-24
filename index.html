@@ -399,20 +399,37 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content glass-panel">
+        <div class="modal-content glass-panel" style="width: 550px;">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-gear"></i> Grid Limits Settings</h2>
+                <h2><i class="fa-solid fa-gear"></i> Map & Quest Settings</h2>
                 <button id="close-modal-btn" class="icon-btn close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-description">Set the maximum limits for the grid width (columns) and height (rows) sliders.</p>
-                <div class="input-container">
-                    <label for="max-cols-input">Max Columns Limit</label>
-                    <input type="number" id="max-cols-input" class="modal-input" value="30" min="3" max="100">
+                <div class="settings-tabs">
+                    <button class="settings-tab-btn active" data-tab="grid-tab">Grid Limits</button>
+                    <button class="settings-tab-btn" data-tab="quests-tab">Quests</button>
                 </div>
-                <div class="input-container">
-                    <label for="max-rows-input">Max Rows Limit</label>
-                    <input type="number" id="max-rows-input" class="modal-input" value="30" min="3" max="100">
+                
+                <div class="settings-tab-content active" id="grid-tab">
+                    <p class="modal-description">Set the maximum limits for the grid width (columns) and height (rows) sliders.</p>
+                    <div class="input-container">
+                        <label for="max-cols-input">Max Columns Limit</label>
+                        <input type="number" id="max-cols-input" class="modal-input" value="30" min="3" max="100">
+                    </div>
+                    <div class="input-container">
+                        <label for="max-rows-input">Max Rows Limit</label>
+                        <input type="number" id="max-rows-input" class="modal-input" value="30" min="3" max="100">
+                    </div>
+                </div>
+                
+                <div class="settings-tab-content" id="quests-tab" style="display: none;">
+                    <p class="modal-description">Configure quest cards, their target map tiles, and their placement coordinates.</p>
+                    <div class="quests-manager">
+                        <div id="quests-list" class="quests-list-container">
+                            <!-- Dynamically populated quest rows -->
+                        </div>
+                        <button id="add-quest-btn" class="secondary-btn btn-sm"><i class="fa-solid fa-plus"></i> Add New Quest</button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
