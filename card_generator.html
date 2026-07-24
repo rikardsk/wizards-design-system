@@ -1654,6 +1654,18 @@
                         </select>
                     </div>
 
+                    <!-- Target select row for Spell (Dynamic visibility) -->
+                    <div class="input-container" id="spell-target-row" style="display: none;">
+                        <label for="card-target-select">Target</label>
+                        <select id="card-target-select">
+                            <option value="">-- None --</option>
+                            <option value="Creature">Creature</option>
+                            <option value="Land">Land</option>
+                            <option value="Tower">Tower</option>
+                            <option value="Wizard">Wizard</option>
+                        </select>
+                    </div>
+
                     <!-- Creature Stats row (Dynamic visibility) -->
                     <div class="input-row" id="creature-stats-row">
                         <div class="input-container">
@@ -2178,6 +2190,7 @@
             activatedAbilities: [],
             tempAbilityManaCost: [],
             abilityManaSize: 14,
+            target: "",
             
             // Full deck database
             deck: [],
@@ -2512,6 +2525,8 @@
         const cardNameInput = document.getElementById("card-name-input");
         const cardTypeSelect = document.getElementById("card-type-select");
         const cardSubTypeSelect = document.getElementById("card-subtype-select");
+        const cardTargetSelect = document.getElementById("card-target-select");
+        const spellTargetRow = document.getElementById("spell-target-row");
         const cardPowerInput = document.getElementById("card-power-input");
         const cardToughnessInput = document.getElementById("card-toughness-input");
         const cardDescriptionInput = document.getElementById("card-description-input");
@@ -2896,6 +2911,7 @@
             cardTypeSelect.value = state.cardType;
             populateCardSubTypeSelect();
             cardSubTypeSelect.value = state.cardSubType || "";
+            cardTargetSelect.value = state.target || "";
             cardDescriptionInput.value = state.customDescription || "";
             cardDescriptionItalicCheckbox.checked = state.customDescriptionItalic !== false;
             cardTextInput.value = state.rulesText;
@@ -2993,6 +3009,12 @@
 
             cardSubTypeSelect.addEventListener("change", (e) => {
                 state.cardSubType = e.target.value;
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            cardTargetSelect.addEventListener("change", (e) => {
+                state.target = e.target.value;
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -3861,7 +3883,7 @@
             reader.readAsDataURL(file);
         }
 
-        // Toggle P/T input visibility
+        // Toggle P/T and Spell Target input visibility
         function updateCreatureStatsVisibility() {
             const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
             const hasPt = currentTypeObj ? currentTypeObj.hasPt : (state.cardType === "Creature" || state.cardType === "Tower");
@@ -3869,6 +3891,12 @@
                 creatureStatsRow.style.display = "flex";
             } else {
                 creatureStatsRow.style.display = "none";
+            }
+            
+            if (state.cardType === "Spell") {
+                spellTargetRow.style.display = "block";
+            } else {
+                spellTargetRow.style.display = "none";
             }
         }
 
@@ -4277,6 +4305,7 @@
             state.borderColor = "black";
             state.manaCost = [];
             state.cardType = "Creature";
+            state.target = "";
             state.cardSubType = "";
             state.rulesText = "";
             state.customDescription = "";
@@ -4334,6 +4363,7 @@
                 manaCost: [...state.manaCost],
                 cardType: state.cardType,
                 cardSubType: state.cardSubType || "",
+                target: state.target || "",
                 hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
@@ -4390,6 +4420,7 @@
             state.manaCost = mergeColorlessMana(card.manaCost || []);
             state.cardType = card.cardType;
             state.cardSubType = card.cardSubType || "";
+            state.target = (card.target === "None" ? "" : (card.target || ""));
             state.rulesText = card.rulesText || "";
             state.customDescription = card.customDescription || "";
             state.customDescriptionItalic = card.customDescriptionItalic !== false;
@@ -5333,6 +5364,7 @@
                 borderColor: state.borderColor || "black",
                 manaCost: [...(state.manaCost || [])],
                 cardType: state.cardType || "Creature",
+                target: state.target || "",
                 hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
@@ -5381,6 +5413,7 @@
                     manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                     cardType: card.cardType || "Creature",
                     cardSubType: card.cardSubType || "",
+                    target: card.target || "",
                     hasPt: card.hasPt !== undefined ? !!card.hasPt : true,
                     rulesText: card.rulesText || "",
                     customDescription: card.customDescription || "",
@@ -5511,6 +5544,7 @@
                 manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
                 cardType: cardType,
                 cardSubType: card.cardSubType || "",
+                target: (card.target === "None" ? "" : (card.target || "")),
                 hasPt: hasPt,
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
