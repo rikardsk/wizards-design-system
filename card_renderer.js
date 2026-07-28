@@ -611,19 +611,6 @@
                 // Use preloaded image directly
                 renderCardToCanvasCtx(cardData, ctx, w, h, options.artImage);
                 resolve(canvas);
-            } else if (cardData.artBase64) {
-                // Load base64 art asynchronously
-                const img = new Image();
-                img.onload = function () {
-                    renderCardToCanvasCtx(cardData, ctx, w, h, img);
-                    resolve(canvas);
-                };
-                img.onerror = function () {
-                    // Draw without image if failed to load
-                    renderCardToCanvasCtx(cardData, ctx, w, h, null);
-                    resolve(canvas);
-                };
-                img.src = cardData.artBase64;
             } else {
                 // No illustration
                 renderCardToCanvasCtx(cardData, ctx, w, h, null);

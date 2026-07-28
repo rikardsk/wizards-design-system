@@ -1024,6 +1024,108 @@
             gap: 8px;
         }
 
+        /* Image Loading Toggle */
+        .img-loading-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            margin: 8px 0 0 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            gap: 8px;
+        }
+
+        .img-loading-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .img-loading-toggle-label i {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+        }
+
+        /* Toggle switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            transition: background 0.25s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: transform 0.25s, background 0.25s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: rgba(226, 183, 71, 0.3);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(16px);
+            background: var(--accent-gold);
+        }
+
+        /* Per-card load image button */
+        .deck-card-load-img-btn {
+            background: none;
+            border: 1px solid rgba(226, 183, 71, 0.25);
+            color: var(--accent-gold);
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 0.68rem;
+            border-radius: 5px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .deck-card-load-img-btn:hover {
+            background: rgba(226, 183, 71, 0.12);
+            border-color: var(--accent-gold);
+            opacity: 1;
+        }
+
+        .deck-card-load-img-btn.loaded {
+            color: #6fcf6f;
+            border-color: rgba(111, 207, 111, 0.3);
+            opacity: 1;
+            cursor: default;
+        }
+
         .deck-card-row {
             display: flex;
             align-items: center;
@@ -1241,6 +1343,32 @@
 
         .filter-buttons.has-active .type-filter-btn:not(.active):hover {
             opacity: 0.7;
+        }
+        
+        .subtype-filter-select {
+            width: 100%;
+            padding: 5px 8px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .subtype-filter-select:focus,
+        .subtype-filter-select:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .subtype-filter-select option {
+            background: #18181c;
+            color: var(--text-main);
+            padding: 4px 8px;
         }
         
         .clear-filters-btn {
@@ -1906,6 +2034,16 @@
                 <i class="fa-solid fa-folder-open logo-icon"></i>
                 <h2>Deck Manager</h2>
                 <p id="deck-count">0 Cards in Deck</p>
+                <div class="img-loading-toggle-row">
+                    <label class="img-loading-toggle-label" for="img-loading-toggle">
+                        <i class="fa-solid fa-image"></i>
+                        Load Images
+                    </label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="img-loading-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
             </div>
             
             <div class="control-sections">
@@ -1939,6 +2077,15 @@
                         <div class="filter-buttons" id="type-filters-container">
                             <!-- Dynamically generated type filter buttons -->
                         </div>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Subtype</span>
+                            <button class="clear-filters-btn" id="clear-subtype-filters-btn">Clear</button>
+                        </div>
+                        <select id="subtype-filter-select" class="subtype-filter-select">
+                            <option value="">All Subtypes</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2197,7 +2344,10 @@
             selectedCardId: null, // If editing a card, its ID
 
             // Viewport configuration
-            canvasBackground: "dark"
+            canvasBackground: "dark",
+
+            // Performance: global image loading toggle
+            imageLoadingEnabled: localStorage.getItem("wizards_imageLoadingEnabled") !== "false"
         };
 
         // Initialize Coloris Color Picker library settings
@@ -3049,12 +3199,20 @@
                 autoSaveCurrentCard();
             });
 
+            let _illustrationLoadTimer = null;
             cardIllustrationInput.addEventListener("input", (e) => {
+                const val = e.target.value;
+                // Update state immediately so it's correct when save fires
+                state.illustration = val;
                 const card = state.deck.find(c => c.id === state.selectedCardId);
-                if (!card) return;
-                card.illustration = e.target.value;
-                autoSaveCurrentCard();
-                loadIllustrationForCard(card);
+                if (card) card.illustration = val;
+
+                // Debounce both the image fetch and the save — no point firing on every keystroke
+                clearTimeout(_illustrationLoadTimer);
+                _illustrationLoadTimer = setTimeout(() => {
+                    autoSaveCurrentCard();
+                    if (card) loadIllustrationForCard(card);
+                }, 500);
             });
 
             // Mana Symbols Guide Modal events
@@ -3253,13 +3411,13 @@
                 state.artScale = parseInt(e.target.value) / 100;
                 artScaleVal.textContent = `${e.target.value}%`;
                 updateCardPreview();
-                autoSaveCurrentCard();
+                debouncedAutoSave();
             });
             artRotateSlider.addEventListener("input", (e) => {
                 state.artRotation = parseInt(e.target.value);
                 artRotateVal.textContent = `${e.target.value}°`;
                 updateCardPreview();
-                autoSaveCurrentCard();
+                debouncedAutoSave();
             });
 
             // Ability Mana Size Slider
@@ -3267,7 +3425,7 @@
                 state.abilityManaSize = parseInt(e.target.value);
                 abilityManaSizeVal.textContent = `${e.target.value}px`;
                 updateCardPreview();
-                autoSaveCurrentCard();
+                debouncedAutoSave();
             });
 
             // Increment/Decrement buttons for all sliders
@@ -3319,7 +3477,10 @@
                 const dy = e.clientY - startY;
                 state.artX = startOffsetX + dx;
                 state.artY = startOffsetY + dy;
-                updateCardPreview();
+                // Only update the transform — don't call updateCardPreview() which rebuilds the entire card DOM
+                if (cardPreviewArt) {
+                    cardPreviewArt.style.transform = `translate(${state.artX}px, ${state.artY}px) rotate(${state.artRotation || 0}deg) scale(${state.artScale || 1.0})`;
+                }
             });
 
             window.addEventListener("mouseup", () => {
@@ -4278,7 +4439,10 @@
             
             // Card Art Image
             if (state.artImage) {
-                cardPreviewArt.src = state.artImage.src;
+                // Only reassign .src when the image actually changes — setting a large base64 src on every frame is expensive
+                if (cardPreviewArt.src !== state.artImage.src) {
+                    cardPreviewArt.src = state.artImage.src;
+                }
                 cardPreviewArt.style.display = "block";
                 cardArtPlaceholder.style.display = "none";
                 cardPreviewArt.style.transform = `translate(${state.artX || 0}px, ${state.artY || 0}px) rotate(${state.artRotation || 0}deg) scale(${state.artScale || 1.0})`;
@@ -4343,6 +4507,13 @@
             showToast("Form reset. Start typing a Card Name to create a new card!");
         }
 
+        // Debounced save — used by sliders to avoid writing to IndexedDB on every tick
+        let _autoSaveTimer = null;
+        function debouncedAutoSave() {
+            clearTimeout(_autoSaveTimer);
+            _autoSaveTimer = setTimeout(() => autoSaveCurrentCard(), 600);
+        }
+
         // Auto-save card to Local Deck Database
         function autoSaveCurrentCard() {
             // If we are creating a new card and have no name yet, don't save.
@@ -4370,7 +4541,6 @@
                 customDescriptionItalic: state.customDescriptionItalic !== false,
                 power: state.power || "1",
                 toughness: state.toughness || "1",
-                artBase64: state.artImage ? state.artImage.src : "",
                 artScale: state.artScale !== undefined ? state.artScale : 1.0,
                 artRotation: state.artRotation !== undefined ? state.artRotation : 0,
                 artX: state.artX !== undefined ? state.artX : 0,
@@ -4389,7 +4559,22 @@
             }
 
             saveDeckToStorage();
-            renderDeckList();
+            // Only patch the affected row in-place rather than rebuilding the entire deck list
+            patchDeckListRow(cardData);
+        }
+
+        // Surgically update a single deck list row without rebuilding the whole list
+        function patchDeckListRow(card) {
+            const row = deckListContainer.querySelector(`.deck-card-row[data-card-id="${card.id}"]`);
+            if (!row) return;
+            const nameSpan = row.querySelector(".deck-card-name");
+            const typeSpan = row.querySelector(".deck-card-type");
+            if (nameSpan) nameSpan.textContent = card.cardName;
+            if (typeSpan) {
+                let typeStr = card.cardType;
+                if (card.cardSubType) typeStr += " — " + card.cardSubType;
+                typeSpan.textContent = typeStr;
+            }
         }
 
         // Delete card from deck
@@ -4447,9 +4632,48 @@
             }
             
             loadIllustrationForCard(card);
+
+            // (Real-time auto-saving active)
+            // Update inputs and deck list immediately after initiating image load
+            initFormValues();
+            renderDeckList();
+            showToast("Loaded card for editing!");
         }
 
-        function loadIllustrationForCard(card) {
+        function loadIllustrationForCard(card, forceLoad = false) {
+            // If image loading is globally disabled and this isn't a manual per-card load, skip.
+            if (!state.imageLoadingEnabled && !forceLoad) {
+                state.artImage = null;
+                state.artFilename = "";
+                state.missingArtInfo = null;
+                if (artFilenamePreview) artFilenamePreview.style.display = "none";
+                const artPlaceholderEl = document.getElementById("card-art-placeholder");
+                const artPlaceholderTextEl = document.getElementById("card-art-placeholder-text");
+                if (artPlaceholderEl) {
+                    artPlaceholderEl.title = "Image loading is disabled. Enable it in the Deck Manager.";
+                    artPlaceholderEl.style.cursor = "default";
+                }
+                if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = "Images Disabled";
+                updateCardPreview();
+                // Sync load-img button state in deck list
+                const loadBtn = document.querySelector(`.deck-card-load-img-btn[data-card-id="${card.id}"]`);
+                if (loadBtn && !loadBtn.classList.contains("loaded")) {
+                    loadBtn.title = "Click to load this card\'s image";
+                }
+                return;
+            }
+
+            // Mark the per-card load button as loading
+            const existingLoadBtn = document.querySelector(`.deck-card-load-img-btn[data-card-id="${card.id}"]`);
+            if (existingLoadBtn) {
+                existingLoadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+
+            // Delegate to the actual implementation
+            _loadIllustrationForCardImpl(card);
+        }
+
+        function _loadIllustrationForCardImpl(card) {
             // Synchronously reset art state so previous card images don't linger
             state.artImage = null;
             state.artFilename = "";
@@ -4462,84 +4686,59 @@
 
             const targetIllustration = card.illustration || (card.cardName + ".png");
 
-            // Load art image
-            if (card.artBase64) {
-                const img = new Image();
-                img.onload = () => {
-                    if (state.selectedCardId !== card.id) return;
-                    state.artImage = img;
-                    state.artFilename = "Loaded Art";
-                    artFilename.textContent = "Loaded Art";
-                    if (artFilenamePreview) artFilenamePreview.style.display = "flex";
-                    
-                    const frameW = 347;
-                    const frameH = 220;
-                    const aspectFrame = frameW / frameH;
-                    const aspectImg = img.width / img.height;
-                    
-                    if (aspectImg > aspectFrame) {
-                        cardPreviewArt.style.height = "100%";
-                        cardPreviewArt.style.width = "auto";
-                    } else {
-                        cardPreviewArt.style.width = "100%";
-                        cardPreviewArt.style.height = "auto";
-                    }
-                    
-                    checkImageTransparency(img);
-                    updateCardPreview();
-                };
-                img.src = card.artBase64;
-            } else if (targetIllustration) {
+            // Callbacks to update per-card load button state in the deck list
+            const _markCardLoaded = (cardId) => {
+                const btn = document.querySelector(`.deck-card-load-img-btn[data-card-id="${cardId}"]`);
+                if (!btn) return;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                btn.classList.add("loaded");
+                btn.title = "Image loaded";
+                btn.disabled = true;
+            };
+
+            const _markCardMissing = (cardId) => {
+                const btn = document.querySelector(`.deck-card-load-img-btn[data-card-id="${cardId}"]`);
+                if (!btn) return;
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                btn.title = "Image file not found";
+                btn.style.color = "var(--danger)";
+                btn.style.borderColor = "rgba(239,68,68,0.3)";
+                btn.disabled = true;
+            };
+
+            // Load art image from file path
+            if (targetIllustration) {
                 const rawName = decodeURIComponent(targetIllustration.replace(/^.*[\\\/]/, ''));
                 const cleanName = card.cardName ? (card.cardName + ".png") : rawName;
-                
-                const getVariants = (nameStr) => {
-                    if (!nameStr) return [];
-                    const extMatch = nameStr.match(/\.[a-z0-9]+$/i);
-                    const ext = extMatch ? extMatch[0] : '.png';
-                    const base = nameStr.replace(/\.[a-z0-9]+$/i, '');
-                    const withSpaces = base.replace(/[_]/g, ' ').replace(/-/g, ' ');
-                    const withUnderscores = base.replace(/\s+/g, '_').replace(/-/g, '_');
-                    const withHyphens = base.replace(/\s+/g, '-').replace(/_/g, '-');
-                    return [
-                        nameStr,
-                        base + ext,
-                        withSpaces + ext,
-                        withUnderscores + ext,
-                        withHyphens + ext,
-                        base.toLowerCase() + ext,
-                        withSpaces.toLowerCase() + ext,
-                        withUnderscores.toLowerCase() + ext,
-                        withHyphens.toLowerCase() + ext
-                    ];
+
+                // Helper: given a path, return variants trying the current extension first, then other extensions (.jpg, .png, .jpeg)
+                const withVariants = (pathStr) => {
+                    if (/\.(png|jpg|jpeg|webp)$/i.test(pathStr)) {
+                        const base = pathStr.replace(/\.(png|jpg|jpeg|webp)$/i, "");
+                        const ext = pathStr.match(/\.(png|jpg|jpeg|webp)$/i)[0].toLowerCase();
+                        const exts = [ext, ".png", ".jpg", ".jpeg", ".webp"];
+                        return Array.from(new Set(exts.map(e => base + e)));
+                    } else {
+                        return [pathStr + ".png", pathStr + ".jpg", pathStr + ".jpeg", pathStr];
+                    }
                 };
 
-                const nameVariants = Array.from(new Set([
-                    ...getVariants(targetIllustration),
-                    ...getVariants(rawName),
-                    ...getVariants(cleanName)
-                ]));
+                // Try creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
+                const basePaths = [
+                    ...withVariants(`creatures/${rawName}`),
+                    ...withVariants(`spells/${rawName}`),
+                    ...withVariants(rawName),
+                ];
+                // If illustration field differs from card name, also try card-name variant
+                if (cleanName !== rawName) {
+                    basePaths.push(
+                        ...withVariants(`creatures/${cleanName}`),
+                        ...withVariants(`spells/${cleanName}`),
+                        ...withVariants(cleanName)
+                    );
+                }
 
-                const folders = ['', 'creatures/', 'spells/', 'assets/', 'creatures small/', 'assets/creatures/', 'assets/spells/'];
-                const basePaths = [];
-                folders.forEach(f => {
-                    nameVariants.forEach(v => {
-                        basePaths.push(f + v);
-                    });
-                });
-                
-                const sources = [];
-                basePaths.forEach(p => {
-                    if (!p) return;
-                    const cleanP = p.replace(/^\.\//, '');
-                    if (!sources.includes(cleanP)) sources.push(cleanP);
-                    const encP = encodeURI(cleanP);
-                    if (!sources.includes(encP)) sources.push(encP);
-                    const dotP = `./${cleanP}`;
-                    if (!sources.includes(dotP)) sources.push(dotP);
-                    const dotEncP = `./${encP}`;
-                    if (!sources.includes(dotEncP)) sources.push(dotEncP);
-                });
+                const sources = Array.from(new Set(basePaths.filter(Boolean)));
                 
                 let srcIndex = 0;
                 let triedCORS = false;
@@ -4559,6 +4758,7 @@
                         if (artDropzoneEl) artDropzoneEl.title = tooltipMsg;
                         if (artFilenamePreview) artFilenamePreview.style.display = "none";
                         updateCardPreview();
+                        _markCardMissing(card.id);
                         return;
                     }
                     const currentSrc = sources[srcIndex];
@@ -4569,11 +4769,23 @@
                     altImg.onload = () => {
                         if (state.selectedCardId !== card.id) return;
                         state.artImage = altImg;
-                        state.artFilename = rawName;
                         state.missingArtInfo = null;
-                        if (artPlaceholderEl) artPlaceholderEl.title = rawName;
-                        if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = rawName;
-                        if (artFilename) artFilename.textContent = rawName;
+
+                        const loadedFilename = currentSrc.split("?")[0].replace(/^.*[\\\/]/, '');
+                        const displayFilename = loadedFilename || rawName;
+                        state.artFilename = displayFilename;
+
+                        // If the file that actually loaded has a different name/extension than stored,
+                        // update the illustration field, input value, and auto-save
+                        if (loadedFilename && loadedFilename !== rawName) {
+                            state.illustration = loadedFilename;
+                            if (card) card.illustration = loadedFilename;
+                            if (cardIllustrationInput) cardIllustrationInput.value = loadedFilename;
+                            autoSaveCurrentCard();
+                        }
+                        if (artPlaceholderEl) artPlaceholderEl.title = displayFilename;
+                        if (artPlaceholderTextEl) artPlaceholderTextEl.textContent = displayFilename;
+                        if (artFilename) artFilename.textContent = displayFilename;
                         if (artFilenamePreview) artFilenamePreview.style.display = "flex";
                         const frameW = 347;
                         const frameH = 220;
@@ -4591,6 +4803,7 @@
                         if (artPlaceholderEl) artPlaceholderEl.style.display = "none";
                         checkImageTransparency(altImg);
                         updateCardPreview();
+                        _markCardLoaded(card.id);
                         requestAnimationFrame(() => {
                             updateCardPreview();
                         });
@@ -4611,13 +4824,6 @@
                 };
                 tryNextSrc();
             }
-
-            // (Real-time auto-saving active)
-            
-            // Update inputs
-            initFormValues();
-            renderDeckList();
-            showToast("Loaded card for editing!");
         }
 
         // IndexedDB Manager setup
@@ -4688,7 +4894,7 @@
                             rulesText: "When Volcano Elemental attacks, it deals 2 damage to any target.",
                             power: "4",
                             toughness: "5",
-                            artBase64: "",
+
                             keywords: ["Trample"],
                             activatedAbilities: [],
                             illustration: "Volcano Elemental.png"
@@ -5117,6 +5323,7 @@
         // Deck Filter states
         const activeManaFilters = new Set();
         const activeTypeFilters = new Set();
+        let activeSubtypeFilter = "";
 
         // Helper to check if card matches active filters
         function cardMatchesFilters(card) {
@@ -5157,7 +5364,47 @@
                 }
             }
             
+            // 3. Subtype filtering
+            if (activeSubtypeFilter) {
+                if (!card.cardSubType || !card.cardSubType.toLowerCase().includes(activeSubtypeFilter.toLowerCase())) {
+                    return false;
+                }
+            }
+
             return true;
+        }
+
+        // Populate the subtype filter dropdown with all available and used card subtypes
+        function populateSubtypeFilterSelect() {
+            const select = document.getElementById("subtype-filter-select");
+            if (!select) return;
+            
+            const subTypeSet = new Set(availableSubTypes || []);
+            (state.deck || []).forEach(card => {
+                if (card.cardSubType && card.cardSubType.trim()) {
+                    subTypeSet.add(card.cardSubType.trim());
+                }
+            });
+            
+            const sortedSubtypes = Array.from(subTypeSet).sort((a, b) => a.localeCompare(b));
+            const currentSelection = activeSubtypeFilter;
+
+            select.innerHTML = '<option value="">All Subtypes</option>';
+            sortedSubtypes.forEach(st => {
+                const opt = document.createElement("option");
+                opt.value = st;
+                opt.textContent = st;
+                select.appendChild(opt);
+            });
+
+            if (currentSelection && sortedSubtypes.includes(currentSelection)) {
+                select.value = currentSelection;
+            } else {
+                select.value = "";
+                if (currentSelection && !sortedSubtypes.includes(currentSelection)) {
+                    activeSubtypeFilter = "";
+                }
+            }
         }
 
         // Initialize filter buttons and handlers
@@ -5183,6 +5430,16 @@
             });
 
             renderTypeFilterButtons();
+            populateSubtypeFilterSelect();
+
+            const subtypeSelect = document.getElementById("subtype-filter-select");
+            if (subtypeSelect) {
+                subtypeSelect.addEventListener("change", (e) => {
+                    activeSubtypeFilter = e.target.value;
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
 
             document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
                 activeManaFilters.clear();
@@ -5197,11 +5454,22 @@
                 updateClearFilterButtonsVisibility();
                 renderDeckList();
             });
+
+            const clearSubtypeBtn = document.getElementById("clear-subtype-filters-btn");
+            if (clearSubtypeBtn) {
+                clearSubtypeBtn.addEventListener("click", () => {
+                    activeSubtypeFilter = "";
+                    if (subtypeSelect) subtypeSelect.value = "";
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
         }
 
         function updateClearFilterButtonsVisibility() {
             const clearManaBtn = document.getElementById("clear-mana-filters-btn");
             const clearTypeBtn = document.getElementById("clear-type-filters-btn");
+            const clearSubtypeBtn = document.getElementById("clear-subtype-filters-btn");
             const firstManaBtn = document.querySelector(".mana-filter-btn");
             const firstTypeBtn = document.querySelector(".type-filter-btn");
             
@@ -5219,6 +5487,10 @@
             } else {
                 clearTypeBtn.style.display = "none";
                 if (firstTypeBtn) firstTypeBtn.parentElement.classList.remove("has-active");
+            }
+
+            if (clearSubtypeBtn) {
+                clearSubtypeBtn.style.display = activeSubtypeFilter ? "inline-block" : "none";
             }
         }
 
@@ -5238,11 +5510,13 @@
                 return;
             }
 
+            populateSubtypeFilterSelect();
+
             // Filter deck
             const filteredDeck = state.deck.filter(cardMatchesFilters);
 
             // Update deck count text
-            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0) {
+            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter) {
                 deckCount.textContent = `${filteredDeck.length} of ${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} shown`;
             } else {
                 deckCount.textContent = `${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} in Deck`;
@@ -5261,6 +5535,7 @@
             filteredDeck.forEach(card => {
                 const row = document.createElement("div");
                 row.className = "deck-card-row" + (state.selectedCardId === card.id ? " selected" : "");
+                row.dataset.cardId = card.id;
                 row.addEventListener("click", () => loadCardDetails(card.id));
 
                 const info = document.createElement("div");
@@ -5292,13 +5567,33 @@
                 info.appendChild(nameSpan);
                 info.appendChild(meta);
 
+                // Per-card load image button (shown when global image loading is OFF)
+                if (!state.imageLoadingEnabled) {
+                    const loadImgBtn = document.createElement("button");
+                    loadImgBtn.className = "deck-card-load-img-btn";
+                    loadImgBtn.dataset.cardId = card.id;
+                    loadImgBtn.innerHTML = '<i class="fa-solid fa-image"></i>';
+                    loadImgBtn.title = "Load image for this card";
+                    loadImgBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        // Select the card first so loadIllustrationForCard targets it
+                        state.selectedCardId = card.id;
+                        // Find the card data
+                        const cardData = state.deck.find(c => c.id === card.id);
+                        if (cardData) loadIllustrationForCard(cardData, true);
+                    });
+                    row.appendChild(info);
+                    row.appendChild(loadImgBtn);
+                } else {
+                    row.appendChild(info);
+                }
+
                 const deleteBtn = document.createElement("button");
                 deleteBtn.className = "deck-card-delete-btn";
                 deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
                 deleteBtn.title = "Delete card";
                 deleteBtn.addEventListener("click", (e) => deleteCard(card.id, e));
 
-                row.appendChild(info);
                 row.appendChild(deleteBtn);
                 deckListContainer.appendChild(row);
             });
@@ -5371,7 +5666,6 @@
                 customDescriptionItalic: state.customDescriptionItalic !== false,
                 power: state.power || "1",
                 toughness: state.toughness || "1",
-                artBase64: state.artImage ? state.artImage.src : "",
                 artScale: state.artScale !== undefined ? state.artScale : 1.0,
                 artRotation: state.artRotation !== undefined ? state.artRotation : 0,
                 artX: state.artX !== undefined ? state.artX : 0,
@@ -5386,7 +5680,6 @@
         // Show single card JSON preview modal
         function showCardJsonPreview() {
             const cardJson = getCurrentCardJson();
-            delete cardJson.artBase64;
             delete cardJson.artScale;
             delete cardJson.artRotation;
             delete cardJson.artX;
@@ -5402,7 +5695,7 @@
                 return;
             }
             
-            // Normalize cards by stripping artBase64, scale, and offset properties, and including all other fields explicitly
+            // Normalize cards by stripping scale and offset properties, and including all other fields explicitly
             const normalizedCards = state.deck.map(card => {
                 const cardName = card.cardName || "Unnamed Card";
                 return {
@@ -5551,7 +5844,6 @@
                 customDescriptionItalic: card.customDescriptionItalic !== false,
                 power: card.power !== undefined ? String(card.power) : "1",
                 toughness: card.toughness !== undefined ? String(card.toughness) : "1",
-                artBase64: card.artBase64 || "",
                 artScale: 1.0,
                 artRotation: 0,
                 artX: 0,
@@ -6195,153 +6487,127 @@
             }
         }
 
-        // Trigger illustration only file download (Uses High-Quality Step-down Downsampling)
+        // Trigger illustration only file download — saves exactly what's visible in the card art frame
         function downloadArtImage() {
             if (!state.artImage) {
                 alert("No illustration selected.");
                 return;
             }
-            
+
+            const rawName = state.cardName?.trim()
+                || state.illustration?.replace(/\.[^/.]+$/, "")
+                || state.artFilename?.replace(/\.[^/.]+$/, "")
+                || "card";
+
+            downloadArtImageViaCanvas(rawName);
+        }
+
+        function downloadArtImageViaCanvas(filename) {
             try {
-                // High-res source canvas
                 const scale = 2;
                 const targetW = 327 * scale;
                 const targetH = 220 * scale;
-                
+
                 const srcCanvas = document.createElement("canvas");
                 srcCanvas.width = targetW;
                 srcCanvas.height = targetH;
                 const srcCtx = srcCanvas.getContext("2d");
-                
+
                 srcCtx.save();
-                
-                // Base fit dimensions (equivalent to object-fit: cover)
                 const imgW = state.artImage.width;
                 const imgH = state.artImage.height;
-                const scaleW = targetW / imgW;
-                const scaleH = targetH / imgH;
-                const fitScale = Math.max(scaleW, scaleH);
-                
+                const fitScale = Math.max(targetW / imgW, targetH / imgH);
                 const drawW = imgW * fitScale;
                 const drawH = imgH * fitScale;
-                
-                // Translate to center of the canvas
-                const centerX = targetW / 2;
-                const centerY = targetH / 2;
-                srcCtx.translate(centerX, centerY);
-                
-                // Apply drag offsets (scaled according to canvas resolution)
+
+                srcCtx.translate(targetW / 2, targetH / 2);
                 srcCtx.translate((state.artX || 0) * scale, (state.artY || 0) * scale);
-                
-                // Apply rotation
                 srcCtx.rotate((state.artRotation || 0) * Math.PI / 180);
-                
-                // Apply scale
-                const customScale = state.artScale || 1.0;
-                srcCtx.scale(customScale, customScale);
-                
-                // Draw centered at the origin
+                srcCtx.scale(state.artScale || 1.0, state.artScale || 1.0);
                 srcCtx.drawImage(state.artImage, -drawW / 2, -drawH / 2, drawW, drawH);
                 srcCtx.restore();
-                
-                // Use multi-pass step-down resizer to produce clean 327x220 PNG
-                const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
-                
-                const dataUrl = finalCanvas.toDataURL("image/png");
+
+                const finalCanvas = document.createElement("canvas");
+                finalCanvas.width = 327;
+                finalCanvas.height = 220;
+                const finalCtx = finalCanvas.getContext("2d");
+                finalCtx.imageSmoothingEnabled = true;
+                finalCtx.imageSmoothingQuality = "high";
+                finalCtx.drawImage(srcCanvas, 0, 0, targetW, targetH, 0, 0, 327, 220);
+
+                // JPEG is ~10x faster to encode than PNG for photographic art
+                const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.95);
                 const link = document.createElement("a");
                 link.href = dataUrl;
-                
-                // File download naming
-                const name = state.artFilename ? state.artFilename.replace(/\.[^/.]+$/, "") : (state.cardName ? state.cardName.trim() : 'card');
-                link.download = `${name}.png`;
-                
+                link.download = `${filename}.jpg`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 showToast("Illustration image downloaded!");
             } catch (err) {
                 console.error("Canvas export failed:", err);
-                alert("Canvas export failed!\n\nError: " + err.name + " - " + err.message + "\n\nIf this is a CORS/SecurityError, please ensure your local server is running and you have refreshed the page. If it is a different error, please let us know.");
+                alert("Canvas export failed!\n\nError: " + err.name + " - " + err.message + "\n\nIf this is a CORS/SecurityError, please ensure your local server is running and you have refreshed the page.");
             }
         }
 
         // Download art for a single card in the deck (asynchronously)
         function downloadSingleCardArt(card) {
             return new Promise((resolve, reject) => {
-                if (!card.artBase64) {
+                if (!state.artImage) {
                     resolve();
                     return;
                 }
-                
-                const img = new Image();
-                img.onload = () => {
-                    // High-res source canvas
-                    const scale = 2;
-                    const targetW = 327 * scale;
-                    const targetH = 220 * scale;
-                    
-                    const srcCanvas = document.createElement("canvas");
-                    srcCanvas.width = targetW;
-                    srcCanvas.height = targetH;
-                    const srcCtx = srcCanvas.getContext("2d");
-                    
-                    srcCtx.save();
-                    
-                    // Base fit dimensions (equivalent to object-fit: cover)
-                    const imgW = img.width;
-                    const imgH = img.height;
-                    const scaleW = targetW / imgW;
-                    const scaleH = targetH / imgH;
-                    const fitScale = Math.max(scaleW, scaleH);
-                    
-                    const drawW = imgW * fitScale;
-                    const drawH = imgH * fitScale;
-                    
-                    // Translate to center of the canvas
-                    const centerX = targetW / 2;
-                    const centerY = targetH / 2;
-                    srcCtx.translate(centerX, centerY);
-                    
-                    // Apply drag offsets (scaled according to canvas resolution)
-                    srcCtx.translate((card.artX || 0) * scale, (card.artY || 0) * scale);
-                    
-                    // Apply rotation
-                    srcCtx.rotate((card.artRotation || 0) * Math.PI / 180);
-                    
-                    // Apply scale
-                    const customScale = card.artScale || 1.0;
-                    srcCtx.scale(customScale, customScale);
-                    
-                    // Draw centered at origin
-                    srcCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-                    srcCtx.restore();
-                    
-                    // Use multi-pass step-down resizer to produce clean 327x220 PNG
-                    const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
-                    
-                    const dataUrl = finalCanvas.toDataURL("image/png");
-                    const link = document.createElement("a");
-                    link.href = dataUrl;
-                    
-                    // File download naming
-                    const name = card.illustration ? card.illustration.replace(/\.[^/.]+$/, "") : (card.cardName ? card.cardName.trim() : 'card');
-                    link.download = `${name}.png`;
-                    
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    resolve();
-                };
-                img.onerror = (err) => {
-                    reject(err);
-                };
-                img.src = card.artBase64;
+
+                const img = state.artImage;
+                // High-res source canvas
+                const scale = 2;
+                const targetW = 327 * scale;
+                const targetH = 220 * scale;
+
+                const srcCanvas = document.createElement("canvas");
+                srcCanvas.width = targetW;
+                srcCanvas.height = targetH;
+                const srcCtx = srcCanvas.getContext("2d");
+
+                srcCtx.save();
+
+                const imgW = img.width;
+                const imgH = img.height;
+                const scaleW = targetW / imgW;
+                const scaleH = targetH / imgH;
+                const fitScale = Math.max(scaleW, scaleH);
+
+                const drawW = imgW * fitScale;
+                const drawH = imgH * fitScale;
+
+                const centerX = targetW / 2;
+                const centerY = targetH / 2;
+                srcCtx.translate(centerX, centerY);
+                srcCtx.translate((card.artX || 0) * scale, (card.artY || 0) * scale);
+                srcCtx.rotate((card.artRotation || 0) * Math.PI / 180);
+                const customScale = card.artScale || 1.0;
+                srcCtx.scale(customScale, customScale);
+                srcCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                srcCtx.restore();
+
+                const finalCanvas = downsampleCanvas(srcCanvas, 327, 220);
+                const dataUrl = finalCanvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = dataUrl;
+
+                const name = card.illustration ? card.illustration.replace(/\.[^/.]+$/, "") : (card.cardName ? card.cardName.trim() : 'card');
+                link.download = `${name}.png`;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                resolve();
             });
         }
 
         // Export all illustration images for all cards in the deck
         async function exportAllArtOnly() {
-            const cardsWithArt = state.deck.filter(c => c.artBase64);
+            const cardsWithArt = state.deck.filter(c => c.illustration);
             if (cardsWithArt.length === 0) {
                 alert("There are no cards in the deck with illustrations to export.");
                 return;
@@ -6423,6 +6689,27 @@
             initFormValues();
             initEvents();
             initFilters();
+
+            // Init image loading toggle
+            const imgLoadingToggle = document.getElementById("img-loading-toggle");
+            if (imgLoadingToggle) {
+                imgLoadingToggle.checked = state.imageLoadingEnabled;
+                imgLoadingToggle.addEventListener("change", () => {
+                    state.imageLoadingEnabled = imgLoadingToggle.checked;
+                    localStorage.setItem("wizards_imageLoadingEnabled", state.imageLoadingEnabled ? "true" : "false");
+                    // Re-render deck list to show/hide per-card load buttons
+                    renderDeckList();
+                    // If turning ON: reload the currently selected card's image
+                    if (state.imageLoadingEnabled && state.selectedCardId) {
+                        const currentCard = state.deck.find(c => c.id === state.selectedCardId);
+                        if (currentCard) loadIllustrationForCard(currentCard);
+                    } else if (!state.imageLoadingEnabled) {
+                        // Clear the current art and update preview
+                        state.artImage = null;
+                        updateCardPreview();
+                    }
+                });
+            }
             
             initIndexedDB()
                 .then(() => loadDeckFromStorage())
