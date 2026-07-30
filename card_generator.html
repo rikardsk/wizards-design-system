@@ -107,6 +107,7 @@
 
         .control-sections {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             padding-right: 4px;
         }
@@ -1389,9 +1390,12 @@
         }
 
         .sidebar-footer {
-            margin-top: 14px;
+            margin-top: 10px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
-            padding-top: 12px;
+            padding-top: 10px;
+            flex-shrink: 0;
+            max-height: 50vh;
+            overflow-y: auto;
         }
 
         /* Toast notification */
@@ -1434,18 +1438,21 @@
             height: 100vh;
             background: rgba(4, 5, 10, 0.8);
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1100;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s ease;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
         
         .modal-overlay.show {
             opacity: 1;
             pointer-events: auto;
+            visibility: visible;
         }
         
         .modal-content {
@@ -1537,8 +1544,192 @@
             background: var(--gold-hover);
         }
         
+        /* ─── Quest Manager Styles ─── */
+        .quest-sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.83rem;
+            color: var(--text-light);
+            border: 1px solid transparent;
+            transition: all 0.18s ease;
+            margin-bottom: 3px;
+        }
+        .quest-sidebar-item:hover {
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.25);
+            color: var(--text-color);
+        }
+        .quest-sidebar-item.active {
+            background: rgba(139, 92, 246, 0.22);
+            border-color: rgba(139, 92, 246, 0.55);
+            color: #c4b5fd;
+        }
+        .quest-sidebar-item i {
+            font-size: 0.8rem;
+            width: 14px;
+            text-align: center;
+            color: #a78bfa;
+            flex-shrink: 0;
+        }
+
+        .quest-level-card {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: border-color 0.2s;
+        }
+        .quest-level-card:hover {
+            border-color: rgba(139, 92, 246, 0.38);
+        }
+        .quest-level-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+        }
+        .quest-level-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #c4b5fd;
+        }
+        .quest-level-section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quest-reward-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.76rem;
+            color: #86efac;
+            margin: 3px;
+        }
+        .quest-reward-chip .remove-chip {
+            background: none;
+            border: none;
+            color: #86efac;
+            cursor: pointer;
+            font-size: 0.65rem;
+            padding: 0 0 0 3px;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+        .quest-reward-chip .remove-chip:hover { opacity: 1; }
+
+        .quest-unlock-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.76rem;
+            color: #fde68a;
+            margin: 3px;
+        }
+        .quest-unlock-chip .remove-chip {
+            background: none;
+            border: none;
+            color: #fde68a;
+            cursor: pointer;
+            font-size: 0.65rem;
+            padding: 0 0 0 3px;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+        .quest-unlock-chip .remove-chip:hover { opacity: 1; }
+
+        .quest-opponent-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.76rem;
+            color: #fca5a5;
+            margin: 3px;
+        }
+        .quest-opponent-chip .remove-chip {
+            background: none;
+            border: none;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.65rem;
+            padding: 0 0 0 3px;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+        .quest-opponent-chip .remove-chip:hover { opacity: 1; }
+
+        .quest-chips-area {
+            min-height: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 0;
+            margin-bottom: 6px;
+        }
+        .quest-add-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .quest-add-row select {
+            flex: 1;
+            font-size: 0.8rem;
+            padding: 5px 8px;
+        }
+        .quest-add-row button {
+            flex-shrink: 0;
+            font-size: 0.76rem;
+            padding: 5px 12px;
+            width: auto;
+            margin: 0;
+        }
+        .quest-delete-level-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.2s, transform 0.1s;
+            padding: 2px 4px;
+        }
+        .quest-delete-level-btn:hover {
+            color: var(--danger);
+            transform: scale(1.1);
+        }
+        .quest-level-section {
+            margin-top: 10px;
+        }
+
         .keywords-manager-list {
             max-height: 250px;
+
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -1966,7 +2157,7 @@
                         <i class="fa-solid fa-download"></i> Save Card Image (PNG)
                     </button>
                     <button class="secondary-btn" id="download-art-png" style="width: auto; padding: 6px 14px; font-size: 0.75rem;">
-                        <i class="fa-solid fa-image"></i> Save Art Only (PNG)
+                        <i class="fa-solid fa-image"></i> Save Art Only (JPG)
                     </button>
                     <button class="secondary-btn" id="preview-card-json" style="width: auto; padding: 6px 14px; font-size: 0.75rem;" title="Preview Card JSON">
                         <i class="fa-solid fa-code"></i> Preview JSON
@@ -2025,6 +2216,89 @@
                 <button type="button" class="nav-arrow-btn next" id="nav-next-btn" title="Next Card (Right Arrow)">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
+
+                <!-- Quest Level Cycling Control Bar -->
+                <div id="quest-level-cycle-bar" style="display: none; position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 100; background: rgba(13, 16, 32, 0.92); border: 1px solid rgba(167, 139, 250, 0.4); backdrop-filter: blur(10px); padding: 6px 16px; border-radius: 30px; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 15px rgba(139, 92, 246, 0.2);">
+                    <button type="button" id="quest-level-prev-btn" title="Previous Level" style="background: none; border: none; color: #a78bfa; font-size: 0.9rem; cursor: pointer; padding: 2px 6px; display: flex; align-items: center; transition: color 0.15s;">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span id="quest-level-cycle-label" style="font-size: 0.78rem; font-weight: 700; color: #fde68a; letter-spacing: 0.05em; white-space: nowrap;">
+                        Level 1 of 3
+                    </span>
+                    <button type="button" id="quest-level-next-btn" title="Next Level" style="background: none; border: none; color: #a78bfa; font-size: 0.9rem; cursor: pointer; padding: 2px 6px; display: flex; align-items: center; transition: color 0.15s;">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quest Manager Overlay Panel (Inside Viewport) -->
+            <div id="quest-manager-panel" class="glass-panel" style="display: none; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; z-index: 200; background: rgba(11, 14, 30, 0.98); border: 1px solid var(--panel-border); border-radius: 16px; flex-direction: column; overflow: hidden; box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(139, 92, 246, 0.25);">
+                
+                <!-- Panel Header -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.3); flex-shrink: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-scroll" style="font-size: 1.4rem; color: #a78bfa;"></i>
+                        <div>
+                            <h2 style="font-family: var(--font-heading); font-size: 1.2rem; color: #c4b5fd; margin: 0; line-height: 1.2;">Quest Manager</h2>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Configure quest storylines, levels, rewards, and opponents</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeQuestsPanel()" class="secondary-btn" style="width: auto; padding: 6px 14px; font-size: 0.8rem; margin: 0;">
+                        <i class="fa-solid fa-xmark"></i> Close Panel
+                    </button>
+                </div>
+
+                <!-- Panel Content Body: Split Left (Quest List) & Right (Editor) -->
+                <div style="display: flex; flex: 1; overflow: hidden;">
+                    
+                    <!-- Left Sidebar: Quest List -->
+                    <div id="quest-list-panel" style="width: 240px; min-width: 200px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; flex-shrink: 0; background: rgba(0,0,0,0.15);">
+                        <div style="padding: 12px 14px 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent-gold); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+                            <span>Quests Database</span>
+                        </div>
+                        <div id="quest-sidebar-list" style="flex: 1; overflow-y: auto; padding: 10px 8px;"></div>
+                    </div>
+
+                    <!-- Right Editor Panel -->
+                    <div id="quest-editor-panel" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 20px 24px; gap: 16px;">
+                        <div id="quest-editor-empty" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 12px; min-height: 250px;">
+                            <i class="fa-solid fa-scroll" style="font-size: 3rem; opacity: 0.2; color: #a78bfa;"></i>
+                            <span style="font-size: 0.92rem; color: var(--text-muted);">Select a Quest card from the left list to configure its levels.</span>
+                        </div>
+                        
+                        <div id="quest-editor-content" style="display: none; flex-direction: column; gap: 18px;">
+                            <!-- Quest Header Row -->
+                            <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+                                <h3 style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--accent-gold); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-scroll" style="color: #a78bfa;"></i>
+                                    <span id="quest-title-text">Quest Name</span>
+                                </h3>
+                                <button type="button" id="delete-quest-btn" class="danger-btn" style="padding: 6px 14px; font-size: 0.78rem; margin: 0; width: auto;">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i> Clear All Levels
+                                </button>
+                            </div>
+
+                            <!-- Levels Section -->
+                            <div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent-gold); font-weight: 700;">Quest Levels</div>
+                                    <button type="button" id="add-quest-level-btn" class="secondary-btn" style="font-size: 0.78rem; padding: 6px 14px; width: auto; margin: 0; background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: #c4b5fd;">
+                                        <i class="fa-solid fa-layer-group"></i> Add Level
+                                    </button>
+                                </div>
+                                <div id="quest-levels-container" style="display: flex; flex-direction: column; gap: 14px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Panel Footer -->
+                <div style="padding: 12px 24px; border-top: 1px solid rgba(255,255,255,0.07); background: rgba(0,0,0,0.3); display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0;">
+                    <button type="button" onclick="closeQuestsPanel()" class="primary-btn" style="background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(168,85,247,0.3)); border-color: rgba(139,92,246,0.7); width: auto; padding: 9px 24px; font-size: 0.88rem; margin: 0;">
+                        Done & Close
+                    </button>
+                </div>
             </div>
         </main>
 
@@ -2110,6 +2384,9 @@
                     <button class="secondary-btn" id="import-deck-btn">
                         <i class="fa-solid fa-file-import"></i> Import Deck (JSON)
                     </button>
+                    <button class="primary-btn" id="manage-quests-btn" type="button" onclick="openQuestsPanel()" style="margin-top: 6px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(168, 85, 247, 0.25)); border-color: rgba(139, 92, 246, 0.65);">
+                        <i class="fa-solid fa-scroll"></i> Manage Quests
+                    </button>
                     <button class="danger-btn" id="clear-deck-btn">
                         <i class="fa-solid fa-trash-can"></i> Clear Entire Deck
                     </button>
@@ -2122,6 +2399,8 @@
             <!-- Hidden input for file importing -->
             <input type="file" id="import-deck-file" accept=".json" style="display: none;">
         </aside>
+    </div>
+
     <!-- JSON Preview Modal -->
     <div class="modal-overlay" id="json-preview-modal">
         <div class="modal-content" style="width: 600px; max-width: 95%;">
@@ -2300,8 +2579,10 @@
             </div>
         </div>
     </div>
+    </div>
 
-    <!-- Feedback Toast -->
+
+
     <div id="toast" class="toast">
         <i class="fa-solid fa-circle-check"></i>
         <span id="toast-text">Card added to deck!</span>
@@ -3524,6 +3805,48 @@
             importDeckBtn.addEventListener("click", () => importDeckFile.click());
             importDeckFile.addEventListener("change", importDeckFromJson);
 
+            // Quest Level Cycle Buttons
+            const qLvlPrevBtn = document.getElementById("quest-level-prev-btn");
+            const qLvlNextBtn = document.getElementById("quest-level-next-btn");
+
+            if (qLvlPrevBtn) {
+                qLvlPrevBtn.addEventListener("click", () => {
+                    if (state.cardType !== "Quest") return;
+                    const questId = state.id || state.selectedCardId;
+                    const cardName = (state.cardName || "").trim().toLowerCase();
+                    const quest = (state.quests || []).find(q => 
+                        (questId && (q.id === questId || q.cardId === questId)) ||
+                        (cardName && q.name && q.name.trim().toLowerCase() === cardName)
+                    );
+                    if (!quest || !quest.levels || quest.levels.length <= 1) return;
+
+                    const total = quest.levels.length;
+                    let curr = state.selectedQuestLevelIdx || 0;
+                    curr = (curr - 1 + total) % total;
+                    state.selectedQuestLevelIdx = curr;
+                    if (typeof updateCardPreview === "function") updateCardPreview();
+                });
+            }
+
+            if (qLvlNextBtn) {
+                qLvlNextBtn.addEventListener("click", () => {
+                    if (state.cardType !== "Quest") return;
+                    const questId = state.id || state.selectedCardId;
+                    const cardName = (state.cardName || "").trim().toLowerCase();
+                    const quest = (state.quests || []).find(q => 
+                        (questId && (q.id === questId || q.cardId === questId)) ||
+                        (cardName && q.name && q.name.trim().toLowerCase() === cardName)
+                    );
+                    if (!quest || !quest.levels || quest.levels.length <= 1) return;
+
+                    const total = quest.levels.length;
+                    let curr = state.selectedQuestLevelIdx || 0;
+                    curr = (curr + 1) % total;
+                    state.selectedQuestLevelIdx = curr;
+                    if (typeof updateCardPreview === "function") updateCardPreview();
+                });
+            }
+
             // JSON Preview Modal events
             if (previewCardJsonBtn) {
                 previewCardJsonBtn.addEventListener("click", showCardJsonPreview);
@@ -4102,13 +4425,51 @@
             return svg;
         }
 
+        // Helper to get effective custom description (formats Level details for Quest cards)
+        function getEffectiveCustomDescription(targetState, levelIdx = 0) {
+            const cardObj = targetState || state;
+            if (cardObj.cardType === "Quest") {
+                const questId = cardObj.id || cardObj.selectedCardId;
+                const cardName = (cardObj.cardName || cardObj.name || "").trim().toLowerCase();
+
+                if (state.quests && state.quests.length > 0) {
+                    const quest = state.quests.find(q => 
+                        (questId && (q.id === questId || q.cardId === questId)) ||
+                        (cardName && q.name && q.name.trim().toLowerCase() === cardName) ||
+                        (cardName && q.name && (q.name.trim().toLowerCase().includes(cardName) || cardName.includes(q.name.trim().toLowerCase())))
+                    );
+
+                    if (quest && quest.levels && quest.levels.length > 0) {
+                        const idx = Math.min(Math.max(0, levelIdx), quest.levels.length - 1);
+                        const targetLevel = quest.levels[idx] || quest.levels[0];
+                        const lines = [];
+
+                        const qDesc = (targetLevel.questDescription || targetLevel.description || "").trim();
+                        if (qDesc) lines.push(`Quest: ${qDesc}`);
+
+                        const rDesc = (targetLevel.rewardsDescription || "").trim();
+                        if (rDesc) lines.push(`Reward: ${rDesc}`);
+
+                        const oDesc = (targetLevel.opponentsDescription || "").trim();
+                        if (oDesc) lines.push(`Opponent: ${oDesc}`);
+
+                        if (lines.length > 0) {
+                            return lines.join("\n\n");
+                        }
+                    }
+                }
+            }
+            return cardObj.customDescription || "";
+        }
+
         // Helper to get combined rules text from keywords, activated abilities, and custom rules text
         function getFullRulesText() {
             const parts = [];
             
-            // 0. Custom description text
-            if (state.customDescription && state.customDescription.trim()) {
-                parts.push(state.customDescription.trim());
+            // 0. Custom description text (or dynamic Quest Level 1 text)
+            const effCustomDesc = getEffectiveCustomDescription(state);
+            if (effCustomDesc && effCustomDesc.trim()) {
+                parts.push(effCustomDesc.trim());
             }
             
             // 1. Keywords
@@ -4241,6 +4602,7 @@
 
         // Update the Center Card Preview Layout
         function updateCardPreview() {
+            window.updatePreview = updateCardPreview;
             // Update color code labels
             const frameCodeSpan = document.getElementById("frame-color-code");
             if (frameCodeSpan) {
@@ -4354,13 +4716,14 @@
             const abilityManaSizePx = (state.abilityManaSize !== undefined ? state.abilityManaSize : 14) + "px";
             cardPreviewRules.style.setProperty("--ability-mana-size", abilityManaSizePx);
             
-            // 0. Custom Description Text
-            if (state.customDescription && state.customDescription.trim()) {
-                const paragraphs = state.customDescription.trim().split("\n");
+            // 0. Custom Description Text (or dynamic Level Quest details)
+            const effCustomDesc = getEffectiveCustomDescription(state, state.selectedQuestLevelIdx || 0);
+            if (effCustomDesc && effCustomDesc.trim()) {
+                const paragraphs = effCustomDesc.trim().split("\n");
                 paragraphs.forEach(paragraph => {
                     if (!paragraph.trim()) return;
                     const p = document.createElement("div");
-                    const isItalic = state.customDescriptionItalic !== false;
+                    const isItalic = state.customDescriptionItalic !== false && state.cardType !== "Quest";
                     p.className = `rules-paragraph${isItalic ? " custom-description-paragraph" : ""}`;
                     p.innerHTML = formatRulesTextForHTML(paragraph);
                     cardPreviewRules.appendChild(p);
@@ -4420,12 +4783,40 @@
                 });
             }
             
-            // Type Box
+            // Type Box & Quest Level label
             let fullTypeString = state.cardType;
-            if (state.cardSubType && state.cardSubType.trim()) {
+            let questLevelsCount = 0;
+            if (state.cardType === "Quest") {
+                const questId = state.id || state.selectedCardId;
+                const cardName = (state.cardName || "").trim().toLowerCase();
+                const quest = (state.quests || []).find(q => 
+                    (questId && (q.id === questId || q.cardId === questId)) ||
+                    (cardName && q.name && q.name.trim().toLowerCase() === cardName)
+                );
+                if (quest && quest.levels && quest.levels.length > 0) {
+                    questLevelsCount = quest.levels.length;
+                    const currLvl = Math.min(Math.max(0, state.selectedQuestLevelIdx || 0), questLevelsCount - 1) + 1;
+                    fullTypeString += ` — Level ${currLvl}`;
+                } else if (state.cardSubType && state.cardSubType.trim()) {
+                    fullTypeString += " — " + state.cardSubType;
+                }
+            } else if (state.cardSubType && state.cardSubType.trim()) {
                 fullTypeString += " — " + state.cardSubType;
             }
             cardPreviewType.textContent = fullTypeString;
+
+            // Quest Level Cycle Bar UI Update
+            const cycleBar = document.getElementById("quest-level-cycle-bar");
+            const cycleLabel = document.getElementById("quest-level-cycle-label");
+            if (cycleBar && cycleLabel) {
+                if (state.cardType === "Quest" && questLevelsCount > 1) {
+                    cycleBar.style.display = "flex";
+                    const currLvl = Math.min(Math.max(0, state.selectedQuestLevelIdx || 0), questLevelsCount - 1) + 1;
+                    cycleLabel.textContent = `Level ${currLvl} of ${questLevelsCount}`;
+                } else {
+                    cycleBar.style.display = "none";
+                }
+            }
             
             // P/T Box
             const currentTypeObj = availableCardTypes.find(t => t.name === state.cardType);
@@ -4537,7 +4928,7 @@
                 target: state.target || "",
                 hasPt: (availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || (state.cardType === "Creature" || state.cardType === "Tower"),
                 rulesText: state.rulesText || "",
-                customDescription: state.customDescription || "",
+                customDescription: getEffectiveCustomDescription(state),
                 customDescriptionItalic: state.customDescriptionItalic !== false,
                 power: state.power || "1",
                 toughness: state.toughness || "1",
@@ -5688,11 +6079,15 @@
             jsonPreviewModal.classList.add("show");
         }
 
-        // Export Deck database to a JSON file download
+        // Export Deck database & quests to a JSON file download
         function exportDeckToJson() {
             if (state.deck.length === 0) {
                 alert("There are no cards in the deck to export.");
                 return;
+            }
+
+            if (typeof syncQuestsWithDeck === "function") {
+                syncQuestsWithDeck();
             }
             
             // Normalize cards by stripping scale and offset properties, and including all other fields explicitly
@@ -5722,9 +6117,10 @@
 
             const exportData = {
                 deckName: state.deckName || "Wizards Deck",
-                cards: normalizedCards
+                cards: normalizedCards,
+                quests: Array.isArray(state.quests) ? state.quests : []
             };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchor = document.createElement("a");
             downloadAnchor.setAttribute("href", dataStr);
             
@@ -5739,7 +6135,8 @@
             
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
-            showToast("Exported deck config JSON!");
+            downloadAnchor.remove();
+            showToast("Exported deck & quest config JSON!");
         }
 
         // Open Artwork Diagnostics Modal
@@ -5926,7 +6323,7 @@
             }
         }
 
-        // Import Deck database from a uploaded JSON file
+        // Import Deck database & quests from a uploaded JSON file
         function importDeckFromJson(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -5949,15 +6346,33 @@
                         return;
                     }
 
+                    if (imported && Array.isArray(imported.quests)) {
+                        state.quests = imported.quests;
+                    }
+
                     addImportedCardTypesToAvailable(rawCards);
                     addImportedCardSubTypesToAvailable(rawCards);
                     state.deck = rawCards.map(normalizeImportedCard);
                     addImportedKeywordsToAvailable(state.deck);
+
+                    if (typeof syncQuestsWithDeck === "function") {
+                        syncQuestsWithDeck();
+                    }
+                    if (typeof saveQuestsToStorage === "function") {
+                        saveQuestsToStorage();
+                    }
+
                     saveDeckToStorage();
                     renderDeckList();
                     resetForm();
-                    showToast("Deck imported successfully!");
+
+                    if (typeof renderQuestSidebarList === "function") {
+                        renderQuestSidebarList();
+                    }
+
+                    showToast("Deck and quest data imported successfully!");
                 } catch(err) {
+                    console.error("Import JSON error:", err);
                     alert("Failed to parse deck JSON file.");
                 }
             };
@@ -6182,10 +6597,11 @@
             // Build text blocks
             const blocks = [];
             
-            // 0. Custom description text
-            if (state.customDescription && state.customDescription.trim()) {
-                const isItalic = state.customDescriptionItalic !== false;
-                blocks.push({ text: state.customDescription.trim(), isItalic: isItalic });
+            // 0. Custom description text (or dynamic Level 1 Quest details)
+            const effCustomDesc = getEffectiveCustomDescription(state);
+            if (effCustomDesc && effCustomDesc.trim()) {
+                const isItalic = state.customDescriptionItalic !== false && state.cardType !== "Quest";
+                blocks.push({ text: effCustomDesc.trim(), isItalic: isItalic });
             }
             
             // 1. Keywords
@@ -6455,28 +6871,66 @@
         // Trigger file download (Uses High-Quality Step-down Downsampling)
         function downloadCardImage() {
             try {
-                // High-res source canvas
-                const srcCanvas = document.createElement("canvas");
-                srcCanvas.width = 750;
-                srcCanvas.height = 1046;
-                const srcCtx = srcCanvas.getContext("2d");
-                
-                // Background is left transparent to preserve transparent rounded corners
-                
-                // Draw full quality composition
-                renderCardToCanvas(srcCtx, 750, 1046);
-                
-                // Use multi-pass step-down resizer to produce clean 375x523 PNG
-                const finalCanvas = downsampleCanvas(srcCanvas, 375, 523);
-                
+                // --- Step 1: Render card content at 2× resolution ---
+                // Card content canvas: matches the CSS card element (375×523 at 2× = 750×1046)
+                const cardW = 750, cardH = 1046;
+                const cardCanvas = document.createElement("canvas");
+                cardCanvas.width = cardW;
+                cardCanvas.height = cardH;
+                renderCardToCanvas(cardCanvas.getContext("2d"), cardW, cardH);
+
+                // --- Step 2: Compose card + border + shadow on a padded canvas ---
+                // CSS: border: 10px solid, box-shadow ~40px spread; scale everything 2×
+                const borderPx = 20;   // 10px CSS border at 2×
+                const shadowPad = 80;  // padding around card to give room for shadow
+                const radius = 36;     // 18px CSS border-radius at 2×
+
+                const totalW = cardW + borderPx * 2 + shadowPad * 2;
+                const totalH = cardH + borderPx * 2 + shadowPad * 2;
+
+                const compositeCanvas = document.createElement("canvas");
+                compositeCanvas.width = totalW;
+                compositeCanvas.height = totalH;
+                const ctx = compositeCanvas.getContext("2d");
+
+                // Leave background fully transparent (PNG supports alpha)
+
+                // Card outer rect position (inside the shadow padding)
+                const cardX = shadowPad;
+                const cardY = shadowPad;
+                const borderR = radius + (borderPx / 2); // outer border radius
+
+                // 1. Solid outer border (the CSS `border: 10px solid #0d0d0c`)
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(cardX, cardY, cardW + borderPx * 2, cardH + borderPx * 2, borderR);
+                ctx.fillStyle = "#0d0d0c";
+                ctx.fill();
+                ctx.restore();
+
+                // 2. Clip to the card content area and draw the rendered card
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(cardX + borderPx, cardY + borderPx, cardW, cardH, radius);
+                ctx.clip();
+                ctx.drawImage(cardCanvas, cardX + borderPx, cardY + borderPx);
+                ctx.restore();
+
+                // --- Step 3: Downsample to final output size ---
+                // Output at 1× CSS size + border + transparent padding (halved from 2× composite)
+                const outW = Math.round(totalW / 2);
+                const outH = Math.round(totalH / 2);
+                const finalCanvas = downsampleCanvas(compositeCanvas, outW, outH);
+
+                // PNG preserves the transparent background around the card
                 const dataUrl = finalCanvas.toDataURL("image/png");
                 const link = document.createElement("a");
                 link.href = dataUrl;
-                
+
                 // File download naming
                 const name = state.cardName ? state.cardName.trim() : 'card';
                 link.download = `${name}.png`;
-                
+
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -6680,6 +7134,607 @@
             }, 3000);
         }
 
+        // ────────────────────────────────────────────────
+        // QUEST MANAGER
+        // ────────────────────────────────────────────────
+
+        // Quest state: array of quest objects
+        // { id, name, levels: [{ description, rewardCards: [cardId], unlockCards: [cardId], opponents: [cardId] }] }
+        if (!state.quests) state.quests = [];
+        let activeQuestId = null;
+
+        const QUESTS_STORAGE_KEY = "wizards_quests";
+
+        function saveQuestsToStorage() {
+            try {
+                localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(state.quests));
+                
+                // Sync effective custom description on all Quest cards in deck
+                (state.deck || []).forEach(card => {
+                    if (card.cardType === "Quest") {
+                        card.customDescription = getEffectiveCustomDescription(card);
+                    }
+                });
+
+                if (state.cardType === "Quest") {
+                    state.customDescription = getEffectiveCustomDescription(state);
+                }
+
+                if (typeof saveDeckToStorage === "function") {
+                    saveDeckToStorage();
+                }
+                if (typeof updateCardPreview === "function") {
+                    updateCardPreview();
+                } else if (typeof window.updatePreview === "function") {
+                    window.updatePreview();
+                }
+            } catch (e) {
+                console.warn("Could not save quests to localStorage:", e);
+            }
+        }
+
+        function loadQuestsFromStorage() {
+            try {
+                const raw = localStorage.getItem(QUESTS_STORAGE_KEY);
+                if (raw) state.quests = JSON.parse(raw);
+            } catch (e) {
+                console.warn("Could not load quests from localStorage:", e);
+                state.quests = [];
+            }
+        }
+
+        function generateQuestId() {
+            return "quest_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+        }
+
+        // ── Open / Close Quest Panel ───────────────────
+
+        function openQuestsPanel() {
+            try {
+                loadQuestsFromStorage();
+                const panel = document.getElementById("quest-manager-panel");
+                if (panel) {
+                    panel.style.display = "flex";
+                }
+                renderQuestSidebarList();
+                selectQuestForEdit(activeQuestId || null);
+            } catch (err) {
+                console.error("openQuestsPanel error:", err);
+            }
+        }
+
+        function closeQuestsPanel() {
+            commitActiveQuestFromForm();
+            saveQuestsToStorage();
+            const panel = document.getElementById("quest-manager-panel");
+            if (panel) {
+                panel.style.display = "none";
+            }
+        }
+
+        window.openQuestsModal = openQuestsPanel;
+        window.openQuestsPanel = openQuestsPanel;
+        window.closeQuestsPanel = closeQuestsPanel;
+
+        // ── Synchronize quests with Quest cards in deck ────
+
+        function syncQuestsWithDeck() {
+            if (!state.quests) state.quests = [];
+            const questCards = (state.deck || []).filter(c => c.cardType === "Quest");
+            const validQuestIds = new Set(questCards.map(c => c.id));
+
+            // Purge quests whose Quest card is no longer in deck
+            state.quests = state.quests.filter(q => validQuestIds.has(q.id || q.cardId));
+
+            // Ensure every Quest card in deck has a corresponding quest entry
+            questCards.forEach(card => {
+                let quest = state.quests.find(q => q.id === card.id || q.cardId === card.id);
+                if (!quest) {
+                    quest = {
+                        id: card.id,
+                        cardId: card.id,
+                        name: card.cardName || card.name || "Unnamed Quest",
+                        levels: []
+                    };
+                    state.quests.push(quest);
+                } else {
+                    quest.id = card.id;
+                    quest.cardId = card.id;
+                    quest.name = card.cardName || card.name || quest.name || "Unnamed Quest";
+                }
+            });
+        }
+
+        // ── Sidebar rendering ─────────────────────────
+
+        function renderQuestSidebarList() {
+            syncQuestsWithDeck();
+            const container = document.getElementById("quest-sidebar-list");
+            if (!container) return;
+            container.innerHTML = "";
+
+            const questCards = (state.deck || []).filter(c => c.cardType === "Quest");
+
+            if (questCards.length === 0) {
+                activeQuestId = null;
+                selectQuestForEdit(null);
+                container.innerHTML = `
+                    <div style="color:var(--text-muted);font-size:0.78rem;padding:16px 10px;text-align:center;line-height:1.5;">
+                        <i class="fa-solid fa-scroll" style="color:var(--accent-gold);margin-bottom:8px;font-size:1.3rem;display:block;opacity:0.6;"></i>
+                        No Quest cards in deck.<br>
+                        <span style="font-size:0.72rem;color:var(--text-muted);">Create a card with type <strong>"Quest"</strong> in the Card Creator first.</span>
+                    </div>`;
+                return;
+            }
+
+            // Auto-select first quest if none selected or invalid
+            if (!activeQuestId || !state.quests.some(q => q.id === activeQuestId)) {
+                activeQuestId = state.quests[0] ? state.quests[0].id : null;
+            }
+
+            state.quests.forEach(quest => {
+                const item = document.createElement("div");
+                item.className = "quest-sidebar-item" + (quest.id === activeQuestId ? " active" : "");
+                item.dataset.questId = quest.id;
+
+                const levelCount = (quest.levels && Array.isArray(quest.levels)) ? quest.levels.length : 0;
+                const badgeHtml = levelCount === 0
+                    ? `<span style="font-size:0.6rem;font-weight:800;background:linear-gradient(135deg, #a78bfa, #8b5cf6);color:#000;padding:2px 6px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0;">NEW</span>`
+                    : `<span style="font-size:0.68rem;color:var(--text-muted);flex-shrink:0;">${levelCount}L</span>`;
+
+                item.innerHTML = `<i class="fa-solid fa-scroll" style="color:#a78bfa;"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">${escapeHtml(quest.name || "Unnamed Quest")}</span>${badgeHtml}`;
+                
+                item.addEventListener("click", () => {
+                    commitActiveQuestFromForm();
+                    selectQuestForEdit(quest.id);
+                });
+                container.appendChild(item);
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        // ── Select & load a quest into the editor ─────
+
+        function selectQuestForEdit(questId) {
+            activeQuestId = questId;
+            const editorEmpty = document.getElementById("quest-editor-empty");
+            const editorContent = document.getElementById("quest-editor-content");
+
+            // Update sidebar highlight
+            document.querySelectorAll(".quest-sidebar-item").forEach(el => {
+                el.classList.toggle("active", el.dataset.questId === questId);
+            });
+
+            if (!questId) {
+                if (editorEmpty) editorEmpty.style.display = "flex";
+                if (editorContent) editorContent.style.display = "none";
+                return;
+            }
+
+            const quest = state.quests.find(q => q.id === questId);
+            if (!quest) {
+                if (editorEmpty) editorEmpty.style.display = "flex";
+                if (editorContent) editorContent.style.display = "none";
+                return;
+            }
+
+            if (editorEmpty) editorEmpty.style.display = "none";
+            if (editorContent) { editorContent.style.display = "flex"; }
+
+            const titleEl = document.getElementById("quest-title-text");
+            if (titleEl) titleEl.textContent = quest.name || "Unnamed Quest";
+
+            renderQuestLevels(quest);
+        }
+
+        function commitActiveQuestFromForm() {
+            // All level changes are auto-saved on input/click
+        }
+
+        // ── Render all levels for a quest ─────────────
+
+        function renderQuestLevels(quest) {
+            const container = document.getElementById("quest-levels-container");
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (!quest.levels || quest.levels.length === 0) {
+                container.innerHTML = `<div style="color:var(--text-muted);font-size:0.82rem;padding:12px;text-align:center;border:1px dashed rgba(255,255,255,0.1);border-radius:10px;">No levels yet. Click <strong>Add Level</strong> to create the first quest level.</div>`;
+                return;
+            }
+
+            quest.levels.forEach((level, idx) => {
+                container.appendChild(buildQuestLevelCard(quest, level, idx));
+            });
+        }
+
+        // ── Build a single level editor card ──────────
+
+        function buildQuestLevelCard(quest, level, idx) {
+            const card = document.createElement("div");
+            card.className = "quest-level-card";
+            card.dataset.levelIdx = idx;
+            card.style.cssText = "background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:all 0.2s;";
+
+            const isCollapsed = !!level.collapsed;
+
+            // Header
+            const header = document.createElement("div");
+            header.className = "quest-level-header";
+            header.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,0.25);cursor:pointer;user-select:none;";
+
+            const leftHeader = document.createElement("div");
+            leftHeader.style.cssText = "display:flex;align-items:center;gap:8px;overflow:hidden;flex:1;margin-right:10px;";
+
+            const toggleIcon = document.createElement("span");
+            toggleIcon.style.cssText = "color:#a78bfa;font-size:0.85rem;display:flex;align-items:center;width:14px;justify-content:center;flex-shrink:0;";
+            toggleIcon.innerHTML = `<i class="fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}"></i>`;
+            leftHeader.appendChild(toggleIcon);
+
+            const titleSpan = document.createElement("span");
+            titleSpan.style.cssText = "font-family:var(--font-heading);font-size:0.88rem;color:var(--accent-gold);font-weight:700;flex-shrink:0;";
+            titleSpan.textContent = `Level ${idx + 1}`;
+            leftHeader.appendChild(titleSpan);
+
+            const summaryPreview = document.createElement("span");
+            summaryPreview.style.cssText = "font-size:0.75rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.85;";
+            if (level.description) {
+                summaryPreview.textContent = `— ${level.description}`;
+            }
+            leftHeader.appendChild(summaryPreview);
+            header.appendChild(leftHeader);
+
+            const rightHeader = document.createElement("div");
+            rightHeader.style.cssText = "display:flex;align-items:center;gap:10px;flex-shrink:0;";
+
+            const chipCountsBadge = document.createElement("span");
+            chipCountsBadge.className = "level-chip-counts";
+            chipCountsBadge.style.cssText = "font-size:0.68rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);";
+            
+            function updateSummaryBadge() {
+                const rCount = (level.rewardCards || []).length;
+                const uCount = (level.unlockCards || []).length;
+                const oCount = (level.opponents || []).length;
+                chipCountsBadge.textContent = `${rCount}R / ${uCount}U / ${oCount}O`;
+            }
+            updateSummaryBadge();
+            rightHeader.appendChild(chipCountsBadge);
+
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "quest-delete-level-btn";
+            delBtn.title = "Delete this level";
+            delBtn.style.cssText = "background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;transition:color 0.15s;";
+            delBtn.innerHTML = `<i class="fa-solid fa-trash-can"></i>`;
+            delBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                quest.levels.splice(idx, 1);
+                renderQuestLevels(quest);
+                renderQuestSidebarList();
+                saveQuestsToStorage();
+            });
+            rightHeader.appendChild(delBtn);
+            header.appendChild(rightHeader);
+
+            card.appendChild(header);
+
+            // Body container
+            const body = document.createElement("div");
+            body.className = "quest-level-body";
+            body.style.cssText = `padding:14px 16px;display:${isCollapsed ? 'none' : 'flex'};flex-direction:column;gap:14px;border-top:1px solid rgba(255,255,255,0.06);`;
+
+            // Click header to toggle collapse
+            header.addEventListener("click", (e) => {
+                if (e.target.closest(".quest-delete-level-btn")) return;
+                level.collapsed = !level.collapsed;
+                const nowCollapsed = level.collapsed;
+                body.style.display = nowCollapsed ? "none" : "flex";
+                toggleIcon.innerHTML = `<i class="fa-solid ${nowCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}"></i>`;
+                saveQuestsToStorage();
+            });
+
+            // 1. Quest Description
+            const questDescSection = document.createElement("div");
+            questDescSection.className = "quest-level-section";
+            questDescSection.innerHTML = `<div class="quest-level-section-label"><i class="fa-solid fa-align-left" style="color:#a78bfa;"></i> Quest Description</div>`;
+            const questDescTA = document.createElement("textarea");
+            questDescTA.placeholder = "Describe the quest task / objective for this level...";
+            questDescTA.value = level.questDescription || level.description || "";
+            questDescTA.rows = 2;
+            questDescTA.style.cssText = "width:100%;resize:vertical;font-size:0.83rem;line-height:1.5;";
+            questDescTA.addEventListener("input", () => {
+                level.questDescription = questDescTA.value;
+                level.description = questDescTA.value;
+                summaryPreview.textContent = level.questDescription ? `— ${level.questDescription}` : "";
+                saveQuestsToStorage();
+            });
+            questDescSection.appendChild(questDescTA);
+            body.appendChild(questDescSection);
+
+            // 2. Card Rewards section
+            body.appendChild(buildChipsSection(quest, level, idx, "rewardCards", "quest-reward-chip",
+                "Card Rewards", "fa-gift", "#86efac",
+                "Cards the player receives as reward",
+                "all",
+                updateSummaryBadge
+            ));
+
+            // 3. Rewards Description
+            const rewardsDescSection = document.createElement("div");
+            rewardsDescSection.className = "quest-level-section";
+            rewardsDescSection.innerHTML = `<div class="quest-level-section-label"><i class="fa-solid fa-file-lines" style="color:#86efac;"></i> Rewards Description</div>`;
+            const rewardsDescTA = document.createElement("textarea");
+            rewardsDescTA.placeholder = "Describe reward details, gold, XP, or special bonuses...";
+            rewardsDescTA.value = level.rewardsDescription || "";
+            rewardsDescTA.rows = 2;
+            rewardsDescTA.style.cssText = "width:100%;resize:vertical;font-size:0.83rem;line-height:1.5;";
+            rewardsDescTA.addEventListener("input", () => {
+                level.rewardsDescription = rewardsDescTA.value;
+                saveQuestsToStorage();
+            });
+            rewardsDescSection.appendChild(rewardsDescTA);
+            body.appendChild(rewardsDescSection);
+
+            // 4. Unlock Cards section
+            body.appendChild(buildChipsSection(quest, level, idx, "unlockCards", "quest-unlock-chip",
+                "Unlock Cards", "fa-lock-open", "#fde68a",
+                "Cards that become activated (unlocked) for the player",
+                "all",
+                updateSummaryBadge
+            ));
+
+            // 5. Opponents section (Strictly Creatures Only)
+            body.appendChild(buildChipsSection(quest, level, idx, "opponents", "quest-opponent-chip",
+                "Opponents (Creatures Only)", "fa-shield-halved", "#fca5a5",
+                "Creature cards acting as opponents in this level",
+                "creatures",
+                updateSummaryBadge
+            ));
+
+            // 6. Opponents Description
+            const opponentsDescSection = document.createElement("div");
+            opponentsDescSection.className = "quest-level-section";
+            opponentsDescSection.innerHTML = `<div class="quest-level-section-label"><i class="fa-solid fa-file-lines" style="color:#fca5a5;"></i> Opponents Description</div>`;
+            const opponentsDescTA = document.createElement("textarea");
+            opponentsDescTA.placeholder = "Describe opponent strategy, encounter notes, or special rules...";
+            opponentsDescTA.value = level.opponentsDescription || "";
+            opponentsDescTA.rows = 2;
+            opponentsDescTA.style.cssText = "width:100%;resize:vertical;font-size:0.83rem;line-height:1.5;";
+            opponentsDescTA.addEventListener("input", () => {
+                level.opponentsDescription = opponentsDescTA.value;
+                saveQuestsToStorage();
+            });
+            opponentsDescSection.appendChild(opponentsDescTA);
+            body.appendChild(opponentsDescSection);
+
+            card.appendChild(body);
+            return card;
+        }
+
+        // ── Generic chips section builder ─────────────
+
+        function buildChipsSection(quest, level, levelIdx, field, chipClass, label, icon, iconColor, placeholder, defaultCategory = "all", onUpdateCallback) {
+            if (!level[field]) level[field] = [];
+
+            const section = document.createElement("div");
+            section.className = "quest-level-section";
+
+            const labelHeader = document.createElement("div");
+            labelHeader.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;";
+
+            const labelEl = document.createElement("div");
+            labelEl.className = "quest-level-section-label";
+            labelEl.style.cssText = "margin-bottom:0;";
+            labelEl.innerHTML = `<i class="fa-solid ${icon}" style="color:${iconColor};"></i> ${label}`;
+            labelHeader.appendChild(labelEl);
+
+            let activeCategory = defaultCategory;
+
+            // Segmented Filter Toggle for Rewards & Unlocks (not needed for Opponents which are Creatures Only)
+            if (field !== "opponents") {
+                const segGroup = document.createElement("div");
+                segGroup.style.cssText = "display:flex;gap:3px;align-items:center;";
+
+                const categories = [
+                    { id: "all", label: "All" },
+                    { id: "creatures", label: "Creatures" },
+                    { id: "spells", label: "Spells" }
+                ];
+
+                categories.forEach(cat => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "seg-filter-btn" + (cat.id === activeCategory ? " active" : "");
+                    btn.style.cssText = `font-size:0.68rem;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid ${cat.id === activeCategory ? 'rgba(167, 139, 250, 0.5)' : 'rgba(255,255,255,0.08)'};background:${cat.id === activeCategory ? 'rgba(167, 139, 250, 0.2)' : 'rgba(255,255,255,0.04)'};color:${cat.id === activeCategory ? '#c4b5fd' : 'var(--text-muted)'};font-weight:${cat.id === activeCategory ? '600' : 'normal'};transition:all 0.15s;`;
+                    btn.textContent = cat.label;
+                    btn.addEventListener("click", () => {
+                        activeCategory = cat.id;
+                        segGroup.querySelectorAll("button").forEach(b => {
+                            b.style.background = "rgba(255,255,255,0.04)";
+                            b.style.borderColor = "rgba(255,255,255,0.08)";
+                            b.style.color = "var(--text-muted)";
+                            b.style.fontWeight = "normal";
+                        });
+                        btn.style.background = "rgba(167, 139, 250, 0.2)";
+                        btn.style.borderColor = "rgba(167, 139, 250, 0.5)";
+                        btn.style.color = "#c4b5fd";
+                        btn.style.fontWeight = "600";
+
+                        populateCardSelect(sel, level[field], activeCategory);
+                    });
+                    segGroup.appendChild(btn);
+                });
+                labelHeader.appendChild(segGroup);
+            }
+
+            section.appendChild(labelHeader);
+
+            // Chips area
+            const chipsArea = document.createElement("div");
+            chipsArea.className = "quest-chips-area";
+            section.appendChild(chipsArea);
+
+            function refreshChips() {
+                chipsArea.innerHTML = "";
+                level[field].forEach((cardId, cIdx) => {
+                    const cardObj = state.deck.find(c => c.id === cardId);
+                    const cardName = cardObj ? cardObj.cardName : cardId;
+                    const chip = document.createElement("span");
+                    chip.className = chipClass;
+                    chip.innerHTML = `${escapeHtml(cardName)}<button type="button" class="remove-chip" title="Remove">&times;</button>`;
+                    chip.querySelector(".remove-chip").addEventListener("click", () => {
+                        level[field].splice(cIdx, 1);
+                        refreshChips();
+                        populateCardSelect(sel, level[field], activeCategory);
+                        if (onUpdateCallback) onUpdateCallback();
+                        saveQuestsToStorage();
+                    });
+                    chipsArea.appendChild(chip);
+                });
+                if (level[field].length === 0) {
+                    chipsArea.innerHTML = `<span style="font-size:0.75rem;color:var(--text-muted);padding:4px 2px;">${placeholder}</span>`;
+                }
+            }
+
+            // Add row
+            const addRow = document.createElement("div");
+            addRow.className = "quest-add-row";
+
+            const sel = document.createElement("select");
+            sel.style.cssText = "flex:1;font-size:0.8rem;padding:5px 8px;";
+            populateCardSelect(sel, level[field], activeCategory);
+            addRow.appendChild(sel);
+
+            refreshChips();
+
+            const addBtn = document.createElement("button");
+            addBtn.type = "button";
+            addBtn.className = "secondary-btn";
+            addBtn.style.cssText = "flex-shrink:0;font-size:0.76rem;padding:5px 12px;width:auto;margin:0;";
+            addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> Add`;
+            addBtn.addEventListener("click", () => {
+                const chosen = sel.value;
+                if (!chosen) return;
+                if (!level[field].includes(chosen)) {
+                    level[field].push(chosen);
+                    refreshChips();
+                    populateCardSelect(sel, level[field], activeCategory);
+                    sel.value = "";
+                    if (onUpdateCallback) onUpdateCallback();
+                    saveQuestsToStorage();
+                }
+            });
+            addRow.appendChild(addBtn);
+            section.appendChild(addRow);
+
+            return section;
+        }
+
+        // ── Populate card select from deck with category filter ──
+
+        function populateCardSelect(sel, excludeIds, filterCategory = "all") {
+            const prev = sel.value;
+            sel.innerHTML = `<option value="">— Select a card —</option>`;
+            (state.deck || []).forEach(card => {
+                const cardName = (card.cardName || card.name || "").trim();
+                if (!cardName) return;
+                if (excludeIds && excludeIds.includes(card.id)) return;
+
+                const cardType = (card.cardType || "").trim();
+                const cardId = (card.id || "").trim().toLowerCase();
+
+                // 1. Exclude Quests
+                if (cardType === "Quest" || cardId.includes("quest")) return;
+
+                // 2. Exclude Wizards & Towers
+                if (cardType === "Wizard" || cardType === "Tower") return;
+                if (cardId.includes("wizard") || cardId.includes("tower")) return;
+                if (/wizard/i.test(cardName) || /tower/i.test(cardName)) return;
+
+                // 3. Exclude Spells/cards ending with "Ability"
+                if (/ability$/i.test(cardName) || cardId.endsWith("ability") || cardId.includes("_ability")) return;
+
+                const isCreature = cardType === "Creature" || (!!card.hasPt && cardType !== "Tower" && cardType !== "Wizard");
+                const isSpell = !isCreature && cardType !== "Land";
+
+                if (filterCategory === "creatures" || filterCategory === "creature") {
+                    if (!isCreature) return;
+                } else if (filterCategory === "spells" || filterCategory === "spell") {
+                    if (!isSpell) return;
+                }
+
+                const opt = document.createElement("option");
+                opt.value = card.id;
+                opt.textContent = cardName + (cardType ? ` (${cardType})` : "");
+                sel.appendChild(opt);
+            });
+            if (prev) sel.value = prev;
+        }
+
+        // ── Clear all levels for active quest ─────────
+
+        function deleteActiveQuest() {
+            if (!activeQuestId) return;
+            const quest = state.quests.find(q => q.id === activeQuestId);
+            if (!quest) return;
+            const name = quest.name || "Unnamed Quest";
+            showAffirmationModal(
+                "Clear Quest Levels",
+                `Are you sure you want to clear all levels for <strong>${escapeHtml(name)}</strong>?`,
+                true,
+                () => {
+                    quest.levels = [];
+                    renderQuestLevels(quest);
+                    renderQuestSidebarList();
+                    saveQuestsToStorage();
+                }
+            );
+        }
+
+        // ── Add a level to the active quest ───────────
+
+        function addLevelToActiveQuest() {
+            if (!activeQuestId) return;
+            const quest = state.quests.find(q => q.id === activeQuestId);
+            if (!quest) return;
+            if (!quest.levels) quest.levels = [];
+            quest.levels.push({
+                description: "",
+                rewardCards: [],
+                unlockCards: [],
+                opponents: []
+            });
+            renderQuestLevels(quest);
+            renderQuestSidebarList();
+        }
+
+        // ── Save all quests ───────────────────────────
+
+        function saveAllQuests() {
+            commitActiveQuestFromForm();
+            saveQuestsToStorage();
+            showToast("All quests saved!");
+            renderQuestSidebarList();
+        }
+
+        // ── Wire up quest panel events ─────────────────
+
+        function initQuestManagerEvents() {
+            loadQuestsFromStorage();
+
+            const manageQuestsBtn = document.getElementById("manage-quests-btn");
+            if (manageQuestsBtn) manageQuestsBtn.addEventListener("click", openQuestsPanel);
+
+            const deleteQuestBtn = document.getElementById("delete-quest-btn");
+            if (deleteQuestBtn) deleteQuestBtn.addEventListener("click", deleteActiveQuest);
+
+            const addLevelBtn = document.getElementById("add-quest-level-btn");
+            if (addLevelBtn) addLevelBtn.addEventListener("click", addLevelToActiveQuest);
+        }
+
         // DOM Loaded Init
         document.addEventListener("DOMContentLoaded", () => {
             setupManaButtonIcons();
@@ -6689,6 +7744,7 @@
             initFormValues();
             initEvents();
             initFilters();
+            initQuestManagerEvents();
 
             // Init image loading toggle
             const imgLoadingToggle = document.getElementById("img-loading-toggle");
@@ -6719,5 +7775,6 @@
                 });
         });
     </script>
+
 </body>
 </html>
