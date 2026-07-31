@@ -150,6 +150,7 @@
             padding: 12px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: margin-bottom 0.2s ease, padding 0.2s ease;
         }
 
         .control-group h3 {
@@ -160,15 +161,49 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;
+            width: calc(100% + 12px);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 6px;
+            margin: -4px -6px 10px -6px;
+            border-radius: 6px;
+            transition: background 0.15s ease, margin-bottom 0.2s ease;
+        }
+
+        .control-group h3:hover {
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .control-group h3 span {
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .panel-chevron {
+            transition: transform 0.25s ease;
+            font-size: 0.7rem;
+            opacity: 0.75;
+            color: var(--accent-gold);
+        }
+
+        .control-group.collapsed {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+        }
+
+        .control-group.collapsed h3 {
+            margin-bottom: 0;
+        }
+
+        .control-group.collapsed .panel-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .control-group.collapsed > :not(h3) {
+            display: none !important;
         }
 
         .reset-panel-btn {
@@ -1870,7 +1905,7 @@
                 <!-- Title & Frame Group -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-id-card"></i> Identity & Frame</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-id-card"></i> Identity & Frame</span>
                         <button class="reset-panel-btn" id="reset-identity-btn" title="Reset Identity & Frame"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     
@@ -1917,7 +1952,7 @@
                 <!-- Mana Cost Builder Group -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-bolt"></i> Mana Cost</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-bolt"></i> Mana Cost</span>
                         <button class="reset-panel-btn" id="reset-mana-btn" title="Reset Mana Cost"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="mana-builder-wrapper">
@@ -1940,7 +1975,7 @@
                 <!-- Type & Stats Group -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-gears"></i> Type & Stats</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-gears"></i> Type & Stats</span>
                         <div style="display: flex; gap: 6px; align-items: center;">
                             <button class="reset-panel-btn" id="manage-types-btn" title="Manage Card Types" style="opacity: 0.8;"><i class="fa-solid fa-gear"></i> Edit</button>
                             <button class="reset-panel-btn" id="reset-type-stats-btn" title="Reset Type & Stats"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
@@ -2001,7 +2036,7 @@
                 <!-- Card Art Group -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-image"></i> Card Illustration</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-image"></i> Card Illustration</span>
                         <button class="reset-panel-btn" id="reset-illustration-btn" title="Reset Illustration"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="dropzone" id="card-art-dropzone">
@@ -2049,7 +2084,7 @@
                 <!-- Custom Description Text -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-align-left"></i> Custom Description Text</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-align-left"></i> Custom Description Text</span>
                         <button class="reset-panel-btn" id="reset-custom-description-btn" title="Reset Description"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="input-container">
@@ -2068,7 +2103,7 @@
                 <!-- Keyword Abilities -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-circle-check"></i> Keyword Abilities</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-circle-check"></i> Keyword Abilities</span>
                         <div style="display: flex; gap: 6px; align-items: center;">
                             <button class="reset-panel-btn" id="manage-keywords-btn" title="Manage Keywords" style="opacity: 0.8;"><i class="fa-solid fa-gear"></i> Edit</button>
                             <button class="reset-panel-btn" id="reset-keywords-btn" title="Reset Keywords"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
@@ -2082,7 +2117,7 @@
                 <!-- Activated Abilities -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-burst"></i> Activated Abilities</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-burst"></i> Activated Abilities</span>
                         <button class="reset-panel-btn" id="reset-activated-btn" title="Reset Activated Abilities"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="mana-builder-wrapper">
@@ -2127,7 +2162,7 @@
                 <!-- Card Rules Text -->
                 <div class="control-group">
                     <h3>
-                        <span><i class="fa-solid fa-font"></i> Custom Rules Text</span>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-font"></i> Custom Rules Text</span>
                         <button class="reset-panel-btn" id="reset-custom-rules-btn" title="Reset Custom Rules"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="input-container">
@@ -2322,13 +2357,20 @@
             
             <div class="control-sections">
                 <!-- Deck Name Section -->
-                <div class="deck-name-container" style="margin-bottom: 16px; padding: 0 4px;">
-                    <div class="input-label" style="font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-gold); margin-bottom: 6px;">Deck Name</div>
-                    <input type="text" id="deck-name-input" placeholder="Wizards Deck" value="Wizards Deck">
+                <div class="control-group" id="deck-name-panel">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-pen-to-square"></i> Deck Name</span>
+                    </h3>
+                    <div class="input-container" style="margin-bottom: 0;">
+                        <input type="text" id="deck-name-input" placeholder="Wizards Deck" value="Wizards Deck">
+                    </div>
                 </div>
 
                 <!-- Deck Filters -->
-                <div class="deck-filters">
+                <div class="control-group deck-filters" id="deck-filters-panel">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-filter"></i> Deck Filters</span>
+                    </h3>
                     <div class="filter-group">
                         <div class="filter-label">
                             <span>Filter by Mana</span>
@@ -2364,35 +2406,45 @@
                 </div>
 
                 <!-- Deck items container -->
-                <div class="deck-list" id="deck-list-container">
-                    <div class="deck-empty-placeholder">
-                        <i class="fa-solid fa-box-open"></i>
-                        No cards in deck yet.<br>Create a card and click "Generate".
+                <div class="control-group" id="deck-cards-panel">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-layer-group"></i> Deck Cards</span>
+                    </h3>
+                    <div class="deck-list" id="deck-list-container">
+                        <div class="deck-empty-placeholder">
+                            <i class="fa-solid fa-box-open"></i>
+                            No cards in deck yet.<br>Create a card and click "Generate".
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Deck settings and import/export operations -->
             <div class="sidebar-footer">
-                <div class="btn-column">
-                    <button class="secondary-btn" id="export-deck-btn">
-                        <i class="fa-solid fa-file-export"></i> Export Deck (JSON)
-                    </button>
-                    <button class="secondary-btn" id="export-all-art-btn">
-                        <i class="fa-solid fa-images"></i> Export All Art Only (PNGs)
-                    </button>
-                    <button class="secondary-btn" id="import-deck-btn">
-                        <i class="fa-solid fa-file-import"></i> Import Deck (JSON)
-                    </button>
-                    <button class="primary-btn" id="manage-quests-btn" type="button" onclick="openQuestsPanel()" style="margin-top: 6px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(168, 85, 247, 0.25)); border-color: rgba(139, 92, 246, 0.65);">
-                        <i class="fa-solid fa-scroll"></i> Manage Quests
-                    </button>
-                    <button class="danger-btn" id="clear-deck-btn">
-                        <i class="fa-solid fa-trash-can"></i> Clear Entire Deck
-                    </button>
-                    <button class="secondary-btn" style="margin-top: 6px;" onclick="window.location.href='index.html'">
-                        <i class="fa-solid fa-circle-arrow-left"></i> Return to Map
-                    </button>
+                <div class="control-group" id="deck-actions-panel" style="margin-bottom: 0;">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-sliders"></i> Deck Actions</span>
+                    </h3>
+                    <div class="btn-column">
+                        <button class="secondary-btn" id="export-deck-btn">
+                            <i class="fa-solid fa-file-export"></i> Export Deck (JSON)
+                        </button>
+                        <button class="secondary-btn" id="export-all-art-btn">
+                            <i class="fa-solid fa-images"></i> Export All Art Only (PNGs)
+                        </button>
+                        <button class="secondary-btn" id="import-deck-btn">
+                            <i class="fa-solid fa-file-import"></i> Import Deck (JSON)
+                        </button>
+                        <button class="primary-btn" id="manage-quests-btn" type="button" onclick="openQuestsPanel()" style="margin-top: 6px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(168, 85, 247, 0.25)); border-color: rgba(139, 92, 246, 0.65);">
+                            <i class="fa-solid fa-scroll"></i> Manage Quests
+                        </button>
+                        <button class="danger-btn" id="clear-deck-btn">
+                            <i class="fa-solid fa-trash-can"></i> Clear Entire Deck
+                        </button>
+                        <button class="secondary-btn" style="margin-top: 6px;" onclick="window.location.href='index.html'">
+                            <i class="fa-solid fa-circle-arrow-left"></i> Return to Map
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -7735,6 +7787,32 @@
             if (addLevelBtn) addLevelBtn.addEventListener("click", addLevelToActiveQuest);
         }
 
+        // ── Wire up collapsible panels ────────────────
+        function initCollapsiblePanels() {
+            const groups = document.querySelectorAll(".sidebar .control-group");
+            groups.forEach((group, index) => {
+                const h3 = group.querySelector("h3");
+                if (!h3) return;
+
+                const interactiveEls = h3.querySelectorAll("button, input, select, a, label");
+                interactiveEls.forEach((el) => {
+                    el.addEventListener("click", (e) => e.stopPropagation());
+                });
+
+                const panelKey = group.id ? `card_gen_panel_${group.id}` : `card_gen_panel_${index}`;
+                const isCollapsed = localStorage.getItem(panelKey) === "true";
+                if (isCollapsed) {
+                    group.classList.add("collapsed");
+                }
+
+                h3.addEventListener("click", () => {
+                    group.classList.toggle("collapsed");
+                    const collapsedNow = group.classList.contains("collapsed");
+                    localStorage.setItem(panelKey, collapsedNow ? "true" : "false");
+                });
+            });
+        }
+
         // DOM Loaded Init
         document.addEventListener("DOMContentLoaded", () => {
             setupManaButtonIcons();
@@ -7745,6 +7823,7 @@
             initEvents();
             initFilters();
             initQuestManagerEvents();
+            initCollapsiblePanels();
 
             // Init image loading toggle
             const imgLoadingToggle = document.getElementById("img-loading-toggle");
