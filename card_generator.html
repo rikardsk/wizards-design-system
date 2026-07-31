@@ -5166,8 +5166,9 @@
                     }
                 };
 
-                // Try creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
+                // Try quests/, creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
                 const basePaths = [
+                    ...withVariants(`quests/${rawName}`),
                     ...withVariants(`creatures/${rawName}`),
                     ...withVariants(`spells/${rawName}`),
                     ...withVariants(rawName),
@@ -5175,6 +5176,7 @@
                 // If illustration field differs from card name, also try card-name variant
                 if (cleanName !== rawName) {
                     basePaths.push(
+                        ...withVariants(`quests/${cleanName}`),
                         ...withVariants(`creatures/${cleanName}`),
                         ...withVariants(`spells/${cleanName}`),
                         ...withVariants(cleanName)
@@ -6227,7 +6229,7 @@
                                 Place the file <strong>${info.file}</strong> inside your project folder at:
                             </p>
                             <div style="font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 4px; color: var(--text-color); border: 1px dashed rgba(255,255,255,0.2);">
-                                Wizards Design System/creatures/${info.file}
+                                Wizards Design System/quests/${info.file} (or creatures/${info.file})
                             </div>
                         </div>
                         
