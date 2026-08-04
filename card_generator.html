@@ -189,6 +189,89 @@
             color: var(--accent-gold);
         }
 
+        /* Card selection tag chips (Spells / Companions sections) */
+        .card-tag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .card-tag-chip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 5px 8px 5px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            color: var(--text-light);
+            transition: background 0.15s;
+        }
+        .card-tag-chip:hover {
+            background: rgba(255, 255, 255, 0.09);
+        }
+        .card-tag-chip .chip-label {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-tag-chip .chip-type {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .card-tag-remove {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.35);
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 0.8rem;
+            line-height: 1;
+            transition: color 0.15s;
+            flex-shrink: 0;
+        }
+        .card-tag-remove:hover {
+            color: #f87171;
+        }
+        .card-section-add-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 2px;
+        }
+        .card-section-add-row select {
+            flex: 1;
+            min-width: 0;
+        }
+        .card-section-add-btn {
+            flex-shrink: 0;
+            background: rgba(var(--accent-gold-rgb, 212,175,55), 0.12);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--accent-gold);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card-section-add-btn:hover {
+            background: rgba(212,175,55,0.22);
+            border-color: rgba(212,175,55,0.4);
+        }
+        .card-tag-empty {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 4px 2px;
+        }
+
         .control-group.collapsed {
             margin-bottom: 8px;
             padding-bottom: 8px;
@@ -2170,6 +2253,67 @@
                     </div>
                 </div>
 
+                <!-- Upkeep Cost -->
+                <div class="control-group">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-rotate"></i> Upkeep</span>
+                        <button class="reset-panel-btn" id="reset-upkeep-btn" title="Reset Upkeep Cost"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="mana-builder-wrapper">
+                        <div class="mana-display-row" id="upkeep-display-container"></div>
+                        <div class="mana-buttons-grid">
+                            <button class="mana-btn upkeep-mana-btn" data-mana="C1" title="Colorless 1">1</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="C2" title="Colorless 2">2</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="W" title="White (Plains)">W</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="U" title="Blue (Island)">U</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="B" title="Black (Swamp)">B</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="R" title="Red (Mountain)">R</button>
+                            <button class="mana-btn upkeep-mana-btn" data-mana="G" title="Green (Forest)">G</button>
+                            <button class="mana-btn clear-mana-btn" id="clear-upkeep-mana-btn">
+                                <i class="fa-solid fa-trash-can"></i> Clear Mana
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spells Section -->
+                <div class="control-group" id="deck-spells-panel">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-fire-flame-curved"></i> Spells</span>
+                        <button class="reset-panel-btn" id="reset-spells-btn" title="Clear all spells"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="card-section-add-row">
+                        <select id="spell-add-select">
+                            <option value="">-- Select a Spell --</option>
+                        </select>
+                        <button class="card-section-add-btn" id="spell-add-btn" title="Add spell">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="card-tag-list" id="spell-tag-list">
+                        <span class="card-tag-empty">No spells added yet.</span>
+                    </div>
+                </div>
+
+                <!-- Companions Section -->
+                <div class="control-group" id="deck-companions-panel">
+                    <h3>
+                        <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-paw"></i> Companions</span>
+                        <button class="reset-panel-btn" id="reset-companions-btn" title="Clear all companions"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </h3>
+                    <div class="card-section-add-row">
+                        <select id="companion-add-select">
+                            <option value="">-- Select a Creature --</option>
+                        </select>
+                        <button class="card-section-add-btn" id="companion-add-btn" title="Add companion">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="card-tag-list" id="companion-tag-list">
+                        <span class="card-tag-empty">No companions added yet.</span>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Operations buttons -->
@@ -2370,6 +2514,7 @@
                 <div class="control-group deck-filters" id="deck-filters-panel">
                     <h3>
                         <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-filter"></i> Deck Filters</span>
+                        <button class="reset-panel-btn" id="reset-deck-filters-btn" title="Reset All Filters"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
                     <div class="filter-group">
                         <div class="filter-label">
@@ -2401,6 +2546,24 @@
                         </div>
                         <select id="subtype-filter-select" class="subtype-filter-select">
                             <option value="">All Subtypes</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Keyword</span>
+                            <button class="clear-filters-btn" id="clear-keyword-filters-btn">Clear</button>
+                        </div>
+                        <select id="keyword-filter-select" class="subtype-filter-select">
+                            <option value="">All Keywords</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Ability</span>
+                            <button class="clear-filters-btn" id="clear-ability-filters-btn">Clear</button>
+                        </div>
+                        <select id="ability-filter-select" class="subtype-filter-select">
+                            <option value="">All Abilities</option>
                         </select>
                     </div>
                 </div>
@@ -2671,10 +2834,15 @@
             tempAbilityManaCost: [],
             abilityManaSize: 14,
             target: "",
+            upkeepCost: [],
             
             // Full deck database
             deck: [],
             selectedCardId: null, // If editing a card, its ID
+
+            // Curated spell & companion selections (IDs)
+            deckSpells: [],
+            deckCompanions: [],
 
             // Viewport configuration
             canvasBackground: "dark",
@@ -3465,6 +3633,7 @@
             updateManaDisplay();
             renderAbilityManaDisplay();
             renderActivatedAbilitiesList();
+            updateUpkeepManaDisplay();
             updateCardPreview();
         }
 
@@ -3707,6 +3876,31 @@
             clearManaBtn.addEventListener("click", () => {
                 state.manaCost = [];
                 updateManaDisplay();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            // Upkeep mana buttons
+            document.querySelectorAll(".upkeep-mana-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const symbol = btn.dataset.mana;
+                    state.upkeepCost = mergeColorlessMana([...(state.upkeepCost || []), symbol]);
+                    updateUpkeepManaDisplay();
+                    updateCardPreview();
+                    autoSaveCurrentCard();
+                });
+            });
+
+            document.getElementById("clear-upkeep-mana-btn")?.addEventListener("click", () => {
+                state.upkeepCost = [];
+                updateUpkeepManaDisplay();
+                updateCardPreview();
+                autoSaveCurrentCard();
+            });
+
+            document.getElementById("reset-upkeep-btn")?.addEventListener("click", () => {
+                state.upkeepCost = [];
+                updateUpkeepManaDisplay();
                 updateCardPreview();
                 autoSaveCurrentCard();
             });
@@ -4447,6 +4641,18 @@
             });
         }
 
+        function updateUpkeepManaDisplay() {
+            const container = document.getElementById("upkeep-display-container");
+            if (!container) return;
+            container.innerHTML = "";
+            (state.upkeepCost || []).forEach(symbol => {
+                const span = document.createElement("span");
+                span.className = "mana-item";
+                span.appendChild(createManaSvg(symbol));
+                container.appendChild(span);
+            });
+        }
+
         // Helper to generate Svg DOM nodes based on symbol name
         function createManaSvg(symbol) {
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -4834,6 +5040,42 @@
                     cardPreviewRules.appendChild(p);
                 });
             }
+
+            // 4. Upkeep cost
+            if (state.upkeepCost && state.upkeepCost.length > 0) {
+                const p = document.createElement("div");
+                p.className = "rules-paragraph";
+                const label = document.createElement("em");
+                const strong = document.createElement("strong");
+                strong.textContent = "Upkeep: ";
+                label.appendChild(strong);
+                p.appendChild(label);
+                state.upkeepCost.forEach(symbol => {
+                    p.appendChild(createManaSvg(symbol));
+                });
+                cardPreviewRules.appendChild(p);
+            }
+
+            // 5. Spells & Companions deck selections
+            const spellNames = (state.deckSpells || [])
+                .map(id => state.deck.find(c => c.id === id)?.cardName)
+                .filter(Boolean);
+            const companionNames = (state.deckCompanions || [])
+                .map(id => state.deck.find(c => c.id === id)?.cardName)
+                .filter(Boolean);
+
+            if (spellNames.length > 0) {
+                const p = document.createElement("div");
+                p.className = "rules-paragraph";
+                p.innerHTML = `<em><strong>Spells:</strong> ${spellNames.join(", ")}</em>`;
+                cardPreviewRules.appendChild(p);
+            }
+            if (companionNames.length > 0) {
+                const p = document.createElement("div");
+                p.className = "rules-paragraph";
+                p.innerHTML = `<em><strong>Companions:</strong> ${companionNames.join(", ")}</em>`;
+                cardPreviewRules.appendChild(p);
+            }
             
             // Type Box & Quest Level label
             let fullTypeString = state.cardType;
@@ -4919,6 +5161,9 @@
             state.customDescriptionItalic = true;
             state.power = "1";
             state.toughness = "1";
+            state.upkeepCost = [];
+            state.deckSpells = [];
+            state.deckCompanions = [];
             state.artImage = null;
             state.artFilename = "";
             state.artScale = 1.0;
@@ -4982,8 +5227,10 @@
                 rulesText: state.rulesText || "",
                 customDescription: getEffectiveCustomDescription(state),
                 customDescriptionItalic: state.customDescriptionItalic !== false,
-                power: state.power || "1",
-                toughness: state.toughness || "1",
+                upkeepCost: [...(state.upkeepCost || [])],
+                spells: [...(state.deckSpells || [])],
+                companions: [...(state.deckCompanions || [])],
+                ...( ((availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || state.cardType === "Creature" || state.cardType === "Tower") ? { power: state.power || "1", toughness: state.toughness || "1" } : {} ),
                 artScale: state.artScale !== undefined ? state.artScale : 1.0,
                 artRotation: state.artRotation !== undefined ? state.artRotation : 0,
                 artX: state.artX !== undefined ? state.artX : 0,
@@ -5054,6 +5301,9 @@
             state.customDescriptionItalic = card.customDescriptionItalic !== false;
             state.power = card.power;
             state.toughness = card.toughness;
+            state.upkeepCost = mergeColorlessMana(card.upkeepCost || []);
+            state.deckSpells = [...(card.spells || [])];
+            state.deckCompanions = [...(card.companions || [])];
             state.keywords = [...(card.keywords || [])];
             const rawAbilities = JSON.parse(JSON.stringify(card.activatedAbilities || []));
             state.activatedAbilities = rawAbilities.map(ability => ({
@@ -5311,7 +5561,9 @@
             const request = store.put({ 
                 id: "current_deck", 
                 cards: state.deck,
-                name: state.deckName || "Wizards Deck"
+                name: state.deckName || "Wizards Deck",
+                deckSpells: state.deckSpells || [],
+                deckCompanions: state.deckCompanions || []
             });
             
             request.onsuccess = () => {
@@ -5525,6 +5777,8 @@
                     const result = e.target.result;
                     if (result && result.cards) {
                         state.deck = result.cards;
+                        state.deckSpells = result.deckSpells || [];
+                        state.deckCompanions = result.deckCompanions || [];
                         const hasTowerAbilities = state.deck.some(card => card.id && card.id.includes("tower_ability"));
                         if (!hasTowerAbilities) {
                             const defaultAbilities = [
@@ -5769,6 +6023,8 @@
         const activeManaFilters = new Set();
         const activeTypeFilters = new Set();
         let activeSubtypeFilter = "";
+        let activeKeywordFilter = "";
+        let activeAbilityFilter = "";
 
         // Helper to check if card matches active filters
         function cardMatchesFilters(card) {
@@ -5816,6 +6072,20 @@
                 }
             }
 
+            // 4. Keyword filtering
+            if (activeKeywordFilter) {
+                if (!card.keywords || !card.keywords.some(kw => kw.trim().toLowerCase() === activeKeywordFilter.toLowerCase())) {
+                    return false;
+                }
+            }
+
+            // 5. Ability filtering
+            if (activeAbilityFilter) {
+                if (!card.activatedAbilities || !card.activatedAbilities.some(ab => ab.text && ab.text.trim().toLowerCase() === activeAbilityFilter.toLowerCase())) {
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -5852,6 +6122,80 @@
             }
         }
 
+        // Populate the keyword filter dropdown with all used keywords
+        function populateKeywordFilterSelect() {
+            const select = document.getElementById("keyword-filter-select");
+            if (!select) return;
+
+            const keywordSet = new Set(availableKeywords || []);
+            (state.deck || []).forEach(card => {
+                if (Array.isArray(card.keywords)) {
+                    card.keywords.forEach(kw => {
+                        if (kw && kw.trim()) {
+                            keywordSet.add(kw.trim());
+                        }
+                    });
+                }
+            });
+
+            const sortedKeywords = Array.from(keywordSet).sort((a, b) => a.localeCompare(b));
+            const currentSelection = activeKeywordFilter;
+
+            select.innerHTML = '<option value="">All Keywords</option>';
+            sortedKeywords.forEach(kw => {
+                const opt = document.createElement("option");
+                opt.value = kw;
+                opt.textContent = kw;
+                select.appendChild(opt);
+            });
+
+            if (currentSelection && sortedKeywords.includes(currentSelection)) {
+                select.value = currentSelection;
+            } else {
+                select.value = "";
+                if (currentSelection && !sortedKeywords.includes(currentSelection)) {
+                    activeKeywordFilter = "";
+                }
+            }
+        }
+
+        // Populate the ability filter dropdown with all unique activated abilities from the deck
+        function populateAbilityFilterSelect() {
+            const select = document.getElementById("ability-filter-select");
+            if (!select) return;
+
+            const abilitySet = new Set();
+            (state.deck || []).forEach(card => {
+                if (Array.isArray(card.activatedAbilities)) {
+                    card.activatedAbilities.forEach(ab => {
+                        if (ab && ab.text && ab.text.trim()) {
+                            abilitySet.add(ab.text.trim());
+                        }
+                    });
+                }
+            });
+
+            const sortedAbilities = Array.from(abilitySet).sort((a, b) => a.localeCompare(b));
+            const currentSelection = activeAbilityFilter;
+
+            select.innerHTML = '<option value="">All Abilities</option>';
+            sortedAbilities.forEach(ab => {
+                const opt = document.createElement("option");
+                opt.value = ab;
+                opt.textContent = ab;
+                select.appendChild(opt);
+            });
+
+            if (currentSelection && sortedAbilities.includes(currentSelection)) {
+                select.value = currentSelection;
+            } else {
+                select.value = "";
+                if (currentSelection && !sortedAbilities.includes(currentSelection)) {
+                    activeAbilityFilter = "";
+                }
+            }
+        }
+
         // Initialize filter buttons and handlers
         function initFilters() {
             // Populate mana icons in filter buttons
@@ -5876,11 +6220,31 @@
 
             renderTypeFilterButtons();
             populateSubtypeFilterSelect();
+            populateKeywordFilterSelect();
+            populateAbilityFilterSelect();
 
             const subtypeSelect = document.getElementById("subtype-filter-select");
             if (subtypeSelect) {
                 subtypeSelect.addEventListener("change", (e) => {
                     activeSubtypeFilter = e.target.value;
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
+            const keywordSelect = document.getElementById("keyword-filter-select");
+            if (keywordSelect) {
+                keywordSelect.addEventListener("change", (e) => {
+                    activeKeywordFilter = e.target.value;
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
+            const abilitySelect = document.getElementById("ability-filter-select");
+            if (abilitySelect) {
+                abilitySelect.addEventListener("change", (e) => {
+                    activeAbilityFilter = e.target.value;
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
@@ -5905,6 +6269,49 @@
                 clearSubtypeBtn.addEventListener("click", () => {
                     activeSubtypeFilter = "";
                     if (subtypeSelect) subtypeSelect.value = "";
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
+            const clearKeywordBtn = document.getElementById("clear-keyword-filters-btn");
+            if (clearKeywordBtn) {
+                clearKeywordBtn.addEventListener("click", () => {
+                    activeKeywordFilter = "";
+                    if (keywordSelect) keywordSelect.value = "";
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
+            const clearAbilityBtn = document.getElementById("clear-ability-filters-btn");
+            if (clearAbilityBtn) {
+                clearAbilityBtn.addEventListener("click", () => {
+                    activeAbilityFilter = "";
+                    if (abilitySelect) abilitySelect.value = "";
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
+            const resetDeckFiltersBtn = document.getElementById("reset-deck-filters-btn");
+            if (resetDeckFiltersBtn) {
+                resetDeckFiltersBtn.addEventListener("click", () => {
+                    activeManaFilters.clear();
+                    document.querySelectorAll(".mana-filter-btn").forEach(btn => btn.classList.remove("active"));
+                    
+                    activeTypeFilters.clear();
+                    document.querySelectorAll(".type-filter-btn").forEach(btn => btn.classList.remove("active"));
+                    
+                    activeSubtypeFilter = "";
+                    if (subtypeSelect) subtypeSelect.value = "";
+                    
+                    activeKeywordFilter = "";
+                    if (keywordSelect) keywordSelect.value = "";
+                    
+                    activeAbilityFilter = "";
+                    if (abilitySelect) abilitySelect.value = "";
+                    
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
@@ -5937,9 +6344,167 @@
             if (clearSubtypeBtn) {
                 clearSubtypeBtn.style.display = activeSubtypeFilter ? "inline-block" : "none";
             }
+
+            const clearKeywordBtn = document.getElementById("clear-keyword-filters-btn");
+            if (clearKeywordBtn) {
+                clearKeywordBtn.style.display = activeKeywordFilter ? "inline-block" : "none";
+            }
+
+            const clearAbilityBtn = document.getElementById("clear-ability-filters-btn");
+            if (clearAbilityBtn) {
+                clearAbilityBtn.style.display = activeAbilityFilter ? "inline-block" : "none";
+            }
         }
 
         // Render the deck manager list
+        // ── Spells & Companions section helpers ─────────────────────────────
+
+        function getSpellCards() {
+            return state.deck.filter(c =>
+                c.cardType === "Spell" &&
+                !( (c.id || "").includes("tower_ability") || (c.id || "").includes("wizard_ability") )
+            );
+        }
+
+        function getCreatureCards() {
+            return state.deck.filter(c => c.cardType === "Creature");
+        }
+
+        function renderSpellsSection() {
+            const spellSelect = document.getElementById("spell-add-select");
+            const tagList = document.getElementById("spell-tag-list");
+            if (!spellSelect || !tagList) return;
+
+            // Populate dropdown with spells not already added
+            const addedIds = new Set(state.deckSpells);
+            const availableSpells = getSpellCards();
+            spellSelect.innerHTML = "<option value=''>-- Select a Spell --</option>";
+            availableSpells
+                .filter(c => !addedIds.has(c.id))
+                .forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = c.cardName;
+                    spellSelect.appendChild(opt);
+                });
+
+            // Render tag chips
+            tagList.innerHTML = "";
+            if (state.deckSpells.length === 0) {
+                tagList.innerHTML = "<span class='card-tag-empty'>No spells added yet.</span>";
+                return;
+            }
+            state.deckSpells.forEach(id => {
+                const card = state.deck.find(c => c.id === id);
+                if (!card) return;
+                const chip = document.createElement("div");
+                chip.className = "card-tag-chip";
+                chip.innerHTML = `
+                    <span class="chip-label">${card.cardName}</span>
+                    <span class="chip-type">${card.cardSubType || card.cardType}</span>
+                    <button class="card-tag-remove" data-id="${id}" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                chip.querySelector(".card-tag-remove").addEventListener("click", () => {
+                    state.deckSpells = state.deckSpells.filter(x => x !== id);
+                    autoSaveCurrentCard();
+                    renderSpellsSection();
+                    updateCardPreview();
+                });
+                tagList.appendChild(chip);
+            });
+        }
+
+        function renderCompanionsSection() {
+            const companionSelect = document.getElementById("companion-add-select");
+            const tagList = document.getElementById("companion-tag-list");
+            if (!companionSelect || !tagList) return;
+
+            // Populate dropdown with creatures not already added
+            const addedIds = new Set(state.deckCompanions);
+            const availableCreatures = getCreatureCards();
+            companionSelect.innerHTML = "<option value=''>-- Select a Creature --</option>";
+            availableCreatures
+                .filter(c => !addedIds.has(c.id))
+                .forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = c.cardName;
+                    companionSelect.appendChild(opt);
+                });
+
+            // Render tag chips
+            tagList.innerHTML = "";
+            if (state.deckCompanions.length === 0) {
+                tagList.innerHTML = "<span class='card-tag-empty'>No companions added yet.</span>";
+                return;
+            }
+            state.deckCompanions.forEach(id => {
+                const card = state.deck.find(c => c.id === id);
+                if (!card) return;
+                const chip = document.createElement("div");
+                chip.className = "card-tag-chip";
+                chip.innerHTML = `
+                    <span class="chip-label">${card.cardName}</span>
+                    <span class="chip-type">${card.cardSubType || card.cardType} ${card.power !== undefined ? card.power + '/' + card.toughness : ''}</span>
+                    <button class="card-tag-remove" data-id="${id}" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                chip.querySelector(".card-tag-remove").addEventListener("click", () => {
+                    state.deckCompanions = state.deckCompanions.filter(x => x !== id);
+                    autoSaveCurrentCard();
+                    renderCompanionsSection();
+                    updateCardPreview();
+                });
+                tagList.appendChild(chip);
+            });
+        }
+
+        function initSpellsCompanionsControls() {
+            const spellAddBtn = document.getElementById("spell-add-btn");
+            const spellSelect = document.getElementById("spell-add-select");
+            const companionAddBtn = document.getElementById("companion-add-btn");
+            const companionSelect = document.getElementById("companion-add-select");
+            const resetSpellsBtn = document.getElementById("reset-spells-btn");
+            const resetCompanionsBtn = document.getElementById("reset-companions-btn");
+
+            spellAddBtn?.addEventListener("click", () => {
+                const id = spellSelect.value;
+                if (!id) return;
+                if (!state.deckSpells.includes(id)) {
+                    state.deckSpells.push(id);
+                    autoSaveCurrentCard();
+                    renderSpellsSection();
+                    updateCardPreview();
+                }
+            });
+
+            companionAddBtn?.addEventListener("click", () => {
+                const id = companionSelect.value;
+                if (!id) return;
+                if (!state.deckCompanions.includes(id)) {
+                    state.deckCompanions.push(id);
+                    autoSaveCurrentCard();
+                    renderCompanionsSection();
+                    updateCardPreview();
+                }
+            });
+
+            resetSpellsBtn?.addEventListener("click", () => {
+                state.deckSpells = [];
+                autoSaveCurrentCard();
+                renderSpellsSection();
+                updateCardPreview();
+            });
+
+            resetCompanionsBtn?.addEventListener("click", () => {
+                state.deckCompanions = [];
+                autoSaveCurrentCard();
+                renderCompanionsSection();
+                updateCardPreview();
+            });
+        }
+
+        // ── End Spells & Companions helpers ─────────────────────────────────
+
         function renderDeckList() {
             updateNavigationButtons();
             deckListContainer.innerHTML = "";
@@ -5952,16 +6517,20 @@
                         No cards in deck yet.<br>Type a Card Name to auto-create a card!
                     </div>
                 `;
+                renderSpellsSection();
+                renderCompanionsSection();
                 return;
             }
 
             populateSubtypeFilterSelect();
+            populateKeywordFilterSelect();
+            populateAbilityFilterSelect();
 
             // Filter deck
             const filteredDeck = state.deck.filter(cardMatchesFilters);
 
             // Update deck count text
-            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter) {
+            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter || activeKeywordFilter || activeAbilityFilter) {
                 deckCount.textContent = `${filteredDeck.length} of ${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} shown`;
             } else {
                 deckCount.textContent = `${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} in Deck`;
@@ -6042,6 +6611,10 @@
                 row.appendChild(deleteBtn);
                 deckListContainer.appendChild(row);
             });
+
+            // Keep spell / companion dropdowns in sync with deck contents
+            renderSpellsSection();
+            renderCompanionsSection();
         }
 
         // Deck navigation function
@@ -6109,8 +6682,10 @@
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
                 customDescriptionItalic: state.customDescriptionItalic !== false,
-                power: state.power || "1",
-                toughness: state.toughness || "1",
+                upkeepCost: [...(state.upkeepCost || [])],
+                spells: [...(state.deckSpells || [])],
+                companions: [...(state.deckCompanions || [])],
+                ...( ((availableCardTypes.find(t => t.name === state.cardType)?.hasPt) || state.cardType === "Creature" || state.cardType === "Tower") ? { power: state.power || "1", toughness: state.toughness || "1" } : {} ),
                 artScale: state.artScale !== undefined ? state.artScale : 1.0,
                 artRotation: state.artRotation !== undefined ? state.artRotation : 0,
                 artX: state.artX !== undefined ? state.artX : 0,
@@ -6160,6 +6735,9 @@
                     rulesText: card.rulesText || "",
                     customDescription: card.customDescription || "",
                     customDescriptionItalic: card.customDescriptionItalic !== false,
+                    upkeepCost: Array.isArray(card.upkeepCost) ? card.upkeepCost : [],
+                    spells: Array.isArray(card.spells) ? card.spells : [],
+                    companions: Array.isArray(card.companions) ? card.companions : [],
                     power: card.power !== undefined ? String(card.power) : "1",
                     toughness: card.toughness !== undefined ? String(card.toughness) : "1",
                     keywords: Array.isArray(card.keywords) ? card.keywords : [],
@@ -6172,6 +6750,8 @@
             const exportData = {
                 deckName: state.deckName || "Wizards Deck",
                 cards: normalizedCards,
+                deckSpells: Array.isArray(state.deckSpells) ? state.deckSpells : [],
+                deckCompanions: Array.isArray(state.deckCompanions) ? state.deckCompanions : [],
                 quests: Array.isArray(state.quests) ? state.quests : []
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
@@ -6293,6 +6873,9 @@
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
                 customDescriptionItalic: card.customDescriptionItalic !== false,
+                upkeepCost: Array.isArray(card.upkeepCost) ? card.upkeepCost : [],
+                spells: Array.isArray(card.spells) ? card.spells : [],
+                companions: Array.isArray(card.companions) ? card.companions : [],
                 power: card.power !== undefined ? String(card.power) : "1",
                 toughness: card.toughness !== undefined ? String(card.toughness) : "1",
                 artScale: 1.0,
@@ -6402,6 +6985,18 @@
 
                     if (imported && Array.isArray(imported.quests)) {
                         state.quests = imported.quests;
+                    }
+
+                    // Restore deck-level spell & companion selections
+                    if (imported && Array.isArray(imported.deckSpells)) {
+                        state.deckSpells = imported.deckSpells;
+                    } else {
+                        state.deckSpells = [];
+                    }
+                    if (imported && Array.isArray(imported.deckCompanions)) {
+                        state.deckCompanions = imported.deckCompanions;
+                    } else {
+                        state.deckCompanions = [];
                     }
 
                     addImportedCardTypesToAvailable(rawCards);
@@ -7850,9 +8445,10 @@
             
             initIndexedDB()
                 .then(() => loadDeckFromStorage())
+                .then(() => initSpellsCompanionsControls())
                 .catch((err) => {
                     console.error("IndexedDB initialization failed, trying load without DB:", err);
-                    loadDeckFromStorage();
+                    loadDeckFromStorage().then(() => initSpellsCompanionsControls());
                 });
         });
     </script>
