@@ -3385,7 +3385,8 @@
             if (!cardTypeSelect) return;
             const currentValue = state.cardType || "Creature";
             cardTypeSelect.innerHTML = "";
-            availableCardTypes.forEach(type => {
+            const sortedTypes = [...availableCardTypes].sort((a, b) => a.name.localeCompare(b.name));
+            sortedTypes.forEach(type => {
                 const option = document.createElement("option");
                 option.value = type.name;
                 if (type.name === "Spell") {
@@ -3434,7 +3435,8 @@
         function renderTypesManagerList() {
             if (!typesManagerList) return;
             typesManagerList.innerHTML = "";
-            availableCardTypes.forEach(type => {
+            const sortedTypes = [...availableCardTypes].sort((a, b) => a.name.localeCompare(b.name));
+            sortedTypes.forEach(type => {
                 const item = document.createElement("div");
                 item.className = "keyword-manager-item";
                 
@@ -4284,6 +4286,7 @@
                 }
                 
                 availableCardTypes.push({ name: formattedType, hasPt: false });
+                availableCardTypes.sort((a, b) => a.name.localeCompare(b.name));
                 saveAvailableCardTypes();
                 
                 newTypeInput.value = "";
