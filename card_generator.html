@@ -3408,7 +3408,8 @@
         function renderTypeFilterButtons() {
             if (!typeFiltersContainer) return;
             typeFiltersContainer.innerHTML = "";
-            availableCardTypes.forEach(type => {
+            const sortedTypeFilters = [...availableCardTypes].sort((a, b) => a.name.localeCompare(b.name));
+            sortedTypeFilters.forEach(type => {
                 const btn = document.createElement("button");
                 btn.className = "type-filter-btn";
                 if (activeTypeFilters.has(type.name)) {
