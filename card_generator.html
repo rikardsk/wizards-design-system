@@ -3423,6 +3423,7 @@
                         activeTypeFilters.add(type.name);
                         btn.classList.add("active");
                     }
+                    populateSubtypeFilterSelect();
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
@@ -5416,8 +5417,10 @@
                     }
                 };
 
-                // Try quests/, creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
+                // Try heroes/, legends/, quests/, creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
                 const basePaths = [
+                    ...withVariants(`heroes/${rawName}`),
+                    ...withVariants(`legends/${rawName}`),
                     ...withVariants(`quests/${rawName}`),
                     ...withVariants(`creatures/${rawName}`),
                     ...withVariants(`spells/${rawName}`),
@@ -5426,6 +5429,8 @@
                 // If illustration field differs from card name, also try card-name variant
                 if (cleanName !== rawName) {
                     basePaths.push(
+                        ...withVariants(`heroes/${cleanName}`),
+                        ...withVariants(`legends/${cleanName}`),
                         ...withVariants(`quests/${cleanName}`),
                         ...withVariants(`creatures/${cleanName}`),
                         ...withVariants(`spells/${cleanName}`),
@@ -6089,18 +6094,50 @@
             return true;
         }
 
-        // Populate the subtype filter dropdown with all available and used card subtypes
+        // Populate the subtype filter dropdown with only subtypes used by cards
+        // that already pass the active mana + type filters.
         function populateSubtypeFilterSelect() {
             const select = document.getElementById("subtype-filter-select");
             if (!select) return;
-            
-            const subTypeSet = new Set(availableSubTypes || []);
+
+            // Helper: does this card pass mana + type filters only (not subtype)?
+            const cardPassesPreSubtypeFilters = (card) => {
+                // Mana/Color filter
+                if (activeManaFilters.size > 0) {
+                    const cardColors = new Set();
+                    let hasColoredMana = false;
+                    let hasColorlessMana = false;
+                    (card.manaCost || []).forEach(sym => {
+                        if (["W", "U", "B", "R", "G"].includes(sym)) {
+                            cardColors.add(sym);
+                            hasColoredMana = true;
+                        } else if (sym && (sym.toString().startsWith("C") || !isNaN(sym))) {
+                            cardColors.add("C");
+                            hasColorlessMana = true;
+                        }
+                    });
+                    if (!hasColoredMana && !hasColorlessMana) cardColors.add("C");
+                    let matchesMana = false;
+                    for (const col of activeManaFilters) {
+                        if (cardColors.has(col)) { matchesMana = true; break; }
+                    }
+                    if (!matchesMana) return false;
+                }
+                // Type filter
+                if (activeTypeFilters.size > 0) {
+                    if (!activeTypeFilters.has(card.cardType)) return false;
+                }
+                return true;
+            };
+
+            // Collect subtypes only from cards that match the pre-subtype filters
+            const subTypeSet = new Set();
             (state.deck || []).forEach(card => {
-                if (card.cardSubType && card.cardSubType.trim()) {
+                if (cardPassesPreSubtypeFilters(card) && card.cardSubType && card.cardSubType.trim()) {
                     subTypeSet.add(card.cardSubType.trim());
                 }
             });
-            
+
             const sortedSubtypes = Array.from(subTypeSet).sort((a, b) => a.localeCompare(b));
             const currentSelection = activeSubtypeFilter;
 
@@ -6253,6 +6290,7 @@
             document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
                 activeManaFilters.clear();
                 document.querySelectorAll(".mana-filter-btn").forEach(btn => btn.classList.remove("active"));
+                populateSubtypeFilterSelect();
                 updateClearFilterButtonsVisibility();
                 renderDeckList();
             });
@@ -6260,6 +6298,7 @@
             document.getElementById("clear-type-filters-btn").addEventListener("click", () => {
                 activeTypeFilters.clear();
                 document.querySelectorAll(".type-filter-btn").forEach(btn => btn.classList.remove("active"));
+                populateSubtypeFilterSelect();
                 updateClearFilterButtonsVisibility();
                 renderDeckList();
             });
@@ -6312,6 +6351,7 @@
                     activeAbilityFilter = "";
                     if (abilitySelect) abilitySelect.value = "";
                     
+                    populateSubtypeFilterSelect();
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
