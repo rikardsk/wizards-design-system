@@ -5856,6 +5856,132 @@
                             activatedAbilities: [],
                             abilityManaSize: 14,
                             illustration: "Tower of Terror Quest.png"
+                        },
+                        {
+                            id: "default_dragons_nest_quest",
+                            cardName: "Dragons Nest Quest",
+                            frameStyle: "red",
+                            borderColor: "black",
+                            manaCost: ["R", "R"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find the dragon's nest and kill the dragon that is bringing terror to the land.\n\nReward: Receive a dragon card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Dragons Nest Quest.jpg"
+                        },
+                        {
+                            id: "default_ancient_temple_ruins_quest",
+                            cardName: "Ancient Temple Ruins Quest",
+                            frameStyle: "green",
+                            borderColor: "black",
+                            manaCost: ["G", "G"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find the ancient temple ruins and kill the mythical creatures that dwell there.\n\nReward: Receive a mythical monsters card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Ancient Temple Ruins Quest.jpg"
+                        },
+                        {
+                            id: "default_city_of_the_dead_quest",
+                            cardName: "City of the Dead Quest",
+                            frameStyle: "black",
+                            borderColor: "black",
+                            manaCost: ["B", "B"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find the city of the dead and kill the skeleton king that lives there.\n\nReward: Receive a skeleton card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "City of the Dead Quest.jpg"
+                        },
+                        {
+                            id: "default_goblin_camp_quest",
+                            cardName: "Goblin Camp Quest",
+                            frameStyle: "red",
+                            borderColor: "black",
+                            manaCost: ["R", "R"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find the goblin camp and kill the powerful goblin king to bring peace to the land.\n\nReward: Receive a goblin card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Goblin Camp Quest.jpg"
+                        },
+                        {
+                            id: "default_crypt_of_the_undead_quest",
+                            cardName: "Crypt of the undead Quest",
+                            frameStyle: "black",
+                            borderColor: "black",
+                            manaCost: ["B", "B"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find the crypt and kill the undead.\n\nReward: Receive an undead card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Crypt of the undead Quest.jpg"
+                        },
+                        {
+                            id: "default_gladiator_school_quest",
+                            cardName: "Gladiator School Quest",
+                            frameStyle: "gold",
+                            borderColor: "black",
+                            manaCost: ["C2"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Visit the gladiator school and learn from the best.\n\nReward: Receive an gladiator card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Gladiator School Quest.jpg"
+                        },
+                        {
+                            id: "default_battle_arena_quest",
+                            cardName: "Battle Arena Quest",
+                            frameStyle: "red",
+                            borderColor: "black",
+                            manaCost: ["R", "R"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Try your luck in the battle arena and face off against the best of the best.\n\nReward: Receive a creatures card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Battle Arena Quest.jpg"
                         }
                     ];
                     saveDeckToStorage();
@@ -6061,6 +6187,181 @@
                             state.deck.push(...defaultQuest);
                             saveDeckToStorage();
                         }
+                        const hasDragonsNestQuest = state.deck.some(card => card.id && card.id.includes("dragons_nest_quest"));
+                        if (!hasDragonsNestQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_dragons_nest_quest",
+                                    cardName: "Dragons Nest Quest",
+                                    frameStyle: "red",
+                                    borderColor: "black",
+                                    manaCost: ["R", "R"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find the dragon's nest and kill the dragon that is bringing terror to the land.\n\nReward: Receive a dragon card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Dragons Nest Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasAncientTempleRuinsQuest = state.deck.some(card => card.id && card.id.includes("ancient_temple_ruins_quest"));
+                        if (!hasAncientTempleRuinsQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_ancient_temple_ruins_quest",
+                                    cardName: "Ancient Temple Ruins Quest",
+                                    frameStyle: "green",
+                                    borderColor: "black",
+                                    manaCost: ["G", "G"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find the ancient temple ruins and kill the mythical creatures that dwell there.\n\nReward: Receive a mythical monsters card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Ancient Temple Ruins Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasCityOfTheDeadQuest = state.deck.some(card => card.id && card.id.includes("city_of_the_dead_quest"));
+                        if (!hasCityOfTheDeadQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_city_of_the_dead_quest",
+                                    cardName: "City of the Dead Quest",
+                                    frameStyle: "black",
+                                    borderColor: "black",
+                                    manaCost: ["B", "B"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find the city of the dead and kill the skeleton king that lives there.\n\nReward: Receive a skeleton card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "City of the Dead Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasGoblinCampQuest = state.deck.some(card => card.id && card.id.includes("goblin_camp_quest"));
+                        if (!hasGoblinCampQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_goblin_camp_quest",
+                                    cardName: "Goblin Camp Quest",
+                                    frameStyle: "red",
+                                    borderColor: "black",
+                                    manaCost: ["R", "R"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find the goblin camp and kill the powerful goblin king to bring peace to the land.\n\nReward: Receive a goblin card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Goblin Camp Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasCryptOfTheUndeadQuest = state.deck.some(card => card.id && card.id.includes("crypt_of_the_undead_quest"));
+                        if (!hasCryptOfTheUndeadQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_crypt_of_the_undead_quest",
+                                    cardName: "Crypt of the undead Quest",
+                                    frameStyle: "black",
+                                    borderColor: "black",
+                                    manaCost: ["B", "B"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find the crypt and kill the undead.\n\nReward: Receive an undead card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Crypt of the undead Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasGladiatorSchoolQuest = state.deck.some(card => card.id && card.id.includes("gladiator_school_quest"));
+                        if (!hasGladiatorSchoolQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_gladiator_school_quest",
+                                    cardName: "Gladiator School Quest",
+                                    frameStyle: "gold",
+                                    borderColor: "black",
+                                    manaCost: ["C2"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Visit the gladiator school and learn from the best.\n\nReward: Receive an gladiator card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Gladiator School Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasBattleArenaQuest = state.deck.some(card => card.id && card.id.includes("battle_arena_quest"));
+                        if (!hasBattleArenaQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_battle_arena_quest",
+                                    cardName: "Battle Arena Quest",
+                                    frameStyle: "red",
+                                    borderColor: "black",
+                                    manaCost: ["R", "R"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Try your luck in the battle arena and face off against the best of the best.\n\nReward: Receive a creatures card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Battle Arena Quest.jpg"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
                         // Enforce correct illustration paths for default/ability/quest cards
                         let deckUpdated = false;
                         state.deck.forEach(card => {
@@ -6080,6 +6381,34 @@
                             }
                             if ((id.includes("tower_of_terror_quest") || name.includes("tower of terror quest") || (name.includes("tower of terror") && name.includes("quest"))) && card.illustration !== "Tower of Terror Quest.png") {
                                 card.illustration = "Tower of Terror Quest.png";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("dragons_nest_quest") || name.includes("dragons nest quest") || (name.includes("dragons nest") && name.includes("quest"))) && card.illustration !== "Dragons Nest Quest.jpg") {
+                                card.illustration = "Dragons Nest Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("ancient_temple_ruins_quest") || name.includes("ancient temple ruins quest") || (name.includes("ancient temple ruins") && name.includes("quest"))) && card.illustration !== "Ancient Temple Ruins Quest.jpg") {
+                                card.illustration = "Ancient Temple Ruins Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("city_of_the_dead_quest") || name.includes("city of the dead quest") || (name.includes("city of the dead") && name.includes("quest"))) && card.illustration !== "City of the Dead Quest.jpg") {
+                                card.illustration = "City of the Dead Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("goblin_camp_quest") || name.includes("goblin camp quest") || (name.includes("goblin camp") && name.includes("quest"))) && card.illustration !== "Goblin Camp Quest.jpg") {
+                                card.illustration = "Goblin Camp Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("crypt_of_the_undead_quest") || name.includes("crypt of the undead quest") || (name.includes("crypt of the undead") && name.includes("quest"))) && card.illustration !== "Crypt of the undead Quest.jpg") {
+                                card.illustration = "Crypt of the undead Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("gladiator_school_quest") || name.includes("gladiator school quest") || (name.includes("gladiator school") && name.includes("quest"))) && card.illustration !== "Gladiator School Quest.jpg") {
+                                card.illustration = "Gladiator School Quest.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("battle_arena_quest") || name.includes("battle arena quest") || (name.includes("battle arena") && name.includes("quest"))) && card.illustration !== "Battle Arena Quest.jpg") {
+                                card.illustration = "Battle Arena Quest.jpg";
                                 deckUpdated = true;
                             }
                         });
@@ -7003,6 +7332,20 @@
                 illustration = "Wizard Ability.png";
             } else if (idLower.includes("tower_of_terror_quest") || nameLower.includes("tower of terror quest") || (nameLower.includes("tower of terror") && nameLower.includes("quest"))) {
                 illustration = "Tower of Terror Quest.png";
+            } else if (idLower.includes("dragons_nest_quest") || nameLower.includes("dragons nest quest") || (nameLower.includes("dragons nest") && nameLower.includes("quest"))) {
+                illustration = "Dragons Nest Quest.jpg";
+            } else if (idLower.includes("ancient_temple_ruins_quest") || nameLower.includes("ancient temple ruins quest") || (nameLower.includes("ancient temple ruins") && nameLower.includes("quest"))) {
+                illustration = "Ancient Temple Ruins Quest.jpg";
+            } else if (idLower.includes("city_of_the_dead_quest") || nameLower.includes("city of the dead quest") || (nameLower.includes("city of the dead") && nameLower.includes("quest"))) {
+                illustration = "City of the Dead Quest.jpg";
+            } else if (idLower.includes("goblin_camp_quest") || nameLower.includes("goblin camp quest") || (nameLower.includes("goblin camp") && nameLower.includes("quest"))) {
+                illustration = "Goblin Camp Quest.jpg";
+            } else if (idLower.includes("crypt_of_the_undead_quest") || nameLower.includes("crypt of the undead quest") || (nameLower.includes("crypt of the undead") && nameLower.includes("quest"))) {
+                illustration = "Crypt of the undead Quest.jpg";
+            } else if (idLower.includes("gladiator_school_quest") || nameLower.includes("gladiator school quest") || (nameLower.includes("gladiator school") && nameLower.includes("quest"))) {
+                illustration = "Gladiator School Quest.jpg";
+            } else if (idLower.includes("battle_arena_quest") || nameLower.includes("battle arena quest") || (nameLower.includes("battle arena") && nameLower.includes("quest"))) {
+                illustration = "Battle Arena Quest.jpg";
             }
 
             return {
