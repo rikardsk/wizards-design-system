@@ -1340,6 +1340,35 @@
             display: block;
         }
 
+        /* Deck Sort Button */
+        .deck-sort-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.2s, opacity 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.6;
+            border-radius: 4px;
+        }
+        .deck-sort-btn:hover {
+            color: var(--accent-gold);
+            opacity: 1;
+        }
+        .deck-sort-btn.sort-active {
+            color: var(--accent-gold);
+            opacity: 1;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+
         /* Deck Manager Filters */
         .deck-filters {
             background: rgba(255, 255, 255, 0.02);
@@ -2572,6 +2601,7 @@
                 <div class="control-group" id="deck-cards-panel">
                     <h3>
                         <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-layer-group"></i> Deck Cards</span>
+                        <button class="deck-sort-btn" id="deck-sort-btn" title="Cycle sort order"><i class="fa-solid fa-arrow-up-wide-short"></i> Sort: Default</button>
                     </h3>
                     <div class="deck-list" id="deck-list-container">
                         <div class="deck-empty-placeholder">
@@ -3240,6 +3270,62 @@
         // Deck DOM Elements
         const deckCount = document.getElementById("deck-count");
         const deckListContainer = document.getElementById("deck-list-container");
+
+        // ── Deck Sort ─────────────────────────────────────────────────────────
+        const DECK_SORT_MODES = [
+            { key: "default",   label: "Default",       icon: "fa-arrow-up-wide-short" },
+            { key: "alpha-asc", label: "A → Z",         icon: "fa-arrow-down-a-z" },
+            { key: "alpha-desc",label: "Z → A",         icon: "fa-arrow-up-z-a" },
+            { key: "mana-asc",  label: "Mana ↑",        icon: "fa-arrow-up-1-9" },
+            { key: "mana-desc", label: "Mana ↓",        icon: "fa-arrow-down-9-1" },
+            { key: "color",     label: "Color",         icon: "fa-palette" },
+            { key: "type",      label: "Type",          icon: "fa-tag" },
+        ];
+        let deckSortIndex = 0;
+
+        function getTotalMana(card) {
+            if (!Array.isArray(card.manaCost)) return 0;
+            return card.manaCost.reduce((sum, sym) => {
+                if (sym.startsWith("C")) return sum + (parseInt(sym.substring(1)) || 0);
+                return sum + 1;
+            }, 0);
+        }
+
+        const COLOR_ORDER = ["W", "U", "B", "R", "G", "C"];
+        function getColorPriority(card) {
+            if (!Array.isArray(card.manaCost) || card.manaCost.length === 0) return 99;
+            const colours = card.manaCost.filter(s => !s.startsWith("C"));
+            if (colours.length === 0) return COLOR_ORDER.indexOf("C");
+            // Use the first coloured pip's priority
+            const p = COLOR_ORDER.indexOf(colours[0]);
+            return p === -1 ? 98 : p;
+        }
+
+        function sortedDeck(cards) {
+            const mode = DECK_SORT_MODES[deckSortIndex].key;
+            if (mode === "default") return [...cards];
+            const copy = [...cards];
+            copy.sort((a, b) => {
+                switch (mode) {
+                    case "alpha-asc":  return (a.cardName || "").localeCompare(b.cardName || "");
+                    case "alpha-desc": return (b.cardName || "").localeCompare(a.cardName || "");
+                    case "mana-asc":   return getTotalMana(a) - getTotalMana(b);
+                    case "mana-desc":  return getTotalMana(b) - getTotalMana(a);
+                    case "color":      return getColorPriority(a) - getColorPriority(b) || (a.cardName || "").localeCompare(b.cardName || "");
+                    case "type":       return (a.cardType || "").localeCompare(b.cardType || "") || (a.cardName || "").localeCompare(b.cardName || "");
+                    default:           return 0;
+                }
+            });
+            return copy;
+        }
+
+        function updateSortButton() {
+            const btn = document.getElementById("deck-sort-btn");
+            if (!btn) return;
+            const mode = DECK_SORT_MODES[deckSortIndex];
+            btn.innerHTML = `<i class="fa-solid ${mode.icon}"></i> Sort: ${mode.label}`;
+            btn.classList.toggle("sort-active", deckSortIndex !== 0);
+        }
         
         // Toast DOM Elements
         const toast = document.getElementById("toast");
@@ -5421,13 +5507,15 @@
                     }
                 };
 
-                // Try heroes/, legends/, quests/, creatures/, spells/, root — each with .png, .jpg, and .jpeg variants
+                // Try heroes/, legends/, quests/, creatures/, spells/, artifacts/, portals/, root — each with .png, .jpg, and .jpeg variants
                 const basePaths = [
                     ...withVariants(`heroes/${rawName}`),
                     ...withVariants(`legends/${rawName}`),
                     ...withVariants(`quests/${rawName}`),
                     ...withVariants(`creatures/${rawName}`),
                     ...withVariants(`spells/${rawName}`),
+                    ...withVariants(`artifacts/${rawName}`),
+                    ...withVariants(`portals/${rawName}`),
                     ...withVariants(rawName),
                 ];
                 // If illustration field differs from card name, also try card-name variant
@@ -5438,6 +5526,8 @@
                         ...withVariants(`quests/${cleanName}`),
                         ...withVariants(`creatures/${cleanName}`),
                         ...withVariants(`spells/${cleanName}`),
+                        ...withVariants(`artifacts/${cleanName}`),
+                        ...withVariants(`portals/${cleanName}`),
                         ...withVariants(cleanName)
                     );
                 }
@@ -6360,6 +6450,17 @@
                     renderDeckList();
                 });
             }
+
+            // Sort button
+            const deckSortBtn = document.getElementById("deck-sort-btn");
+            if (deckSortBtn) {
+                deckSortBtn.addEventListener("click", (e) => {
+                    e.stopPropagation(); // don't collapse the panel
+                    deckSortIndex = (deckSortIndex + 1) % DECK_SORT_MODES.length;
+                    updateSortButton();
+                    renderDeckList();
+                });
+            }
         }
 
         function updateClearFilterButtonsVisibility() {
@@ -6570,8 +6671,8 @@
             populateKeywordFilterSelect();
             populateAbilityFilterSelect();
 
-            // Filter deck
-            const filteredDeck = state.deck.filter(cardMatchesFilters);
+            // Filter then sort deck
+            const filteredDeck = sortedDeck(state.deck.filter(cardMatchesFilters));
 
             // Update deck count text
             if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter || activeKeywordFilter || activeAbilityFilter) {
