@@ -2311,6 +2311,11 @@
                         <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-fire-flame-curved"></i> Spells</span>
                         <button class="reset-panel-btn" id="reset-spells-btn" title="Clear all spells"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
+                    <div class="card-section-add-row" style="margin-bottom: 6px;">
+                        <select id="spell-subtype-filter-select" class="subtype-filter-select" style="font-size: 0.75rem; padding: 6px 10px; width: 100%;">
+                            <option value="">All Subtypes</option>
+                        </select>
+                    </div>
                     <div class="card-section-add-row">
                         <select id="spell-add-select">
                             <option value="">-- Select a Spell --</option>
@@ -2330,6 +2335,11 @@
                         <span><i class="fa-solid fa-chevron-down panel-chevron"></i><i class="fa-solid fa-paw"></i> Companions</span>
                         <button class="reset-panel-btn" id="reset-companions-btn" title="Clear all companions"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
                     </h3>
+                    <div class="card-section-add-row" style="margin-bottom: 6px;">
+                        <select id="companion-subtype-filter-select" class="subtype-filter-select" style="font-size: 0.75rem; padding: 6px 10px; width: 100%;">
+                            <option value="">All Subtypes</option>
+                        </select>
+                    </div>
                     <div class="card-section-add-row">
                         <select id="companion-add-select">
                             <option value="">-- Select a Creature --</option>
@@ -5255,6 +5265,8 @@
             state.upkeepCost = [];
             state.deckSpells = [];
             state.deckCompanions = [];
+            activeSpellSubtypeFilter = "";
+            activeCompanionSubtypeFilter = "";
             state.artImage = null;
             state.artFilename = "";
             state.artScale = 1.0;
@@ -5395,6 +5407,8 @@
             state.upkeepCost = mergeColorlessMana(card.upkeepCost || []);
             state.deckSpells = [...(card.spells || [])];
             state.deckCompanions = [...(card.companions || [])];
+            activeSpellSubtypeFilter = "";
+            activeCompanionSubtypeFilter = "";
             state.keywords = [...(card.keywords || [])];
             const rawAbilities = JSON.parse(JSON.stringify(card.activatedAbilities || []));
             state.activatedAbilities = rawAbilities.map(ability => ({
@@ -5507,30 +5521,41 @@
                     }
                 };
 
-                // Try heroes/, legends/, quests/, creatures/, spells/, artifacts/, portals/, root — each with .png, .jpg, and .jpeg variants
-                const basePaths = [
-                    ...withVariants(`heroes/${rawName}`),
-                    ...withVariants(`legends/${rawName}`),
-                    ...withVariants(`quests/${rawName}`),
-                    ...withVariants(`creatures/${rawName}`),
-                    ...withVariants(`spells/${rawName}`),
-                    ...withVariants(`artifacts/${rawName}`),
-                    ...withVariants(`portals/${rawName}`),
-                    ...withVariants(rawName),
-                ];
-                // If illustration field differs from card name, also try card-name variant
-                if (cleanName !== rawName) {
-                    basePaths.push(
-                        ...withVariants(`heroes/${cleanName}`),
-                        ...withVariants(`legends/${cleanName}`),
-                        ...withVariants(`quests/${cleanName}`),
-                        ...withVariants(`creatures/${cleanName}`),
-                        ...withVariants(`spells/${cleanName}`),
-                        ...withVariants(`artifacts/${cleanName}`),
-                        ...withVariants(`portals/${cleanName}`),
-                        ...withVariants(cleanName)
-                    );
+                // Try multiple folders (wizards, creatures, spells, heroes, etc.) and cover name variants (like victory vs Ultimate Victory)
+                const nameVariants = Array.from(new Set([rawName, cleanName].filter(Boolean)));
+                if (nameVariants.some(n => n.toLowerCase().includes("victory"))) {
+                    nameVariants.push("victory.png", "victory.jpg", "Ultimate Victory.png", "Ultimate Victory.jpg");
                 }
+
+                const searchDirs = [
+                    "wizards",
+                    "Wizards",
+                    "../wizards",
+                    "../Wizards",
+                    "creatures",
+                    "spells",
+                    "heroes",
+                    "legends",
+                    "quests",
+                    "creatures/wizards",
+                    "creatures/Wizards",
+                    "assets/wizards",
+                    "assets/Wizards",
+                    "concept art/wizards",
+                    "concept art/Wizards",
+                    "concept art/Creatures 5 Wizards",
+                    "artifacts",
+                    "portals",
+                    "" // root
+                ];
+
+                const basePaths = [];
+                nameVariants.forEach(nameVar => {
+                    searchDirs.forEach(dir => {
+                        const pathStr = dir ? `${dir}/${nameVar}` : nameVar;
+                        basePaths.push(...withVariants(pathStr));
+                    });
+                });
 
                 const sources = Array.from(new Set(basePaths.filter(Boolean)));
                 
@@ -5612,8 +5637,9 @@
                             tryNextSrc();
                         }
                     };
-                    // Append timestamp parameter to bypass cached 404 responses
-                    const cacheBuster = (currentSrc.includes("?") ? "&" : "?") + "v=" + Date.now();
+                    // Append timestamp parameter to bypass cached 404 responses (only if not running on file:// protocol to prevent file load failures)
+                    const isLocalFile = window.location.protocol === "file:";
+                    const cacheBuster = isLocalFile ? "" : ((currentSrc.includes("?") ? "&" : "?") + "v=" + Date.now());
                     altImg.src = currentSrc + cacheBuster;
                 };
                 tryNextSrc();
@@ -5982,6 +6008,75 @@
                             activatedAbilities: [],
                             abilityManaSize: 14,
                             illustration: "Battle Arena Quest.jpg"
+                        },
+                        {
+                            id: "default_demonic_portal",
+                            cardName: "Demonic Portal",
+                            frameStyle: "black",
+                            borderColor: "black",
+                            manaCost: ["B", "B", "R", "R"],
+                            cardType: "Artifact",
+                            hasPt: false,
+                            rulesText: "At the beginning of your upkeep, you may pay 2 life. If you do, draw a card.",
+                            customDescription: "A gateway to the fiery pits of the Abyss, where dark desires take physical form.",
+                            customDescriptionItalic: true,
+                            power: "0",
+                            toughness: "0",
+                            keywords: [],
+                            activatedAbilities: [
+                                {
+                                    cost: ["B", "R"],
+                                    text: "Deals 2 damage to any target."
+                                }
+                            ],
+                            abilityManaSize: 14,
+                            illustration: "Demonic Portal.jpg"
+                        },
+                        {
+                            id: "default_planar_portal",
+                            cardName: "Planar Portal",
+                            frameStyle: "artifact",
+                            borderColor: "black",
+                            manaCost: ["C6"],
+                            cardType: "Artifact",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "A gateway linking distant planes of existence.",
+                            customDescriptionItalic: true,
+                            power: "0",
+                            toughness: "0",
+                            keywords: [],
+                            activatedAbilities: [
+                                {
+                                    cost: ["C4"],
+                                    text: "Search your library for a card and put it into your hand."
+                                }
+                            ],
+                            abilityManaSize: 14,
+                            illustration: "Planar Portal.jpg"
+                        },
+                        {
+                            id: "default_sol_ring",
+                            cardName: "Sol Ring",
+                            frameStyle: "artifact",
+                            borderColor: "black",
+                            manaCost: ["C1"],
+                            cardType: "Artifact",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "A relic of pure power, channeling light into energy.",
+                            customDescriptionItalic: true,
+                            power: "0",
+                            toughness: "0",
+                            keywords: [],
+                            activatedAbilities: [
+                                {
+                                    cost: ["C1"],
+                                    text: "Add {C2} to your mana pool."
+                                }
+                            ],
+                            abilityManaSize: 14,
+                            illustration: "Sol Ring.jpg"
                         }
                     ];
                     saveDeckToStorage();
@@ -6411,6 +6506,18 @@
                                 card.illustration = "Battle Arena Quest.jpg";
                                 deckUpdated = true;
                             }
+                            if ((id.includes("demonic_portal") || name.includes("demonic portal")) && card.illustration !== "Demonic Portal.jpg") {
+                                card.illustration = "Demonic Portal.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("planar_portal") || name.includes("planar portal")) && card.illustration !== "Planar Portal.jpg") {
+                                card.illustration = "Planar Portal.jpg";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("sol_ring") || name.includes("sol ring")) && card.illustration !== "Sol Ring.jpg") {
+                                card.illustration = "Sol Ring.jpg";
+                                deckUpdated = true;
+                            }
                         });
                         if (deckUpdated) {
                             saveDeckToStorage();
@@ -6453,6 +6560,8 @@
         let activeSubtypeFilter = "";
         let activeKeywordFilter = "";
         let activeAbilityFilter = "";
+        let activeSpellSubtypeFilter = "";
+        let activeCompanionSubtypeFilter = "";
 
         // Helper to check if card matches active filters
         function cardMatchesFilters(card) {
@@ -6844,14 +6953,63 @@
             return state.deck.filter(c => c.cardType === "Creature");
         }
 
-        function renderSpellsSection() {
-            const spellSelect = document.getElementById("spell-add-select");
-            const tagList = document.getElementById("spell-tag-list");
-            if (!spellSelect || !tagList) return;
+        function populateSpellSubtypeFilterSelect() {
+            const select = document.getElementById("spell-subtype-filter-select");
+            if (!select) return;
 
-            // Populate dropdown with spells not already added
-            const addedIds = new Set(state.deckSpells);
-            const availableSpells = getSpellCards();
+            const subTypes = new Set();
+            getSpellCards().forEach(c => {
+                if (c.cardSubType && c.cardSubType.trim()) {
+                    subTypes.add(c.cardSubType.trim());
+                }
+            });
+
+            const sorted = Array.from(subTypes).sort((a, b) => a.localeCompare(b));
+            const currentSelection = activeSpellSubtypeFilter;
+
+            select.innerHTML = '<option value="">All Subtypes</option>';
+            sorted.forEach(st => {
+                const opt = document.createElement("option");
+                opt.value = st;
+                opt.textContent = st;
+                select.appendChild(opt);
+            });
+
+            select.value = (currentSelection && sorted.includes(currentSelection)) ? currentSelection : "";
+            if (select.value === "") activeSpellSubtypeFilter = "";
+        }
+
+        function populateCompanionSubtypeFilterSelect() {
+            const select = document.getElementById("companion-subtype-filter-select");
+            if (!select) return;
+
+            const subTypes = new Set();
+            getCreatureCards().forEach(c => {
+                if (c.cardSubType && c.cardSubType.trim()) {
+                    subTypes.add(c.cardSubType.trim());
+                }
+            });
+
+            const sorted = Array.from(subTypes).sort((a, b) => a.localeCompare(b));
+            const currentSelection = activeCompanionSubtypeFilter;
+
+            select.innerHTML = '<option value="">All Subtypes</option>';
+            sorted.forEach(st => {
+                const opt = document.createElement("option");
+                opt.value = st;
+                opt.textContent = st;
+                select.appendChild(opt);
+            });
+
+            select.value = (currentSelection && sorted.includes(currentSelection)) ? currentSelection : "";
+            if (select.value === "") activeCompanionSubtypeFilter = "";
+        }
+
+        function populateSpellDropdown(spellSelect, addedIds) {
+            let availableSpells = getSpellCards();
+            if (activeSpellSubtypeFilter) {
+                availableSpells = availableSpells.filter(c => c.cardSubType && c.cardSubType.trim().toLowerCase() === activeSpellSubtypeFilter.toLowerCase());
+            }
             spellSelect.innerHTML = "<option value=''>-- Select a Spell --</option>";
             availableSpells
                 .filter(c => !addedIds.has(c.id))
@@ -6861,8 +7019,9 @@
                     opt.textContent = c.cardName;
                     spellSelect.appendChild(opt);
                 });
+        }
 
-            // Render tag chips
+        function renderSpellChips(tagList) {
             tagList.innerHTML = "";
             if (state.deckSpells.length === 0) {
                 tagList.innerHTML = "<span class='card-tag-empty'>No spells added yet.</span>";
@@ -6888,14 +7047,21 @@
             });
         }
 
-        function renderCompanionsSection() {
-            const companionSelect = document.getElementById("companion-add-select");
-            const tagList = document.getElementById("companion-tag-list");
-            if (!companionSelect || !tagList) return;
+        function renderSpellsSection() {
+            const spellSelect = document.getElementById("spell-add-select");
+            const tagList = document.getElementById("spell-tag-list");
+            if (!spellSelect || !tagList) return;
 
-            // Populate dropdown with creatures not already added
-            const addedIds = new Set(state.deckCompanions);
-            const availableCreatures = getCreatureCards();
+            populateSpellSubtypeFilterSelect();
+            populateSpellDropdown(spellSelect, new Set(state.deckSpells));
+            renderSpellChips(tagList);
+        }
+
+        function populateCompanionDropdown(companionSelect, addedIds) {
+            let availableCreatures = getCreatureCards();
+            if (activeCompanionSubtypeFilter) {
+                availableCreatures = availableCreatures.filter(c => c.cardSubType && c.cardSubType.trim().toLowerCase() === activeCompanionSubtypeFilter.toLowerCase());
+            }
             companionSelect.innerHTML = "<option value=''>-- Select a Creature --</option>";
             availableCreatures
                 .filter(c => !addedIds.has(c.id))
@@ -6905,8 +7071,9 @@
                     opt.textContent = c.cardName;
                     companionSelect.appendChild(opt);
                 });
+        }
 
-            // Render tag chips
+        function renderCompanionChips(tagList) {
             tagList.innerHTML = "";
             if (state.deckCompanions.length === 0) {
                 tagList.innerHTML = "<span class='card-tag-empty'>No companions added yet.</span>";
@@ -6932,6 +7099,16 @@
             });
         }
 
+        function renderCompanionsSection() {
+            const companionSelect = document.getElementById("companion-add-select");
+            const tagList = document.getElementById("companion-tag-list");
+            if (!companionSelect || !tagList) return;
+
+            populateCompanionSubtypeFilterSelect();
+            populateCompanionDropdown(companionSelect, new Set(state.deckCompanions));
+            renderCompanionChips(tagList);
+        }
+
         function initSpellsCompanionsControls() {
             const spellAddBtn = document.getElementById("spell-add-btn");
             const spellSelect = document.getElementById("spell-add-select");
@@ -6939,6 +7116,18 @@
             const companionSelect = document.getElementById("companion-add-select");
             const resetSpellsBtn = document.getElementById("reset-spells-btn");
             const resetCompanionsBtn = document.getElementById("reset-companions-btn");
+
+            const spellSubtypeSelect = document.getElementById("spell-subtype-filter-select");
+            spellSubtypeSelect?.addEventListener("change", (e) => {
+                activeSpellSubtypeFilter = e.target.value;
+                renderSpellsSection();
+            });
+
+            const companionSubtypeSelect = document.getElementById("companion-subtype-filter-select");
+            companionSubtypeSelect?.addEventListener("change", (e) => {
+                activeCompanionSubtypeFilter = e.target.value;
+                renderCompanionsSection();
+            });
 
             spellAddBtn?.addEventListener("click", () => {
                 const id = spellSelect.value;
@@ -6964,6 +7153,7 @@
 
             resetSpellsBtn?.addEventListener("click", () => {
                 state.deckSpells = [];
+                activeSpellSubtypeFilter = "";
                 autoSaveCurrentCard();
                 renderSpellsSection();
                 updateCardPreview();
@@ -6971,6 +7161,7 @@
 
             resetCompanionsBtn?.addEventListener("click", () => {
                 state.deckCompanions = [];
+                activeCompanionSubtypeFilter = "";
                 autoSaveCurrentCard();
                 renderCompanionsSection();
                 updateCardPreview();
@@ -7283,7 +7474,7 @@
                                 Place the file <strong>${info.file}</strong> inside your project folder at:
                             </p>
                             <div style="font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 4px; color: var(--text-color); border: 1px dashed rgba(255,255,255,0.2);">
-                                Wizards Design System/quests/${info.file} (or creatures/${info.file})
+                                Wizards Design System/wizards/${info.file} (or creatures/${info.file}, etc.)
                             </div>
                         </div>
                         
