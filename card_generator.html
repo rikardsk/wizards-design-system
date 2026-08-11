@@ -2007,6 +2007,55 @@
             border-radius: 6px;
             letter-spacing: 0.04em;
         }
+        /* Map coordinate row */
+        .qs-coord-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(96,165,250,0.05);
+            border: 1px solid rgba(96,165,250,0.12);
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+        .qs-coord-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .qs-coord-field {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .qs-coord-field-label {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            min-width: 18px;
+            font-weight: 600;
+        }
+        .qs-coord-input {
+            width: 80px;
+            text-align: center;
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 5px 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(96,165,250,0.2);
+            background: rgba(96,165,250,0.07);
+            color: var(--text-primary);
+        }
+        .qs-coord-input:focus {
+            outline: none;
+            border-color: rgba(96,165,250,0.5);
+            background: rgba(96,165,250,0.12);
+        }
         /* Single-card reward dropdown */
         .qs-single-select {
             width: 100%;
@@ -2708,6 +2757,9 @@
                     <div id="quest-list-panel" style="width: 240px; min-width: 200px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; flex-shrink: 0; background: rgba(0,0,0,0.15);">
                         <div style="padding: 12px 14px 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent-gold); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
                             <span>Quests Database</span>
+                            <button type="button" id="quest-sort-btn" title="Sort quests" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:5px;color:var(--accent-gold);font-size:0.68rem;padding:2px 7px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+                                <i class="fa-solid fa-arrow-up-a-z"></i> <span id="quest-sort-label">Default</span>
+                            </button>
                         </div>
                         <div id="quest-sidebar-list" style="flex: 1; overflow-y: auto; padding: 10px 8px;"></div>
                     </div>
@@ -2730,6 +2782,9 @@
                                     <i class="fa-solid fa-arrow-rotate-left"></i> Clear All Levels
                                 </button>
                             </div>
+
+                            <!-- Map Coordinates -->
+                            <div id="quest-map-coords"></div>
 
                             <!-- Levels Section -->
                             <div>
@@ -7621,11 +7676,19 @@
 
         // ── Strip empty / default quest fields from export output ──────────────
         function normalizeQuestForExport(quest) {
-            return {
+            const out = {
                 id:     quest.id,
                 cardId: quest.cardId,
                 name:   quest.name,
-                levels: (quest.levels || []).map(level => {
+            };
+
+            // Map coordinates — only include when non-zero
+            const coords = quest.mapCoords;
+            if (coords && (coords.x !== 0 || coords.y !== 0)) {
+                out.mapCoords = { x: coords.x, y: coords.y };
+            }
+
+            out.levels = (quest.levels || []).map(level => {
                     const out = {};
 
                     // Always keep sections list (needed to restore UI state)
@@ -7669,8 +7732,8 @@
                     if (level.collapsed) out.collapsed = true;
 
                     return out;
-                })
-            };
+                });
+            return out;
         }
 
         // Export Deck database & quests to a JSON file download
@@ -8830,6 +8893,7 @@
         // { id, name, levels: [{ description, rewardCards: [cardId], unlockCards: [cardId], opponents: [cardId] }] }
         if (!state.quests) state.quests = [];
         let activeQuestId = null;
+        let questSortOrder = "default"; // "default" | "az" | "za"
 
         const QUESTS_STORAGE_KEY = "wizards_quests";
 
@@ -8941,6 +9005,18 @@
             if (!container) return;
             container.innerHTML = "";
 
+            // Update sort button label
+            const sortLabel = document.getElementById("quest-sort-label");
+            const sortIcon  = document.querySelector("#quest-sort-btn i");
+            const SORT_STATES = [
+                { key: "default", label: "Default",  icon: "fa-arrow-up-a-z" },
+                { key: "az",      label: "A → Z",     icon: "fa-arrow-up-a-z" },
+                { key: "za",      label: "Z → A",     icon: "fa-arrow-down-z-a" },
+            ];
+            const currentSort = SORT_STATES.find(s => s.key === questSortOrder) || SORT_STATES[0];
+            if (sortLabel) sortLabel.textContent = currentSort.label;
+            if (sortIcon)  { sortIcon.className = ""; sortIcon.classList.add("fa-solid", currentSort.icon); }
+
             const questCards = (state.deck || []).filter(c => c.cardType === "Quest");
 
             if (questCards.length === 0) {
@@ -8960,7 +9036,15 @@
                 activeQuestId = state.quests[0] ? state.quests[0].id : null;
             }
 
-            state.quests.forEach(quest => {
+            // Sort a shallow copy — never mutate state.quests order
+            let displayQuests = [...state.quests];
+            if (questSortOrder === "az") {
+                displayQuests.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            } else if (questSortOrder === "za") {
+                displayQuests.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+            }
+
+            displayQuests.forEach(quest => {
                 const item = document.createElement("div");
                 item.className = "quest-sidebar-item" + (quest.id === activeQuestId ? " active" : "");
                 item.dataset.questId = quest.id;
@@ -8971,7 +9055,7 @@
                     : `<span style="font-size:0.68rem;color:var(--text-muted);flex-shrink:0;">${levelCount}L</span>`;
 
                 item.innerHTML = `<i class="fa-solid fa-scroll" style="color:#a78bfa;"></i><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">${escapeHtml(quest.name || "Unnamed Quest")}</span>${badgeHtml}`;
-                
+
                 item.addEventListener("click", () => {
                     commitActiveQuestFromForm();
                     selectQuestForEdit(quest.id);
@@ -9015,7 +9099,77 @@
             const titleEl = document.getElementById("quest-title-text");
             if (titleEl) titleEl.textContent = quest.name || "Unnamed Quest";
 
+            renderQuestMapCoords(quest);
             renderQuestLevels(quest);
+        }
+
+        // ── Render map coordinate inputs for the active quest ──
+        function renderQuestMapCoords(quest) {
+            const container = document.getElementById("quest-map-coords");
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (!quest.mapCoords) quest.mapCoords = { x: 0, y: 0 };
+
+            const row = document.createElement("div");
+            row.className = "qs-coord-row";
+
+            // Label
+            const lbl = document.createElement("span");
+            lbl.className = "qs-coord-label";
+            lbl.innerHTML = `<i class="fa-solid fa-map-pin"></i> Map Position`;
+            row.appendChild(lbl);
+
+            // Inputs — kept in scope for the reset button
+            let xInput, yInput;
+
+            // Helper to build a coord field
+            function makeCoordField(axis, storeKey) {
+                const field = document.createElement("div");
+                field.className = "qs-coord-field";
+
+                const axisLabel = document.createElement("span");
+                axisLabel.className = "qs-coord-field-label";
+                axisLabel.textContent = axis + ":";
+                field.appendChild(axisLabel);
+
+                const input = document.createElement("input");
+                input.type = "number";
+                input.className = "qs-coord-input";
+                input.step = 1;
+                input.value = quest.mapCoords[storeKey] ?? 0;
+                input.addEventListener("input", () => {
+                    quest.mapCoords[storeKey] = parseFloat(input.value) || 0;
+                    saveQuestsToStorage();
+                });
+                field.appendChild(input);
+                return { el: field, input };
+            }
+
+            const xField = makeCoordField("X", "x");
+            const yField = makeCoordField("Y", "y");
+            xInput = xField.input;
+            yInput = yField.input;
+            row.appendChild(xField.el);
+            row.appendChild(yField.el);
+
+            // Reset button
+            const resetBtn = document.createElement("button");
+            resetBtn.type = "button";
+            resetBtn.title = "Reset to (0, 0)";
+            resetBtn.innerHTML = `<i class="fa-solid fa-rotate-left"></i>`;
+            resetBtn.style.cssText = "margin-left:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-muted);padding:4px 8px;cursor:pointer;font-size:0.75rem;transition:color 0.15s,border-color 0.15s;";
+            resetBtn.addEventListener("mouseenter", () => { resetBtn.style.color = "#f87171"; resetBtn.style.borderColor = "rgba(248,113,113,0.4)"; });
+            resetBtn.addEventListener("mouseleave", () => { resetBtn.style.color = ""; resetBtn.style.borderColor = ""; });
+            resetBtn.addEventListener("click", () => {
+                quest.mapCoords = { x: 0, y: 0 };
+                xInput.value = 0;
+                yInput.value = 0;
+                saveQuestsToStorage();
+            });
+            row.appendChild(resetBtn);
+
+            container.appendChild(row);
         }
 
         function commitActiveQuestFromForm() {
@@ -9838,6 +9992,17 @@
             if (importQuestsBtn && importQuestsFile) {
                 importQuestsBtn.addEventListener("click", () => importQuestsFile.click());
                 importQuestsFile.addEventListener("change", importQuestsFromJson);
+            }
+
+            // Sort button — cycles Default → A→Z → Z→A → Default
+            const sortBtn = document.getElementById("quest-sort-btn");
+            if (sortBtn) {
+                const SORT_CYCLE = ["default", "az", "za"];
+                sortBtn.addEventListener("click", () => {
+                    const next = SORT_CYCLE[(SORT_CYCLE.indexOf(questSortOrder) + 1) % SORT_CYCLE.length];
+                    questSortOrder = next;
+                    renderQuestSidebarList();
+                });
             }
         }
 
