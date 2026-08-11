@@ -2783,6 +2783,9 @@
                                 </button>
                             </div>
 
+                            <!-- Tile Name -->
+                            <div id="quest-tile-name-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
+
                             <!-- Map Coordinates -->
                             <div id="quest-map-coords"></div>
 
@@ -7688,6 +7691,11 @@
                 out.mapCoords = { x: coords.x, y: coords.y };
             }
 
+            // Tile Name — only include when set
+            if (quest.tileName && quest.tileName.trim()) {
+                out.tileName = quest.tileName.trim();
+            }
+
             out.levels = (quest.levels || []).map(level => {
                     const out = {};
 
@@ -9099,8 +9107,43 @@
             const titleEl = document.getElementById("quest-title-text");
             if (titleEl) titleEl.textContent = quest.name || "Unnamed Quest";
 
+            renderQuestTileName(quest);
             renderQuestMapCoords(quest);
             renderQuestLevels(quest);
+        }
+
+        // ── Render map tile name input for the active quest ──
+        function renderQuestTileName(quest) {
+            const container = document.getElementById("quest-tile-name-container");
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (quest.tileName === undefined) quest.tileName = "";
+
+            const lbl = document.createElement("label");
+            lbl.style.cssText = "font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #a78bfa; margin-bottom: 2px; display: flex; align-items: center; gap: 5px;";
+            lbl.innerHTML = `<i class="fa-solid fa-map-location-dot"></i> Map Tile Name`;
+            container.appendChild(lbl);
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "e.g. Whispering Woods, Shadow Dungeon...";
+            input.value = quest.tileName;
+            input.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--text-primary); padding: 8px 12px; font-size: 0.88rem; outline: none; transition: border-color 0.2s;";
+            input.addEventListener("input", () => {
+                quest.tileName = input.value;
+                saveQuestsToStorage();
+            });
+
+            // Focus states styling
+            input.addEventListener("focus", () => {
+                input.style.borderColor = "var(--accent-gold)";
+            });
+            input.addEventListener("blur", () => {
+                input.style.borderColor = "rgba(255,255,255,0.08)";
+            });
+
+            container.appendChild(input);
         }
 
         // ── Render map coordinate inputs for the active quest ──
