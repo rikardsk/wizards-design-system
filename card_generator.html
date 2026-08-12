@@ -7712,10 +7712,18 @@
                     if ((level.opponents       || []).length) out.opponents       = level.opponents;
                     if ((level.learnSpells     || []).length) out.learnSpells     = level.learnSpells;
                     if ((level.companionRewards|| []).length) out.companionRewards= level.companionRewards;
+                    if (level.learnSpellMode && level.learnSpellMode !== "choice") out.learnSpellMode = level.learnSpellMode;
+                    if (level.companionRewardMode && level.companionRewardMode !== "choice") out.companionRewardMode = level.companionRewardMode;
+                    if ((level.learnSpellRandomSubType || "").trim()) out.learnSpellRandomSubType = level.learnSpellRandomSubType;
+                    if ((level.companionRewardRandomSubType || "").trim()) out.companionRewardRandomSubType = level.companionRewardRandomSubType;
 
                     // Text descriptions — omit if blank
                     if ((level.rewardsDescription   || "").trim()) out.rewardsDescription   = level.rewardsDescription;
                     if ((level.opponentsDescription || "").trim()) out.opponentsDescription = level.opponentsDescription;
+                    if (level.opponentsPower !== undefined && level.opponentsPower !== 0) out.opponentsPower = level.opponentsPower;
+                    if ((level.armySubTypes || []).length) out.armySubTypes = level.armySubTypes;
+                    if (level.armyPower !== undefined && level.armyPower !== 0) out.armyPower = level.armyPower;
+                    if (level.xpReward !== undefined && level.xpReward !== 0) out.xpReward = level.xpReward;
 
                     // attributeReward — omit if both are 0
                     const attr = level.attributeReward;
@@ -9279,6 +9287,9 @@
             chipCountsBadge.className = "level-chip-counts";
             chipCountsBadge.style.cssText = "font-size:0.68rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);";
             
+            // Hooks called by updateSummaryBadge for per-section live updates
+            const summaryHooks = [];
+
             function updateSummaryBadge() {
                 const rCount = (level.rewardCards || []).length;
                 const uCount = (level.unlockCards || []).length;
@@ -9298,7 +9309,9 @@
                 if (cCount) parts.push(`${cCount}C`);
                 if (hasAttr) parts.push(`${fmt(attr.power)}/${fmt(attr.toughness)}`);
                 if (hasMana) parts.push(`${mana.amount}M`);
+                if (level.xpReward) parts.push(`${level.xpReward}XP`);
                 chipCountsBadge.textContent = parts.length ? parts.join(" · ") : "—";
+                summaryHooks.forEach(fn => fn());
             }
             updateSummaryBadge();
             rightHeader.appendChild(chipCountsBadge);
@@ -9343,6 +9356,8 @@
                 if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim()) level.sections.push("rewardCards");
                 if ((level.unlockCards || []).length > 0) level.sections.push("unlockCards");
                 if ((level.opponents || []).length > 0 || (level.opponentsDescription || "").trim()) level.sections.push("opponents");
+                if ((level.armySubTypes && level.armySubTypes.length > 0) || (level.armySubType || "").trim() || level.armyPower) level.sections.push("army");
+                if (level.xpReward) level.sections.push("xpReward");
                 // migrate old standalone rewardsDesc / opponentsDesc sections — they're now sub-sections
             } else {
                 if (!level.sections.includes("questDesc")) level.sections.unshift("questDesc");
@@ -9359,6 +9374,8 @@
                 { key: "companionReward", label: "Companion Reward",     icon: "fa-paw",               color: "#f9a8d4" },
                 { key: "unlockCards",     label: "Unlock Cards",         icon: "fa-lock-open",          color: "#fbbf24" },
                 { key: "opponents",       label: "Opponents",            icon: "fa-shield-halved",      color: "#fca5a5" },
+                { key: "army",            label: "Army",                 icon: "fa-users",              color: "#fb923c" },
+                { key: "xpReward",        label: "XP Reward",            icon: "fa-star",               color: "#fde68a" },
             ];
 
             // Container that holds rendered section panels
@@ -9394,6 +9411,90 @@
                 const labelEl = document.createElement("span");
                 labelEl.className = "qs-panel-label";
                 labelEl.innerHTML = `<i class="fa-solid ${def.icon}" style="color:${def.color};"></i> ${def.label}`;
+
+                // Inline header summary for every section
+                const summarySpan = document.createElement("span");
+                summarySpan.style.cssText = "font-size:0.68rem;font-weight:400;color:var(--text-muted);opacity:0.75;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;";
+
+                function cardNames(ids) {
+                    return (ids || []).map(id => {
+                        const c = state.deck.find(d => d.id === id);
+                        return c ? (c.cardName || c.name || id) : id;
+                    }).filter(Boolean);
+                }
+
+                function getSectionSummary(key) {
+                    switch (key) {
+                        case "questDesc": {
+                            const txt = (level.questDescription || level.description || "").trim();
+                            return txt ? `— ${txt.slice(0, 40)}${txt.length > 40 ? "…" : ""}` : "";
+                        }
+                        case "rewardCards": {
+                            const names = cardNames(level.rewardCards);
+                            return names.length ? `— ${names.join(", ")}` : "";
+                        }
+                        case "unlockCards": {
+                            const names = cardNames(level.unlockCards);
+                            return names.length ? `— ${names.join(", ")}` : "";
+                        }
+                        case "opponents": {
+                            const names = cardNames(level.opponents);
+                            const pwr = level.opponentsPower || 0;
+                            const parts = [];
+                            if (names.length) parts.push(names.join(", "));
+                            if (pwr !== 0) parts.push(`PWR ${pwr}`);
+                            return parts.length ? `— ${parts.join(" · ")}` : "";
+                        }
+                        case "army": {
+                            const subs = (level.armySubTypes || []);
+                            const pwr = level.armyPower || 0;
+                            const parts = [];
+                            if (subs.length) parts.push(subs.join(", "));
+                            if (pwr !== 0) parts.push(`PWR ${pwr}`);
+                            return parts.length ? `— ${parts.join(" · ")}` : "";
+                        }
+                        case "learnSpell": {
+                            if (level.learnSpellMode === "random") {
+                                const sub = (level.learnSpellRandomSubType || "").trim();
+                                return sub ? `— Random · ${sub}` : "— Random";
+                            }
+                            const names = cardNames(level.learnSpells);
+                            return names.length ? `— ${names.join(", ")}` : "";
+                        }
+                        case "companionReward": {
+                            if (level.companionRewardMode === "random") {
+                                const sub = (level.companionRewardRandomSubType || "").trim();
+                                return sub ? `— Random · ${sub}` : "— Random";
+                            }
+                            const names = cardNames(level.companionRewards);
+                            return names.length ? `— ${names.join(", ")}` : "";
+                        }
+                        case "manaReward": {
+                            const mana = level.manaReward;
+                            if (!mana || !mana.amount) return "";
+                            const modeLabel = mana.mode === "all" ? "All Colors" : "Choice";
+                            return `— ${mana.amount} · ${modeLabel}`;
+                        }
+                        case "attributeReward": {
+                            const attr = level.attributeReward;
+                            if (!attr || (attr.power === 0 && attr.toughness === 0)) return "";
+                            const fmt = v => v >= 0 ? `+${v}` : `${v}`;
+                            return `— ${fmt(attr.power)}/${fmt(attr.toughness)}`;
+                        }
+                        case "xpReward": {
+                            const xp = level.xpReward || 0;
+                            return xp !== 0 ? `— ${xp} XP` : "";
+                        }
+                        default: return "";
+                    }
+                }
+
+                function refreshSectionSummary() {
+                    summarySpan.textContent = getSectionSummary(def.key);
+                }
+                refreshSectionSummary();
+                summaryHooks.push(refreshSectionSummary);
+                labelEl.appendChild(summarySpan);
                 ph.appendChild(labelEl);
 
                 const removeBtn = document.createElement("button");
@@ -9410,10 +9511,12 @@
                         rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; },
                         manaReward:      () => { level.manaReward = { amount: 1, mode: "choice" }; },
                         attributeReward: () => { level.attributeReward = { power: 0, toughness: 0 }; },
-                        learnSpell:      () => { level.learnSpells = []; },
-                        companionReward: () => { level.companionRewards = []; },
+                        learnSpell:      () => { level.learnSpells = []; level.learnSpellMode = "choice"; level.learnSpellRandomSubType = ""; },
+                        companionReward: () => { level.companionRewards = []; level.companionRewardMode = "choice"; level.companionRewardRandomSubType = ""; },
                         unlockCards:     () => { level.unlockCards = []; },
-                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; },
+                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; },
+                        army:            () => { level.armySubTypes = []; level.armyPower = 0; },
+                        xpReward:        () => { level.xpReward = 0; },
                     };
                     if (SECTION_RESETS[def.key]) SECTION_RESETS[def.key]();
 
@@ -9454,6 +9557,7 @@
                         level.questDescription = ta.value;
                         level.description = ta.value;
                         summaryPreview.textContent = ta.value ? `— ${ta.value}` : "";
+                        updateSummaryBadge();
                         saveQuestsToStorage();
                     });
                     pb.appendChild(ta);
@@ -9532,11 +9636,13 @@
                     pwInput.addEventListener("input", () => {
                         level.attributeReward.power = parseInt(pwInput.value) || 0;
                         updateAttrPreview();
+                        updateSummaryBadge();
                         saveQuestsToStorage();
                     });
                     tgInput.addEventListener("input", () => {
                         level.attributeReward.toughness = parseInt(tgInput.value) || 0;
                         updateAttrPreview();
+                        updateSummaryBadge();
                         saveQuestsToStorage();
                     });
 
@@ -9622,15 +9728,165 @@
 
                 } else if (def.key === "learnSpell") {
                     if (!Array.isArray(level.learnSpells)) level.learnSpells = [];
+                    if (!level.learnSpellMode) level.learnSpellMode = "choice";
+                    if (level.learnSpellRandomSubType === undefined) level.learnSpellRandomSubType = "";
 
-                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "learnSpells", "quest-unlock-chip",
+                    // Mode toggle: Random / Choice
+                    const lsModeWrap = document.createElement("div");
+                    lsModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:8px;";
+                    const lsRandomBtn = document.createElement("button");
+                    lsRandomBtn.type = "button";
+                    lsRandomBtn.textContent = "Random";
+                    lsRandomBtn.className = "qs-mana-mode-btn" + (level.learnSpellMode === "random" ? " active" : "");
+                    const lsChoiceBtn = document.createElement("button");
+                    lsChoiceBtn.type = "button";
+                    lsChoiceBtn.textContent = "Choice";
+                    lsChoiceBtn.className = "qs-mana-mode-btn" + (level.learnSpellMode === "choice" ? " active" : "");
+                    lsModeWrap.appendChild(lsRandomBtn);
+                    lsModeWrap.appendChild(lsChoiceBtn);
+                    pb.appendChild(lsModeWrap);
+
+                    // Sub type picker (Random mode only) — sourced from Spell cards in deck
+                    const lsSubTypeWrap = document.createElement("div");
+                    lsSubTypeWrap.style.display = level.learnSpellMode === "random" ? "" : "none";
+                    const lsSubLabel = document.createElement("div");
+                    lsSubLabel.className = "qs-sub-label";
+                    lsSubLabel.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Spell Sub Type`;
+                    lsSubTypeWrap.appendChild(lsSubLabel);
+                    const lsSubBtnGrid = document.createElement("div");
+                    lsSubBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
+                    const lsSpellSubTypes = [...new Set(
+                        (state.deck || [])
+                            .filter(c => (c.cardType || "").trim() === "Spell" && (c.cardSubType || "").trim())
+                            .map(c => c.cardSubType.trim())
+                    )].sort((a, b) => a.localeCompare(b));
+                    function refreshLsSubTypeBtns() {
+                        lsSubBtnGrid.innerHTML = "";
+                        if (lsSpellSubTypes.length === 0) {
+                            const empty = document.createElement("span");
+                            empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
+                            empty.textContent = "No spell sub types found in deck.";
+                            lsSubBtnGrid.appendChild(empty);
+                            return;
+                        }
+                        lsSpellSubTypes.forEach(sub => {
+                            const isActive = level.learnSpellRandomSubType === sub;
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.textContent = sub;
+                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(196,181,253,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(167,139,250,0.22)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#c4b5fd' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                level.learnSpellRandomSubType = isActive ? "" : sub;
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                                refreshLsSubTypeBtns();
+                            });
+                            lsSubBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshLsSubTypeBtns();
+                    lsSubTypeWrap.appendChild(lsSubBtnGrid);
+                    pb.appendChild(lsSubTypeWrap);
+
+                    // Card chips (Choice mode only)
+                    const lsChipsWrap = document.createElement("div");
+                    lsChipsWrap.style.display = level.learnSpellMode === "choice" ? "" : "none";
+                    lsChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "learnSpells", "quest-unlock-chip",
                         "Select a battle spell to learn", "Spell", updateSummaryBadge));
+                    pb.appendChild(lsChipsWrap);
+
+                    function setLearnSpellMode(mode) {
+                        level.learnSpellMode = mode;
+                        lsRandomBtn.classList.toggle("active", mode === "random");
+                        lsChoiceBtn.classList.toggle("active", mode === "choice");
+                        lsSubTypeWrap.style.display = mode === "random" ? "" : "none";
+                        lsChipsWrap.style.display = mode === "choice" ? "" : "none";
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    }
+                    lsRandomBtn.addEventListener("click", () => setLearnSpellMode("random"));
+                    lsChoiceBtn.addEventListener("click", () => setLearnSpellMode("choice"));
 
                 } else if (def.key === "companionReward") {
                     if (!Array.isArray(level.companionRewards)) level.companionRewards = [];
+                    if (!level.companionRewardMode) level.companionRewardMode = "choice";
+                    if (level.companionRewardRandomSubType === undefined) level.companionRewardRandomSubType = "";
 
-                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "companionRewards", "quest-reward-chip",
+                    // Mode toggle: Random / Choice
+                    const crModeWrap = document.createElement("div");
+                    crModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:8px;";
+                    const crRandomBtn = document.createElement("button");
+                    crRandomBtn.type = "button";
+                    crRandomBtn.textContent = "Random";
+                    crRandomBtn.className = "qs-mana-mode-btn" + (level.companionRewardMode === "random" ? " active" : "");
+                    const crChoiceBtn = document.createElement("button");
+                    crChoiceBtn.type = "button";
+                    crChoiceBtn.textContent = "Choice";
+                    crChoiceBtn.className = "qs-mana-mode-btn" + (level.companionRewardMode === "choice" ? " active" : "");
+                    crModeWrap.appendChild(crRandomBtn);
+                    crModeWrap.appendChild(crChoiceBtn);
+                    pb.appendChild(crModeWrap);
+
+                    // Sub type picker (Random mode only) — sourced from Creature cards in deck
+                    const crSubTypeWrap = document.createElement("div");
+                    crSubTypeWrap.style.display = level.companionRewardMode === "random" ? "" : "none";
+                    const crSubLabel = document.createElement("div");
+                    crSubLabel.className = "qs-sub-label";
+                    crSubLabel.innerHTML = `<i class="fa-solid fa-shield-cat"></i> Creature Sub Type`;
+                    crSubTypeWrap.appendChild(crSubLabel);
+                    const crSubBtnGrid = document.createElement("div");
+                    crSubBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
+                    const crCreatureSubTypes = [...new Set(
+                        (state.deck || [])
+                            .filter(c => (c.cardType || "").trim() === "Creature" && (c.cardSubType || "").trim())
+                            .map(c => c.cardSubType.trim())
+                    )].sort((a, b) => a.localeCompare(b));
+                    function refreshCrSubTypeBtns() {
+                        crSubBtnGrid.innerHTML = "";
+                        if (crCreatureSubTypes.length === 0) {
+                            const empty = document.createElement("span");
+                            empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
+                            empty.textContent = "No creature sub types found in deck.";
+                            crSubBtnGrid.appendChild(empty);
+                            return;
+                        }
+                        crCreatureSubTypes.forEach(sub => {
+                            const isActive = level.companionRewardRandomSubType === sub;
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.textContent = sub;
+                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(249,168,212,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(249,168,212,0.18)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#f9a8d4' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                level.companionRewardRandomSubType = isActive ? "" : sub;
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                                refreshCrSubTypeBtns();
+                            });
+                            crSubBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshCrSubTypeBtns();
+                    crSubTypeWrap.appendChild(crSubBtnGrid);
+                    pb.appendChild(crSubTypeWrap);
+
+                    // Card chips (Choice mode only)
+                    const crChipsWrap = document.createElement("div");
+                    crChipsWrap.style.display = level.companionRewardMode === "choice" ? "" : "none";
+                    crChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "companionRewards", "quest-reward-chip",
                         "Select a companion creature", "Creature", updateSummaryBadge));
+                    pb.appendChild(crChipsWrap);
+
+                    function setCompanionRewardMode(mode) {
+                        level.companionRewardMode = mode;
+                        crRandomBtn.classList.toggle("active", mode === "random");
+                        crChoiceBtn.classList.toggle("active", mode === "choice");
+                        crSubTypeWrap.style.display = mode === "random" ? "" : "none";
+                        crChipsWrap.style.display = mode === "choice" ? "" : "none";
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    }
+                    crRandomBtn.addEventListener("click", () => setCompanionRewardMode("random"));
+                    crChoiceBtn.addEventListener("click", () => setCompanionRewardMode("choice"));
 
                 } else if (def.key === "unlockCards") {
                     pb.appendChild(buildChipsSectionBody(quest, level, idx, "unlockCards", "quest-unlock-chip",
@@ -9640,6 +9896,28 @@
                     // Chips section
                     pb.appendChild(buildChipsSectionBody(quest, level, idx, "opponents", "quest-opponent-chip",
                         "Creature cards acting as opponents in this level", "Creature", updateSummaryBadge));
+
+                    // Sub-section: Power spinner
+                    const powerHr = document.createElement("hr");
+                    powerHr.className = "qs-sub-divider";
+                    pb.appendChild(powerHr);
+                    const powerSubLabel = document.createElement("div");
+                    powerSubLabel.className = "qs-sub-label";
+                    powerSubLabel.innerHTML = `<i class="fa-solid fa-bolt"></i> Power`;
+                    pb.appendChild(powerSubLabel);
+                    const powerRow = document.createElement("div");
+                    powerRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    const powerInput = document.createElement("input");
+                    powerInput.type = "number";
+                    powerInput.value = level.opponentsPower !== undefined ? level.opponentsPower : 0;
+                    powerInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    powerInput.addEventListener("input", () => {
+                        level.opponentsPower = powerInput.value === "" ? 0 : Number(powerInput.value);
+                        saveQuestsToStorage();
+                    });
+                    powerRow.appendChild(powerInput);
+                    pb.appendChild(powerRow);
+
                     // Sub-section: Opponents Description
                     const hr2 = document.createElement("hr");
                     hr2.className = "qs-sub-divider";
@@ -9658,6 +9936,102 @@
                         saveQuestsToStorage();
                     });
                     pb.appendChild(odTA);
+
+                } else if (def.key === "army") {
+                    // Ensure armySubTypes is an array (migrate old string value)
+                    if (!Array.isArray(level.armySubTypes)) {
+                        level.armySubTypes = level.armySubType ? [level.armySubType] : [];
+                    }
+
+                    // Sub-section: Sub Type toggle buttons (creatures only, from deck)
+                    const armySubLabel = document.createElement("div");
+                    armySubLabel.className = "qs-sub-label";
+                    armySubLabel.innerHTML = `<i class="fa-solid fa-shield-cat"></i> Creature Sub Types`;
+                    pb.appendChild(armySubLabel);
+
+                    // Collect subtypes that actually appear on Creature cards in the deck
+                    const creatureSubTypesInDeck = [...new Set(
+                        (state.deck || [])
+                            .filter(c => (c.cardType || "").trim() === "Creature" && (c.cardSubType || "").trim())
+                            .map(c => c.cardSubType.trim())
+                    )].sort((a, b) => a.localeCompare(b));
+
+                    const armyBtnGrid = document.createElement("div");
+                    armyBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;";
+
+                    function refreshArmyButtons() {
+                        armyBtnGrid.innerHTML = "";
+                        if (creatureSubTypesInDeck.length === 0) {
+                            const empty = document.createElement("span");
+                            empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
+                            empty.textContent = "No creature sub types found in deck.";
+                            armyBtnGrid.appendChild(empty);
+                            return;
+                        }
+                        creatureSubTypesInDeck.forEach(sub => {
+                            const isActive = level.armySubTypes.includes(sub);
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.textContent = sub;
+                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(251,146,60,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(251,146,60,0.22)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#fdba74' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                const idx = level.armySubTypes.indexOf(sub);
+                                if (idx === -1) {
+                                    level.armySubTypes.push(sub);
+                                } else {
+                                    level.armySubTypes.splice(idx, 1);
+                                }
+                                saveQuestsToStorage();
+                                refreshArmyButtons();
+                            });
+                            armyBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshArmyButtons();
+                    pb.appendChild(armyBtnGrid);
+
+                    // Sub-section: Power spinner
+                    const armyPowerHr = document.createElement("hr");
+                    armyPowerHr.className = "qs-sub-divider";
+                    pb.appendChild(armyPowerHr);
+                    const armyPowerLabel = document.createElement("div");
+                    armyPowerLabel.className = "qs-sub-label";
+                    armyPowerLabel.innerHTML = `<i class="fa-solid fa-bolt"></i> Power`;
+                    pb.appendChild(armyPowerLabel);
+                    const armyPowerRow = document.createElement("div");
+                    armyPowerRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    const armyPowerInput = document.createElement("input");
+                    armyPowerInput.type = "number";
+                    armyPowerInput.value = level.armyPower !== undefined ? level.armyPower : 0;
+                    armyPowerInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    armyPowerInput.addEventListener("input", () => {
+                        level.armyPower = armyPowerInput.value === "" ? 0 : Number(armyPowerInput.value);
+                        saveQuestsToStorage();
+                    });
+                    armyPowerRow.appendChild(armyPowerInput);
+                    pb.appendChild(armyPowerRow);
+                } else if (def.key === "xpReward") {
+                    // Sub-section: XP Spinner
+                    const xpRow = document.createElement("div");
+                    xpRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    
+                    const xpInput = document.createElement("input");
+                    xpInput.type = "number";
+                    xpInput.value = level.xpReward !== undefined ? level.xpReward : 0;
+                    xpInput.style.cssText = "width:100px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    xpInput.addEventListener("input", () => {
+                        level.xpReward = xpInput.value === "" ? 0 : parseInt(xpInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+                    
+                    const xpLabelSuffix = document.createElement("span");
+                    xpLabelSuffix.style.cssText = "font-size:0.85rem;color:var(--text-muted);";
+                    xpLabelSuffix.textContent = "XP";
+
+                    xpRow.appendChild(xpInput);
+                    xpRow.appendChild(xpLabelSuffix);
+                    pb.appendChild(xpRow);
                 }
 
                 panel.appendChild(pb);
@@ -9848,6 +10222,10 @@
             }
             renderTypeRow();
             filterWrapper.appendChild(typeRow);
+            // Hide the type row entirely when the category is pre-locked (e.g. opponents = Creature only)
+            if (defaultCategory !== "all" && defaultCategory !== "All") {
+                filterWrapper.style.display = "none";
+            }
             wrapper.appendChild(filterWrapper);
 
             // ── Chips area ───────────────────────────────────────────────────────
@@ -9994,9 +10372,14 @@
                 unlockCards: [],
                 opponents: [],
                 learnSpells: [],
+                learnSpellMode: "choice",
                 companionRewards: [],
+                companionRewardMode: "choice",
                 attributeReward: { power: 0, toughness: 0 },
                 manaReward: { amount: 1, mode: "choice" },
+                armySubTypes: [],
+                armyPower: 0,
+                xpReward: 0,
                 sections: ["questDesc"],  // questDesc is always mandatory
                 sectionCollapsed: {}
             });
