@@ -7681,8 +7681,8 @@
         function normalizeQuestForExport(quest) {
             const out = {
                 id:     quest.id,
-                cardId: quest.cardId,
-                name:   quest.name,
+                cardId: quest.cardId || quest.id,
+                name:   quest.name || "Unnamed Quest",
             };
 
             // Map coordinates — only include when non-zero
@@ -7700,41 +7700,75 @@
                     const out = {};
 
                     // Always keep sections list (needed to restore UI state)
-                    if ((level.sections || []).length) out.sections = level.sections;
+                    if ((level.sections || []).length) out.sections = [...level.sections];
 
                     // Descriptions — omit if blank
                     const desc = level.questDescription || level.description || "";
-                    if (desc.trim()) out.questDescription = desc;
+                    if (desc.trim()) out.questDescription = desc.trim();
 
                     // Arrays — omit if empty
-                    if ((level.rewardCards     || []).length) out.rewardCards     = level.rewardCards;
-                    if ((level.unlockCards     || []).length) out.unlockCards     = level.unlockCards;
-                    if ((level.opponents       || []).length) out.opponents       = level.opponents;
-                    if ((level.learnSpells     || []).length) out.learnSpells     = level.learnSpells;
-                    if ((level.companionRewards|| []).length) out.companionRewards= level.companionRewards;
-                    if (level.learnSpellMode && level.learnSpellMode !== "choice") out.learnSpellMode = level.learnSpellMode;
-                    if (level.companionRewardMode && level.companionRewardMode !== "choice") out.companionRewardMode = level.companionRewardMode;
-                    if ((level.learnSpellRandomSubType || "").trim()) out.learnSpellRandomSubType = level.learnSpellRandomSubType;
-                    if ((level.companionRewardRandomSubType || "").trim()) out.companionRewardRandomSubType = level.companionRewardRandomSubType;
+                    if ((level.rewardCards     || []).length) out.rewardCards     = [...level.rewardCards];
+                    if ((level.unlockCards     || []).length) out.unlockCards     = [...level.unlockCards];
+                    if ((level.opponents       || []).length) out.opponents       = [...level.opponents];
+                    const activeSections = level.sections || [];
+                    const hasSectionsArray = Array.isArray(level.sections) && level.sections.length > 0;
+                    const VALID_MODES = ["random", "choice", "preset"];
+
+                    // Learn Spell Reward
+                    const hasLearnSpell = hasSectionsArray
+                        ? activeSections.includes("learnSpell")
+                        : ((level.learnSpells || []).length > 0 || !!(level.learnSpellRandomSubType || "").trim() || (level.learnSpellMode && level.learnSpellMode !== "choice"));
+                    if (hasLearnSpell) {
+                        out.learnSpellMode = VALID_MODES.includes(level.learnSpellMode) ? level.learnSpellMode : "choice";
+                        if ((level.learnSpells || []).length) out.learnSpells = [...level.learnSpells];
+                        if ((level.learnSpellRandomSubType || "").trim()) out.learnSpellRandomSubType = level.learnSpellRandomSubType.trim();
+                    }
+
+                    // Companion Reward
+                    const hasCompanionReward = hasSectionsArray
+                        ? activeSections.includes("companionReward")
+                        : ((level.companionRewards || []).length > 0 || !!(level.companionRewardRandomSubType || "").trim() || (level.companionRewardMode && level.companionRewardMode !== "choice"));
+                    if (hasCompanionReward) {
+                        out.companionRewardMode = VALID_MODES.includes(level.companionRewardMode) ? level.companionRewardMode : "choice";
+                        if ((level.companionRewards || []).length) out.companionRewards = [...level.companionRewards];
+                        if ((level.companionRewardRandomSubType || "").trim()) out.companionRewardRandomSubType = level.companionRewardRandomSubType.trim();
+                    }
+
+                    // Keyword Reward
+                    const hasKeywordReward = hasSectionsArray
+                        ? activeSections.includes("keywordReward")
+                        : ((level.keywordRewardList || []).length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice"));
+                    if (hasKeywordReward) {
+                        out.keywordRewardMode = VALID_MODES.includes(level.keywordRewardMode) ? level.keywordRewardMode : "choice";
+                        if ((level.keywordRewardList || []).length) out.keywordRewardList = [...level.keywordRewardList];
+                    }
+
+                    // Monster Unlock
+                    if (level.monsterUnlockManaCost !== undefined && level.monsterUnlockManaCost !== 0) out.monsterUnlockManaCost = level.monsterUnlockManaCost;
+
+                    // Choice Reward
+                    if ((level.choiceRewardTypes || []).length) out.choiceRewardTypes = [...level.choiceRewardTypes];
 
                     // Text descriptions — omit if blank
-                    if ((level.rewardsDescription   || "").trim()) out.rewardsDescription   = level.rewardsDescription;
-                    if ((level.opponentsDescription || "").trim()) out.opponentsDescription = level.opponentsDescription;
+                    if ((level.rewardsDescription   || "").trim()) out.rewardsDescription   = level.rewardsDescription.trim();
+                    if ((level.opponentsDescription || "").trim()) out.opponentsDescription = level.opponentsDescription.trim();
                     if (level.opponentsPower !== undefined && level.opponentsPower !== 0) out.opponentsPower = level.opponentsPower;
-                    if ((level.armySubTypes || []).length) out.armySubTypes = level.armySubTypes;
+                    if (level.opponentsQuestHp !== undefined && level.opponentsQuestHp !== 10) out.opponentsQuestHp = level.opponentsQuestHp;
+                    if ((level.armySubTypes || []).length) out.armySubTypes = [...level.armySubTypes];
                     if (level.armyPower !== undefined && level.armyPower !== 0) out.armyPower = level.armyPower;
+                    if (level.armyQuestHp !== undefined && level.armyQuestHp !== 10) out.armyQuestHp = level.armyQuestHp;
                     if (level.xpReward !== undefined && level.xpReward !== 0) out.xpReward = level.xpReward;
 
                     // attributeReward — omit if both are 0
                     const attr = level.attributeReward;
                     if (attr && (attr.power !== 0 || attr.toughness !== 0)) {
-                        out.attributeReward = attr;
+                        out.attributeReward = { power: attr.power || 0, toughness: attr.toughness || 0 };
                     }
 
-                    // manaReward — omit if section not active or amount is 0
+                    // manaReward — omit if section not active
                     const mana = level.manaReward;
-                    if (mana && mana.amount !== 0 && (level.sections || []).includes("manaReward")) {
-                        out.manaReward = mana;
+                    if (mana && (level.sections || []).includes("manaReward")) {
+                        out.manaReward = { amount: mana.amount !== undefined ? mana.amount : 1, mode: mana.mode || "choice" };
                     }
 
                     // sectionCollapsed — only keep entries that are true
@@ -7750,6 +7784,86 @@
                     return out;
                 });
             return out;
+        }
+
+        // Helper to normalize quest properties on import
+        function normalizeImportedQuest(quest) {
+            if (!quest) return null;
+            const q = {
+                id: quest.id || quest.cardId || ("quest_" + Date.now() + "_" + Math.floor(Math.random() * 1000)),
+                cardId: quest.cardId || quest.id || "",
+                name: quest.name || quest.cardName || "Unnamed Quest",
+                tileName: quest.tileName || "",
+                mapCoords: quest.mapCoords ? { x: Number(quest.mapCoords.x) || 0, y: Number(quest.mapCoords.y) || 0 } : { x: 0, y: 0 },
+                levels: []
+            };
+
+            q.levels = (quest.levels || []).map(level => {
+                const l = {
+                    description: level.questDescription || level.description || "",
+                    questDescription: level.questDescription || level.description || "",
+                    rewardCards: Array.isArray(level.rewardCards) ? [...level.rewardCards] : [],
+                    rewardsDescription: level.rewardsDescription || "",
+                    keywordRewardMode: level.keywordRewardMode || "choice",
+                    keywordRewardList: Array.isArray(level.keywordRewardList) ? [...level.keywordRewardList] : [],
+                    monsterUnlockManaCost: level.monsterUnlockManaCost !== undefined ? Number(level.monsterUnlockManaCost) : 0,
+                    choiceRewardTypes: Array.isArray(level.choiceRewardTypes) ? [...level.choiceRewardTypes] : [],
+                    unlockCards: Array.isArray(level.unlockCards) ? [...level.unlockCards] : [],
+                    opponents: Array.isArray(level.opponents) ? [...level.opponents] : [],
+                    opponentsDescription: level.opponentsDescription || "",
+                    opponentsPower: level.opponentsPower !== undefined ? Number(level.opponentsPower) : 0,
+                    opponentsQuestHp: level.opponentsQuestHp !== undefined ? Number(level.opponentsQuestHp) : 10,
+                    learnSpells: Array.isArray(level.learnSpells) ? [...level.learnSpells] : [],
+                    learnSpellMode: level.learnSpellMode || "choice",
+                    learnSpellRandomSubType: level.learnSpellRandomSubType || "",
+                    companionRewards: Array.isArray(level.companionRewards) ? [...level.companionRewards] : [],
+                    companionRewardMode: level.companionRewardMode || "choice",
+                    companionRewardRandomSubType: level.companionRewardRandomSubType || "",
+                    attributeReward: level.attributeReward ? { power: Number(level.attributeReward.power) || 0, toughness: Number(level.attributeReward.toughness) || 0 } : { power: 0, toughness: 0 },
+                    manaReward: level.manaReward ? { amount: Number(level.manaReward.amount) || 1, mode: level.manaReward.mode || "choice" } : { amount: 1, mode: "choice" },
+                    armySubTypes: Array.isArray(level.armySubTypes) ? [...level.armySubTypes] : (level.armySubType ? [level.armySubType] : []),
+                    armyPower: level.armyPower !== undefined ? Number(level.armyPower) : 0,
+                    armyQuestHp: level.armyQuestHp !== undefined ? Number(level.armyQuestHp) : 10,
+                    xpReward: level.xpReward !== undefined ? Number(level.xpReward) : 0,
+                    collapsed: !!level.collapsed,
+                    sectionCollapsed: level.sectionCollapsed || {},
+                    sections: Array.isArray(level.sections) ? [...level.sections] : []
+                };
+
+                // Add any keywords from keywordRewardList to availableKeywords if not present
+                if (l.keywordRewardList.length > 0 && typeof availableKeywords !== "undefined") {
+                    l.keywordRewardList.forEach(kw => {
+                        if (kw && !availableKeywords.includes(kw)) {
+                            availableKeywords.push(kw);
+                        }
+                    });
+                    if (typeof saveAvailableKeywords === "function") saveAvailableKeywords();
+                }
+
+                // Ensure active sections are present in sections array
+                const secSet = new Set();
+                secSet.add("questDesc");
+                if (Array.isArray(level.sections) && level.sections.length > 0) {
+                    level.sections.forEach(s => secSet.add(s));
+                } else {
+                    if (l.rewardCards.length > 0 || l.rewardsDescription.trim()) secSet.add("rewardCards");
+                    if (l.keywordRewardList.length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) secSet.add("keywordReward");
+                    if (l.monsterUnlockManaCost !== 0) secSet.add("monsterUnlock");
+                    if (l.choiceRewardTypes.length > 0) secSet.add("choiceReward");
+                    if (l.manaReward && l.manaReward.amount > 0) secSet.add("manaReward");
+                    if (l.attributeReward && (l.attributeReward.power !== 0 || l.attributeReward.toughness !== 0)) secSet.add("attributeReward");
+                    if (l.learnSpells.length > 0 || l.learnSpellRandomSubType.trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) secSet.add("learnSpell");
+                    if (l.companionRewards.length > 0 || l.companionRewardRandomSubType.trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) secSet.add("companionReward");
+                    if (l.unlockCards.length > 0) secSet.add("unlockCards");
+                    if (l.opponents.length > 0 || l.opponentsDescription.trim() || l.opponentsPower !== 0) secSet.add("opponents");
+                    if (l.armySubTypes.length > 0 || l.armyPower !== 0) secSet.add("army");
+                    if (l.xpReward !== 0) secSet.add("xpReward");
+                }
+                l.sections = Array.from(secSet);
+                return l;
+            });
+
+            return q;
         }
 
         // Export Deck database & quests to a JSON file download
@@ -7884,89 +7998,52 @@
 
         // Helper to normalize card properties on import
         function normalizeImportedCard(card) {
-            const cardName = card.cardName || "Unnamed Card";
-            const cardType = card.cardType || "Creature";
-            const matchType = availableCardTypes.find(t => t.name.toLowerCase() === cardType.toLowerCase());
-            const defaultHasPt = matchType ? matchType.hasPt : (cardType === "Creature" || cardType === "Tower");
-            const hasExplicitPt = (card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "");
-            const hasPt = card.hasPt !== undefined ? !!card.hasPt : (defaultHasPt || hasExplicitPt);
-
-            let illustration = card.illustration || (cardName + ".png");
-            const nameLower = cardName.trim().toLowerCase();
-            const idLower = (card.id || "").toLowerCase();
-            if (card.id === "default_volcano") {
-                illustration = "Volcano Elemental.png";
-            } else if (idLower.includes("tower_ability") || (nameLower.includes("tower") && nameLower.includes("ability"))) {
-                illustration = "Tower Ability.png";
-            } else if (idLower.includes("wizard_ability") || (nameLower.includes("wizard") && nameLower.includes("ability"))) {
-                illustration = "Wizard Ability.png";
-            } else if (idLower.includes("tower_of_terror_quest") || nameLower.includes("tower of terror quest") || (nameLower.includes("tower of terror") && nameLower.includes("quest"))) {
-                illustration = "Tower of Terror Quest.png";
-            } else if (idLower.includes("dragons_nest_quest") || nameLower.includes("dragons nest quest") || (nameLower.includes("dragons nest") && nameLower.includes("quest"))) {
-                illustration = "Dragons Nest Quest.jpg";
-            } else if (idLower.includes("ancient_temple_ruins_quest") || nameLower.includes("ancient temple ruins quest") || (nameLower.includes("ancient temple ruins") && nameLower.includes("quest"))) {
-                illustration = "Ancient Temple Ruins Quest.jpg";
-            } else if (idLower.includes("city_of_the_dead_quest") || nameLower.includes("city of the dead quest") || (nameLower.includes("city of the dead") && nameLower.includes("quest"))) {
-                illustration = "City of the Dead Quest.jpg";
-            } else if (idLower.includes("goblin_camp_quest") || nameLower.includes("goblin camp quest") || (nameLower.includes("goblin camp") && nameLower.includes("quest"))) {
-                illustration = "Goblin Camp Quest.jpg";
-            } else if (idLower.includes("crypt_of_the_undead_quest") || nameLower.includes("crypt of the undead quest") || (nameLower.includes("crypt of the undead") && nameLower.includes("quest"))) {
-                illustration = "Crypt of the undead Quest.jpg";
-            } else if (idLower.includes("gladiator_school_quest") || nameLower.includes("gladiator school quest") || (nameLower.includes("gladiator school") && nameLower.includes("quest"))) {
-                illustration = "Gladiator School Quest.jpg";
-            } else if (idLower.includes("battle_arena_quest") || nameLower.includes("battle arena quest") || (nameLower.includes("battle arena") && nameLower.includes("quest"))) {
-                illustration = "Battle Arena Quest.jpg";
-            }
+            const cardName = card.cardName || card.name || "Unnamed Card";
+            const cType = card.cardType || card.type || "Creature";
 
             return {
-                id: card.id || ('card_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
+                id: card.id || ('card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
                 cardName: cardName,
                 frameStyle: card.frameStyle || "red",
                 borderColor: card.borderColor || "black",
-                manaCost: Array.isArray(card.manaCost) ? card.manaCost : [],
-                cardType: cardType,
-                cardSubType: card.cardSubType || "",
-                target: (card.target === "None" ? "" : (card.target || "")),
-                hasPt: hasPt,
+                manaCost: Array.isArray(card.manaCost) ? [...card.manaCost] : [],
+                cardType: cType,
+                cardSubType: card.cardSubType || card.subType || "",
+                target: card.target || "",
+                hasPt: card.hasPt !== undefined ? !!card.hasPt : ((availableCardTypes.find(t => t.name === cType)?.hasPt) || cType === "Creature" || cType === "Tower"),
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
                 customDescriptionItalic: card.customDescriptionItalic !== false,
-                upkeepCost: Array.isArray(card.upkeepCost) ? card.upkeepCost : [],
-                spells: Array.isArray(card.spells) ? card.spells : [],
-                companions: Array.isArray(card.companions) ? card.companions : [],
+                upkeepCost: Array.isArray(card.upkeepCost) ? [...card.upkeepCost] : [],
+                spells: Array.isArray(card.spells) ? [...card.spells] : [],
+                companions: Array.isArray(card.companions) ? [...card.companions] : [],
                 power: card.power !== undefined ? String(card.power) : "1",
                 toughness: card.toughness !== undefined ? String(card.toughness) : "1",
-                artScale: 1.0,
-                artRotation: 0,
-                artX: 0,
-                artY: 0,
-                keywords: Array.isArray(card.keywords) ? card.keywords : [],
-                activatedAbilities: Array.isArray(card.activatedAbilities) ? card.activatedAbilities : [],
+                artScale: card.artScale !== undefined ? card.artScale : 1.0,
+                artRotation: card.artRotation !== undefined ? card.artRotation : 0,
+                artX: card.artX !== undefined ? card.artX : 0,
+                artY: card.artY !== undefined ? card.artY : 0,
+                keywords: Array.isArray(card.keywords) ? [...card.keywords] : [],
+                activatedAbilities: Array.isArray(card.activatedAbilities) ? JSON.parse(JSON.stringify(card.activatedAbilities)) : [],
                 abilityManaSize: card.abilityManaSize !== undefined ? Number(card.abilityManaSize) : 14,
-                illustration: illustration
+                illustration: card.illustration || (cardName + ".png")
             };
         }
 
         // Add any keywords from imported cards to the available keywords list
         function addImportedKeywordsToAvailable(cards) {
-            let updated = false;
-            cards.forEach(card => {
+            let addedNew = false;
+            (cards || []).forEach(card => {
                 if (Array.isArray(card.keywords)) {
                     card.keywords.forEach(kw => {
-                        const trimmed = kw.trim();
-                        if (!trimmed) return;
-                        
-                        // Capitalize each word (e.g. "double strike" -> "Double Strike")
-                        const formattedKeyword = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-                        
-                        if (!availableKeywords.includes(formattedKeyword)) {
-                            availableKeywords.push(formattedKeyword);
-                            updated = true;
+                        if (kw && !availableKeywords.includes(kw)) {
+                            availableKeywords.push(kw);
+                            addedNew = true;
                         }
                     });
                 }
             });
-            if (updated) {
+            if (addedNew) {
                 saveAvailableKeywords();
                 renderKeywordButtons();
             }
@@ -7974,44 +8051,33 @@
 
         // Add any card types from imported cards to the available card types list
         function addImportedCardTypesToAvailable(cards) {
-            let updated = false;
-            cards.forEach(card => {
-                if (card.cardType) {
-                    const trimmed = card.cardType.trim();
-                    if (!trimmed) return;
-                    
-                    const formattedType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-                    
-                    if (!availableCardTypes.some(t => t.name.toLowerCase() === formattedType.toLowerCase())) {
-                        const hasPt = card.hasPt !== undefined ? !!card.hasPt : ((card.power !== undefined && card.power !== "") || (card.toughness !== undefined && card.toughness !== "") || (formattedType === "Creature" || formattedType === "Tower"));
-                        availableCardTypes.push({ name: formattedType, hasPt: hasPt });
-                        updated = true;
-                    }
+            let addedNew = false;
+            (cards || []).forEach(card => {
+                const cType = (card.cardType || card.type || "").trim();
+                if (cType && !availableCardTypes.some(t => t.name === cType)) {
+                    const hasPt = card.hasPt !== undefined ? !!card.hasPt : (cType === "Creature" || cType === "Tower");
+                    availableCardTypes.push({ name: cType, hasPt: hasPt });
+                    addedNew = true;
                 }
             });
-            if (updated) {
+            if (addedNew) {
                 saveAvailableCardTypes();
                 populateCardTypeSelect();
                 renderTypeFilterButtons();
             }
         }
 
+        // Add any sub-types from imported cards to the available sub-types list
         function addImportedCardSubTypesToAvailable(cards) {
-            let updated = false;
-            cards.forEach(card => {
-                if (card.cardSubType) {
-                    const trimmed = card.cardSubType.trim();
-                    if (!trimmed) return;
-                    
-                    const formattedSubType = trimmed.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-                    
-                    if (!availableSubTypes.includes(formattedSubType)) {
-                        availableSubTypes.push(formattedSubType);
-                        updated = true;
-                    }
+            let addedNew = false;
+            (cards || []).forEach(card => {
+                const subType = (card.cardSubType || card.subType || "").trim();
+                if (subType && !availableSubTypes.includes(subType)) {
+                    availableSubTypes.push(subType);
+                    addedNew = true;
                 }
             });
-            if (updated) {
+            if (addedNew) {
                 availableSubTypes.sort((a, b) => a.localeCompare(b));
                 saveAvailableSubTypes();
                 populateCardSubTypeSelect();
@@ -8022,7 +8088,6 @@
         function importDeckFromJson(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (event) => {
                 try {
@@ -8042,7 +8107,7 @@
                     }
 
                     if (imported && Array.isArray(imported.quests)) {
-                        state.quests = imported.quests;
+                        state.quests = imported.quests.map(normalizeImportedQuest).filter(Boolean);
                     }
 
                     // Restore deck-level spell & companion selections
@@ -8132,7 +8197,7 @@
                         return;
                     }
 
-                    state.quests = importedQuests;
+                    state.quests = importedQuests.map(normalizeImportedQuest).filter(Boolean);
                     if (typeof syncQuestsWithDeck === "function") syncQuestsWithDeck();
                     saveQuestsToStorage();
                     if (typeof renderQuestSidebarList === "function") renderQuestSidebarList();
@@ -9354,20 +9419,28 @@
             if (!Array.isArray(level.sections)) {
                 level.sections = ["questDesc"]; // questDesc is always mandatory
                 if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim()) level.sections.push("rewardCards");
+                if ((level.keywordRewardList || []).length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) level.sections.push("keywordReward");
+                if (level.monsterUnlockManaCost !== undefined && level.monsterUnlockManaCost !== 0) level.sections.push("monsterUnlock");
+                if ((level.choiceRewardTypes || []).length > 0) level.sections.push("choiceReward");
+                if (level.manaReward && level.manaReward.amount > 0) level.sections.push("manaReward");
+                if (level.attributeReward && (level.attributeReward.power !== 0 || level.attributeReward.toughness !== 0)) level.sections.push("attributeReward");
+                if ((level.learnSpells || []).length > 0 || (level.learnSpellRandomSubType || "").trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) level.sections.push("learnSpell");
+                if ((level.companionRewards || []).length > 0 || (level.companionRewardRandomSubType || "").trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) level.sections.push("companionReward");
                 if ((level.unlockCards || []).length > 0) level.sections.push("unlockCards");
                 if ((level.opponents || []).length > 0 || (level.opponentsDescription || "").trim()) level.sections.push("opponents");
                 if ((level.armySubTypes && level.armySubTypes.length > 0) || (level.armySubType || "").trim() || level.armyPower) level.sections.push("army");
                 if (level.xpReward) level.sections.push("xpReward");
-                // migrate old standalone rewardsDesc / opponentsDesc sections — they're now sub-sections
             } else {
                 if (!level.sections.includes("questDesc")) level.sections.unshift("questDesc");
-                // remove obsolete standalone keys from saved data
                 level.sections = level.sections.filter(k => k !== "rewardsDesc" && k !== "opponentsDesc");
             }
 
             const SECTION_DEFS = [
                 { key: "questDesc",       label: "Quest Description",    icon: "fa-align-left",         color: "#a78bfa" },
-                { key: "rewardCards",     label: "Card Rewards",         icon: "fa-gift",               color: "#86efac" },
+                { key: "rewardCards",     label: "Card Reward",          icon: "fa-gift",               color: "#86efac" },
+                { key: "keywordReward",   label: "Keyword Reward",       icon: "fa-circle-check",       color: "#34d399" },
+                { key: "monsterUnlock",   label: "Monster Unlock",       icon: "fa-dragon",             color: "#f87171" },
+                { key: "choiceReward",    label: "Choice Reward",        icon: "fa-hand-pointer",       color: "#a5b4fc" },
                 { key: "manaReward",      label: "Mana Reward",          icon: "fa-droplet",            color: "#60a5fa" },
                 { key: "attributeReward", label: "Attribute Reward",     icon: "fa-bolt",               color: "#fde68a" },
                 { key: "learnSpell",      label: "Learn a Spell",        icon: "fa-wand-magic-sparkles", color: "#c4b5fd" },
@@ -9459,7 +9532,10 @@
                                 return sub ? `— Random · ${sub}` : "— Random";
                             }
                             const names = cardNames(level.learnSpells);
-                            return names.length ? `— ${names.join(", ")}` : "";
+                            if (level.learnSpellMode === "preset") {
+                                return names.length ? `— Preset · ${names[0]}` : "";
+                            }
+                            return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
                         case "companionReward": {
                             if (level.companionRewardMode === "random") {
@@ -9467,7 +9543,10 @@
                                 return sub ? `— Random · ${sub}` : "— Random";
                             }
                             const names = cardNames(level.companionRewards);
-                            return names.length ? `— ${names.join(", ")}` : "";
+                            if (level.companionRewardMode === "preset") {
+                                return names.length ? `— Preset · ${names[0]}` : "";
+                            }
+                            return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
                         case "manaReward": {
                             const mana = level.manaReward;
@@ -9484,6 +9563,21 @@
                         case "xpReward": {
                             const xp = level.xpReward || 0;
                             return xp !== 0 ? `— ${xp} XP` : "";
+                        }
+                        case "keywordReward": {
+                            const mode = level.keywordRewardMode || "choice";
+                            const kwList = (level.keywordRewardList || []);
+                            if (mode === "random") return "— Random";
+                            if (mode === "preset") return kwList.length ? `— Preset · ${kwList[0]}` : "— Preset";
+                            return kwList.length ? `— Choice · ${kwList.join(", ")}` : "— Choice";
+                        }
+                        case "monsterUnlock": {
+                            const mc = level.monsterUnlockManaCost;
+                            return (mc !== undefined && mc !== 0) ? `— Mana Cost ${mc}` : "";
+                        }
+                        case "choiceReward": {
+                            const types = (level.choiceRewardTypes || []);
+                            return types.length ? `— ${types.join(", ")}` : "";
                         }
                         default: return "";
                     }
@@ -9509,13 +9603,16 @@
                     // Reset the section's data back to its default empty state
                     const SECTION_RESETS = {
                         rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; },
+                        keywordReward:   () => { level.keywordRewardMode = "choice"; level.keywordRewardList = []; },
+                        monsterUnlock:   () => { level.monsterUnlockManaCost = 0; },
+                        choiceReward:    () => { level.choiceRewardTypes = []; },
                         manaReward:      () => { level.manaReward = { amount: 1, mode: "choice" }; },
                         attributeReward: () => { level.attributeReward = { power: 0, toughness: 0 }; },
                         learnSpell:      () => { level.learnSpells = []; level.learnSpellMode = "choice"; level.learnSpellRandomSubType = ""; },
                         companionReward: () => { level.companionRewards = []; level.companionRewardMode = "choice"; level.companionRewardRandomSubType = ""; },
                         unlockCards:     () => { level.unlockCards = []; },
-                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; },
-                        army:            () => { level.armySubTypes = []; level.armyPower = 0; },
+                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; level.opponentsQuestHp = 10; },
+                        army:            () => { level.armySubTypes = []; level.armyPower = 0; level.armyQuestHp = 10; },
                         xpReward:        () => { level.xpReward = 0; },
                     };
                     if (SECTION_RESETS[def.key]) SECTION_RESETS[def.key]();
@@ -9731,7 +9828,7 @@
                     if (!level.learnSpellMode) level.learnSpellMode = "choice";
                     if (level.learnSpellRandomSubType === undefined) level.learnSpellRandomSubType = "";
 
-                    // Mode toggle: Random / Choice
+                    // Mode toggle: Random / Choice / Preset
                     const lsModeWrap = document.createElement("div");
                     lsModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:8px;";
                     const lsRandomBtn = document.createElement("button");
@@ -9742,8 +9839,13 @@
                     lsChoiceBtn.type = "button";
                     lsChoiceBtn.textContent = "Choice";
                     lsChoiceBtn.className = "qs-mana-mode-btn" + (level.learnSpellMode === "choice" ? " active" : "");
+                    const lsPresetBtn = document.createElement("button");
+                    lsPresetBtn.type = "button";
+                    lsPresetBtn.textContent = "Preset";
+                    lsPresetBtn.className = "qs-mana-mode-btn" + (level.learnSpellMode === "preset" ? " active" : "");
                     lsModeWrap.appendChild(lsRandomBtn);
                     lsModeWrap.appendChild(lsChoiceBtn);
+                    lsModeWrap.appendChild(lsPresetBtn);
                     pb.appendChild(lsModeWrap);
 
                     // Sub type picker (Random mode only) — sourced from Spell cards in deck
@@ -9788,31 +9890,41 @@
                     lsSubTypeWrap.appendChild(lsSubBtnGrid);
                     pb.appendChild(lsSubTypeWrap);
 
-                    // Card chips (Choice mode only)
+                    // Card chips (Choice & Preset modes)
                     const lsChipsWrap = document.createElement("div");
-                    lsChipsWrap.style.display = level.learnSpellMode === "choice" ? "" : "none";
-                    lsChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "learnSpells", "quest-unlock-chip",
-                        "Select a battle spell to learn", "Spell", updateSummaryBadge));
+                    lsChipsWrap.style.display = level.learnSpellMode !== "random" ? "" : "none";
+                    function renderLsChips() {
+                        lsChipsWrap.innerHTML = "";
+                        lsChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "learnSpells", "quest-unlock-chip",
+                            level.learnSpellMode === "preset" ? "Select 1 preset spell to learn" : "Select battle spells to learn (choice)", "Spell", updateSummaryBadge));
+                    }
+                    renderLsChips();
                     pb.appendChild(lsChipsWrap);
 
                     function setLearnSpellMode(mode) {
                         level.learnSpellMode = mode;
+                        if (mode === "preset" && level.learnSpells.length > 1) {
+                            level.learnSpells = level.learnSpells.slice(0, 1);
+                        }
                         lsRandomBtn.classList.toggle("active", mode === "random");
                         lsChoiceBtn.classList.toggle("active", mode === "choice");
+                        lsPresetBtn.classList.toggle("active", mode === "preset");
                         lsSubTypeWrap.style.display = mode === "random" ? "" : "none";
-                        lsChipsWrap.style.display = mode === "choice" ? "" : "none";
+                        lsChipsWrap.style.display = mode !== "random" ? "" : "none";
+                        renderLsChips();
                         updateSummaryBadge();
                         saveQuestsToStorage();
                     }
                     lsRandomBtn.addEventListener("click", () => setLearnSpellMode("random"));
                     lsChoiceBtn.addEventListener("click", () => setLearnSpellMode("choice"));
+                    lsPresetBtn.addEventListener("click", () => setLearnSpellMode("preset"));
 
                 } else if (def.key === "companionReward") {
                     if (!Array.isArray(level.companionRewards)) level.companionRewards = [];
                     if (!level.companionRewardMode) level.companionRewardMode = "choice";
                     if (level.companionRewardRandomSubType === undefined) level.companionRewardRandomSubType = "";
 
-                    // Mode toggle: Random / Choice
+                    // Mode toggle: Random / Choice / Preset
                     const crModeWrap = document.createElement("div");
                     crModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:8px;";
                     const crRandomBtn = document.createElement("button");
@@ -9823,8 +9935,13 @@
                     crChoiceBtn.type = "button";
                     crChoiceBtn.textContent = "Choice";
                     crChoiceBtn.className = "qs-mana-mode-btn" + (level.companionRewardMode === "choice" ? " active" : "");
+                    const crPresetBtn = document.createElement("button");
+                    crPresetBtn.type = "button";
+                    crPresetBtn.textContent = "Preset";
+                    crPresetBtn.className = "qs-mana-mode-btn" + (level.companionRewardMode === "preset" ? " active" : "");
                     crModeWrap.appendChild(crRandomBtn);
                     crModeWrap.appendChild(crChoiceBtn);
+                    crModeWrap.appendChild(crPresetBtn);
                     pb.appendChild(crModeWrap);
 
                     // Sub type picker (Random mode only) — sourced from Creature cards in deck
@@ -9869,54 +9986,105 @@
                     crSubTypeWrap.appendChild(crSubBtnGrid);
                     pb.appendChild(crSubTypeWrap);
 
-                    // Card chips (Choice mode only)
+                    // Card chips (Choice & Preset modes)
                     const crChipsWrap = document.createElement("div");
-                    crChipsWrap.style.display = level.companionRewardMode === "choice" ? "" : "none";
-                    crChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "companionRewards", "quest-reward-chip",
-                        "Select a companion creature", "Creature", updateSummaryBadge));
+                    crChipsWrap.style.display = level.companionRewardMode !== "random" ? "" : "none";
+                    function renderCrChips() {
+                        crChipsWrap.innerHTML = "";
+                        crChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "companionRewards", "quest-reward-chip",
+                            level.companionRewardMode === "preset" ? "Select 1 preset companion creature" : "Select companion creatures (choice)", "Creature", updateSummaryBadge));
+                    }
+                    renderCrChips();
                     pb.appendChild(crChipsWrap);
 
                     function setCompanionRewardMode(mode) {
                         level.companionRewardMode = mode;
+                        if (mode === "preset" && level.companionRewards.length > 1) {
+                            level.companionRewards = level.companionRewards.slice(0, 1);
+                        }
                         crRandomBtn.classList.toggle("active", mode === "random");
                         crChoiceBtn.classList.toggle("active", mode === "choice");
+                        crPresetBtn.classList.toggle("active", mode === "preset");
                         crSubTypeWrap.style.display = mode === "random" ? "" : "none";
-                        crChipsWrap.style.display = mode === "choice" ? "" : "none";
+                        crChipsWrap.style.display = mode !== "random" ? "" : "none";
+                        renderCrChips();
                         updateSummaryBadge();
                         saveQuestsToStorage();
                     }
                     crRandomBtn.addEventListener("click", () => setCompanionRewardMode("random"));
                     crChoiceBtn.addEventListener("click", () => setCompanionRewardMode("choice"));
+                    crPresetBtn.addEventListener("click", () => setCompanionRewardMode("preset"));
 
                 } else if (def.key === "unlockCards") {
                     pb.appendChild(buildChipsSectionBody(quest, level, idx, "unlockCards", "quest-unlock-chip",
                         "Cards that become activated (unlocked) for the player", "all", updateSummaryBadge));
 
                 } else if (def.key === "opponents") {
-                    // Chips section
-                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "opponents", "quest-opponent-chip",
-                        "Creature cards acting as opponents in this level", "Creature", updateSummaryBadge));
+                    function calcCombinedPower() {
+                        let total = 0;
+                        (level.opponents || []).forEach(id => {
+                            const card = (state.deck || []).find(c => c.id === id);
+                            if (card) {
+                                const p = parseInt(card.power, 10);
+                                if (!isNaN(p)) total += p;
+                            }
+                        });
+                        return total;
+                    }
 
-                    // Sub-section: Power spinner
+                    const combinedPowerSpan = document.createElement("span");
+                    combinedPowerSpan.style.cssText = "font-size:0.78rem;color:#fde68a;font-weight:600;display:inline-flex;align-items:center;gap:4px;";
+
+                    let powerInput = null;
+
+                    function updateOpponentPowerUI() {
+                        const total = calcCombinedPower();
+                        combinedPowerSpan.innerHTML = `<i class="fa-solid fa-bolt" style="color:#fde68a;"></i> Combined Power: <strong style="color:#fff;font-size:0.85rem;">${total}</strong>`;
+                        level.opponentsPower = total;
+                        if (powerInput) powerInput.value = total;
+                        updateSummaryBadge();
+                    }
+
+                    // Chips section (allowDuplicates = true for Opponents)
+                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "opponents", "quest-opponent-chip",
+                        "Creature cards acting as opponents in this level", "Creature", () => {
+                            updateOpponentPowerUI();
+                            saveQuestsToStorage();
+                        }, true));
+
+                    // Sub-section: Power spinner with Combined Power presentation
                     const powerHr = document.createElement("hr");
                     powerHr.className = "qs-sub-divider";
                     pb.appendChild(powerHr);
                     const powerSubLabel = document.createElement("div");
                     powerSubLabel.className = "qs-sub-label";
-                    powerSubLabel.innerHTML = `<i class="fa-solid fa-bolt"></i> Power`;
+                    powerSubLabel.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+                    powerSubLabel.innerHTML = `<span><i class="fa-solid fa-bolt"></i> Power</span>`;
+                    powerSubLabel.appendChild(combinedPowerSpan);
                     pb.appendChild(powerSubLabel);
+
                     const powerRow = document.createElement("div");
                     powerRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
-                    const powerInput = document.createElement("input");
+                    powerInput = document.createElement("input");
                     powerInput.type = "number";
-                    powerInput.value = level.opponentsPower !== undefined ? level.opponentsPower : 0;
+                    powerInput.value = level.opponentsPower !== undefined ? level.opponentsPower : calcCombinedPower();
                     powerInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
                     powerInput.addEventListener("input", () => {
                         level.opponentsPower = powerInput.value === "" ? 0 : Number(powerInput.value);
+                        updateSummaryBadge();
                         saveQuestsToStorage();
                     });
                     powerRow.appendChild(powerInput);
+
+                    const pwrHint = document.createElement("span");
+                    pwrHint.style.cssText = "font-size:0.75rem;color:var(--text-muted);";
+                    pwrHint.textContent = "(Auto-calculated from added creatures)";
+                    powerRow.appendChild(pwrHint);
+
                     pb.appendChild(powerRow);
+
+                    // Initial calculation sync
+                    updateOpponentPowerUI();
 
                     // Sub-section: Opponents Description
                     const hr2 = document.createElement("hr");
@@ -9936,6 +10104,27 @@
                         saveQuestsToStorage();
                     });
                     pb.appendChild(odTA);
+
+                    // Sub-section: Quest HP spinner
+                    const oHpHr = document.createElement("hr");
+                    oHpHr.className = "qs-sub-divider";
+                    pb.appendChild(oHpHr);
+                    const oHpSubLabel = document.createElement("div");
+                    oHpSubLabel.className = "qs-sub-label";
+                    oHpSubLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP`;
+                    pb.appendChild(oHpSubLabel);
+                    const oHpRow = document.createElement("div");
+                    oHpRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    const oHpInput = document.createElement("input");
+                    oHpInput.type = "number";
+                    oHpInput.value = level.opponentsQuestHp !== undefined ? level.opponentsQuestHp : 10;
+                    oHpInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    oHpInput.addEventListener("input", () => {
+                        level.opponentsQuestHp = oHpInput.value === "" ? 10 : Number(oHpInput.value);
+                        saveQuestsToStorage();
+                    });
+                    oHpRow.appendChild(oHpInput);
+                    pb.appendChild(oHpRow);
 
                 } else if (def.key === "army") {
                     // Ensure armySubTypes is an array (migrate old string value)
@@ -10010,6 +10199,27 @@
                     });
                     armyPowerRow.appendChild(armyPowerInput);
                     pb.appendChild(armyPowerRow);
+
+                    // Sub-section: Quest HP spinner
+                    const armyHpHr = document.createElement("hr");
+                    armyHpHr.className = "qs-sub-divider";
+                    pb.appendChild(armyHpHr);
+                    const armyHpLabel = document.createElement("div");
+                    armyHpLabel.className = "qs-sub-label";
+                    armyHpLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP`;
+                    pb.appendChild(armyHpLabel);
+                    const armyHpRow = document.createElement("div");
+                    armyHpRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    const armyHpInput = document.createElement("input");
+                    armyHpInput.type = "number";
+                    armyHpInput.value = level.armyQuestHp !== undefined ? level.armyQuestHp : 10;
+                    armyHpInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    armyHpInput.addEventListener("input", () => {
+                        level.armyQuestHp = armyHpInput.value === "" ? 10 : Number(armyHpInput.value);
+                        saveQuestsToStorage();
+                    });
+                    armyHpRow.appendChild(armyHpInput);
+                    pb.appendChild(armyHpRow);
                 } else if (def.key === "xpReward") {
                     // Sub-section: XP Spinner
                     const xpRow = document.createElement("div");
@@ -10032,6 +10242,191 @@
                     xpRow.appendChild(xpInput);
                     xpRow.appendChild(xpLabelSuffix);
                     pb.appendChild(xpRow);
+
+                } else if (def.key === "keywordReward") {
+                    // Initialize data
+                    if (!level.keywordRewardMode) level.keywordRewardMode = "choice";
+                    if (!Array.isArray(level.keywordRewardList)) level.keywordRewardList = [];
+
+                    // Mode toggle: Random / Choice / Preset
+                    const kwModeWrap = document.createElement("div");
+                    kwModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:10px;";
+                    const kwRandomBtn = document.createElement("button");
+                    kwRandomBtn.type = "button";
+                    kwRandomBtn.textContent = "Random";
+                    kwRandomBtn.className = "qs-mana-mode-btn" + (level.keywordRewardMode === "random" ? " active" : "");
+                    const kwChoiceBtn = document.createElement("button");
+                    kwChoiceBtn.type = "button";
+                    kwChoiceBtn.textContent = "Choice";
+                    kwChoiceBtn.className = "qs-mana-mode-btn" + (level.keywordRewardMode === "choice" ? " active" : "");
+                    const kwPresetBtn = document.createElement("button");
+                    kwPresetBtn.type = "button";
+                    kwPresetBtn.textContent = "Preset";
+                    kwPresetBtn.className = "qs-mana-mode-btn" + (level.keywordRewardMode === "preset" ? " active" : "");
+                    kwModeWrap.appendChild(kwRandomBtn);
+                    kwModeWrap.appendChild(kwChoiceBtn);
+                    kwModeWrap.appendChild(kwPresetBtn);
+                    pb.appendChild(kwModeWrap);
+
+                    // Selection area (Choice & Preset modes)
+                    const kwChoiceArea = document.createElement("div");
+                    kwChoiceArea.style.display = level.keywordRewardMode !== "random" ? "" : "none";
+
+                    const kwChipWrap = document.createElement("div");
+                    kwChipWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;min-height:24px;margin-bottom:8px;";
+
+                    function renderKwChips() {
+                        kwChipWrap.innerHTML = "";
+                        (level.keywordRewardList || []).forEach((kw, i) => {
+                            const chip = document.createElement("span");
+                            chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;padding:2px 8px;border-radius:12px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.35);color:#34d399;";
+                            chip.textContent = kw;
+                            const x = document.createElement("span");
+                            x.textContent = "×";
+                            x.style.cssText = "cursor:pointer;opacity:0.7;font-size:0.9rem;line-height:1;";
+                            x.addEventListener("click", () => {
+                                level.keywordRewardList.splice(i, 1);
+                                renderKwChips();
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                            });
+                            chip.appendChild(x);
+                            kwChipWrap.appendChild(chip);
+                        });
+                    }
+                    renderKwChips();
+                    kwChoiceArea.appendChild(kwChipWrap);
+
+                    // Dropdown row
+                    const kwSelectRow = document.createElement("div");
+                    kwSelectRow.style.cssText = "display:flex;gap:6px;align-items:center;";
+
+                    const kwSelect = document.createElement("select");
+                    kwSelect.style.cssText = "flex:1;font-size:0.83rem;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#fff;cursor:pointer;";
+
+                    function populateKwDropdown() {
+                        kwSelect.innerHTML = "";
+                        const placeholder = document.createElement("option");
+                        placeholder.value = "";
+                        placeholder.textContent = "— Select a keyword ability —";
+                        kwSelect.appendChild(placeholder);
+                        const allKws = typeof availableKeywords !== "undefined" ? availableKeywords : [];
+                        allKws.forEach(kw => {
+                            const opt = document.createElement("option");
+                            opt.value = kw;
+                            opt.textContent = kw;
+                            kwSelect.appendChild(opt);
+                        });
+                    }
+                    populateKwDropdown();
+
+                    const kwAddBtn = document.createElement("button");
+                    kwAddBtn.type = "button";
+                    kwAddBtn.textContent = "Add";
+                    kwAddBtn.style.cssText = "font-size:0.8rem;padding:4px 12px;border-radius:6px;cursor:pointer;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;transition:all 0.15s;";
+
+                    kwAddBtn.addEventListener("click", () => {
+                        const val = kwSelect.value;
+                        if (!val) return;
+                        if (level.keywordRewardMode === "preset") {
+                            level.keywordRewardList = [val];
+                            renderKwChips();
+                            updateSummaryBadge();
+                            saveQuestsToStorage();
+                        } else if (!level.keywordRewardList.includes(val)) {
+                            level.keywordRewardList.push(val);
+                            renderKwChips();
+                            updateSummaryBadge();
+                            saveQuestsToStorage();
+                        }
+                        kwSelect.value = "";
+                    });
+
+                    kwSelectRow.appendChild(kwSelect);
+                    kwSelectRow.appendChild(kwAddBtn);
+                    kwChoiceArea.appendChild(kwSelectRow);
+                    pb.appendChild(kwChoiceArea);
+
+                    function setKwMode(mode) {
+                        level.keywordRewardMode = mode;
+                        if (mode === "preset" && level.keywordRewardList.length > 1) {
+                            level.keywordRewardList = level.keywordRewardList.slice(0, 1);
+                            renderKwChips();
+                        }
+                        kwRandomBtn.classList.toggle("active", mode === "random");
+                        kwChoiceBtn.classList.toggle("active", mode === "choice");
+                        kwPresetBtn.classList.toggle("active", mode === "preset");
+                        kwChoiceArea.style.display = mode !== "random" ? "" : "none";
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    }
+                    kwRandomBtn.addEventListener("click", () => setKwMode("random"));
+                    kwChoiceBtn.addEventListener("click", () => setKwMode("choice"));
+                    kwPresetBtn.addEventListener("click", () => setKwMode("preset"));
+
+                } else if (def.key === "monsterUnlock") {
+                    // Mana Cost spinner (unclamped, starts at 0)
+                    const muRow = document.createElement("div");
+                    muRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+
+                    const muLabel = document.createElement("span");
+                    muLabel.style.cssText = "font-size:0.83rem;color:var(--text-muted);";
+                    muLabel.textContent = "Mana Cost:";
+
+                    const muInput = document.createElement("input");
+                    muInput.type = "number";
+                    muInput.value = level.monsterUnlockManaCost !== undefined ? level.monsterUnlockManaCost : 0;
+                    muInput.style.cssText = "width:90px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    muInput.addEventListener("input", () => {
+                        level.monsterUnlockManaCost = muInput.value === "" ? 0 : Number(muInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+
+                    muRow.appendChild(muLabel);
+                    muRow.appendChild(muInput);
+                    pb.appendChild(muRow);
+
+                } else if (def.key === "choiceReward") {
+                    if (!Array.isArray(level.choiceRewardTypes)) level.choiceRewardTypes = [];
+
+                    const CR_OPTIONS = [
+                        { value: "Creature",      label: "Creature",      icon: "fa-dragon" },
+                        { value: "Spell",         label: "Spell",         icon: "fa-wand-magic-sparkles" },
+                        { value: "Attribute",     label: "Attribute",     icon: "fa-bolt" },
+                        { value: "Learn a Spell", label: "Learn a Spell", icon: "fa-book-open" },
+                        { value: "Companion",     label: "Companion",     icon: "fa-paw" },
+                        { value: "Artifact",      label: "Artifact",      icon: "fa-gem" },
+                        { value: "Hero",          label: "Hero",          icon: "fa-shield-halved" },
+                    ];
+
+                    const crBtnGrid = document.createElement("div");
+                    crBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+
+                    function refreshChoiceRewardBtns() {
+                        crBtnGrid.innerHTML = "";
+                        CR_OPTIONS.forEach(opt => {
+                            const isActive = level.choiceRewardTypes.includes(opt.value);
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.innerHTML = `<i class="fa-solid ${opt.icon}" style="margin-right:5px;"></i>${opt.label}`;
+                            btn.style.cssText = `display:inline-flex;align-items:center;font-size:0.78rem;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(165,180,252,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(165,180,252,0.18)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#a5b4fc' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                const i = level.choiceRewardTypes.indexOf(opt.value);
+                                if (i === -1) {
+                                    level.choiceRewardTypes.push(opt.value);
+                                } else {
+                                    level.choiceRewardTypes.splice(i, 1);
+                                }
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                                refreshChoiceRewardBtns();
+                            });
+                            crBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshChoiceRewardBtns();
+                    pb.appendChild(crBtnGrid);
                 }
 
                 panel.appendChild(pb);
@@ -10083,7 +10478,7 @@
 
         // ── Generic chips section builder (panel body variant) ─────────────
 
-        function buildChipsSectionBody(quest, level, levelIdx, field, chipClass, placeholder, defaultCategory = "all", onUpdateCallback) {
+        function buildChipsSectionBody(quest, level, levelIdx, field, chipClass, placeholder, defaultCategory = "all", onUpdateCallback, allowDuplicates = false) {
             if (!level[field]) level[field] = [];
 
             const wrapper = document.createElement("div");
@@ -10127,7 +10522,7 @@
 
             // ── Refresh the select dropdown ──────────────────────────────────────
             function refreshSelect() {
-                populateCardSelect(sel, level[field], activeCategory, activeSubtype);
+                populateCardSelect(sel, allowDuplicates ? [] : level[field], activeCategory, activeSubtype);
             }
 
             // ── Subtype row (rendered dynamically below the type row) ─────────────
@@ -10276,7 +10671,16 @@
             addBtn.addEventListener("click", () => {
                 const chosen = sel.value;
                 if (!chosen) return;
-                if (!level[field].includes(chosen)) {
+                const modeKey = field === "learnSpells" ? level.learnSpellMode : (field === "companionRewards" ? level.companionRewardMode : "");
+                const isPreset = modeKey === "preset";
+                if (isPreset) {
+                    level[field] = [chosen];
+                    refreshChips();
+                    refreshSelect();
+                    sel.value = "";
+                    if (onUpdateCallback) onUpdateCallback();
+                    saveQuestsToStorage();
+                } else if (allowDuplicates || !level[field].includes(chosen)) {
                     level[field].push(chosen);
                     refreshChips();
                     refreshSelect();
