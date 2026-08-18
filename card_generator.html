@@ -1941,6 +1941,30 @@
             opacity: 1;
             color: var(--danger);
         }
+        .qs-panel-move-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.72rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            opacity: 0.6;
+            transition: opacity 0.15s, color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+        .qs-panel-move-btn:hover:not(:disabled) {
+            opacity: 1;
+            color: var(--accent-gold);
+            background: rgba(255,255,255,0.06);
+        }
+        .qs-panel-move-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+        .quest-move-level-btn:hover:not(:disabled) {
+            color: var(--accent-gold) !important;
+        }
         .qs-panel-body {
             padding: 12px 14px;
             display: flex;
@@ -9473,6 +9497,52 @@
             updateSummaryBadge();
             rightHeader.appendChild(chipCountsBadge);
 
+            const moveUpBtn = document.createElement("button");
+            moveUpBtn.type = "button";
+            moveUpBtn.className = "quest-move-level-btn";
+            moveUpBtn.title = "Move level up";
+            moveUpBtn.style.cssText = "background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;transition:color 0.15s;";
+            moveUpBtn.innerHTML = `<i class="fa-solid fa-arrow-up"></i>`;
+            if (idx === 0) {
+                moveUpBtn.disabled = true;
+                moveUpBtn.style.opacity = "0.2";
+                moveUpBtn.style.cursor = "not-allowed";
+            } else {
+                moveUpBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const temp = quest.levels[idx];
+                    quest.levels[idx] = quest.levels[idx - 1];
+                    quest.levels[idx - 1] = temp;
+                    renderQuestLevels(quest);
+                    renderQuestSidebarList();
+                    saveQuestsToStorage();
+                });
+            }
+            rightHeader.appendChild(moveUpBtn);
+
+            const moveDownBtn = document.createElement("button");
+            moveDownBtn.type = "button";
+            moveDownBtn.className = "quest-move-level-btn";
+            moveDownBtn.title = "Move level down";
+            moveDownBtn.style.cssText = "background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.85rem;padding:2px 4px;transition:color 0.15s;";
+            moveDownBtn.innerHTML = `<i class="fa-solid fa-arrow-down"></i>`;
+            if (idx === quest.levels.length - 1) {
+                moveDownBtn.disabled = true;
+                moveDownBtn.style.opacity = "0.2";
+                moveDownBtn.style.cursor = "not-allowed";
+            } else {
+                moveDownBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const temp = quest.levels[idx];
+                    quest.levels[idx] = quest.levels[idx + 1];
+                    quest.levels[idx + 1] = temp;
+                    renderQuestLevels(quest);
+                    renderQuestSidebarList();
+                    saveQuestsToStorage();
+                });
+            }
+            rightHeader.appendChild(moveDownBtn);
+
             const delBtn = document.createElement("button");
             delBtn.type = "button";
             delBtn.className = "quest-delete-level-btn";
@@ -9498,7 +9568,7 @@
 
             // Click header to toggle collapse
             header.addEventListener("click", (e) => {
-                if (e.target.closest(".quest-delete-level-btn")) return;
+                if (e.target.closest(".quest-delete-level-btn") || e.target.closest(".quest-move-level-btn")) return;
                 level.collapsed = !level.collapsed;
                 const nowCollapsed = level.collapsed;
                 body.style.display = nowCollapsed ? "none" : "flex";
@@ -9557,7 +9627,7 @@
             if (!level.sectionCollapsed) level.sectionCollapsed = {};
 
             // ── Build a collapsible panel for a section ───────────────────────────
-            function buildSectionPanel(def) {
+            function buildSectionPanel(def, secIdx, totalSections) {
                 const panel = document.createElement("div");
                 panel.className = "qs-panel";
                 panel.dataset.sectionKey = def.key;
@@ -9683,6 +9753,53 @@
                 labelEl.appendChild(summarySpan);
                 ph.appendChild(labelEl);
 
+                // Actions wrapper (up / down / remove)
+                const actionsWrap = document.createElement("div");
+                actionsWrap.className = "qs-panel-actions";
+                actionsWrap.style.cssText = "display:flex;align-items:center;gap:3px;margin-left:auto;";
+
+                // Move Up button
+                const upBtn = document.createElement("button");
+                upBtn.type = "button";
+                upBtn.className = "qs-panel-move-btn";
+                upBtn.title = "Move section up";
+                upBtn.innerHTML = `<i class="fa-solid fa-arrow-up"></i>`;
+                if (secIdx === 0) {
+                    upBtn.disabled = true;
+                } else {
+                    upBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const temp = level.sections[secIdx];
+                        level.sections[secIdx] = level.sections[secIdx - 1];
+                        level.sections[secIdx - 1] = temp;
+                        saveQuestsToStorage();
+                        renderSections();
+                        renderAddStrip();
+                    });
+                }
+                actionsWrap.appendChild(upBtn);
+
+                // Move Down button
+                const downBtn = document.createElement("button");
+                downBtn.type = "button";
+                downBtn.className = "qs-panel-move-btn";
+                downBtn.title = "Move section down";
+                downBtn.innerHTML = `<i class="fa-solid fa-arrow-down"></i>`;
+                if (secIdx === totalSections - 1) {
+                    downBtn.disabled = true;
+                } else {
+                    downBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const temp = level.sections[secIdx];
+                        level.sections[secIdx] = level.sections[secIdx + 1];
+                        level.sections[secIdx + 1] = temp;
+                        saveQuestsToStorage();
+                        renderSections();
+                        renderAddStrip();
+                    });
+                }
+                actionsWrap.appendChild(downBtn);
+
                 const removeBtn = document.createElement("button");
                 removeBtn.type = "button";
                 removeBtn.className = "qs-panel-remove";
@@ -9714,14 +9831,16 @@
                     renderSections();
                     renderAddStrip();
                 });
+
                 // Quest Description is mandatory — no remove button
                 if (def.key !== "questDesc") {
-                    ph.appendChild(removeBtn);
+                    actionsWrap.appendChild(removeBtn);
                 }
+                ph.appendChild(actionsWrap);
 
                 // Toggle on header click
                 ph.addEventListener("click", (e) => {
-                    if (e.target.closest(".qs-panel-remove")) return;
+                    if (e.target.closest(".qs-panel-remove") || e.target.closest(".qs-panel-move-btn")) return;
                     const nowCollapsed = !level.sectionCollapsed[def.key];
                     level.sectionCollapsed[def.key] = nowCollapsed;
                     pb.classList.toggle("collapsed", nowCollapsed);
@@ -10528,9 +10647,9 @@
             // ── Render active section panels ──────────────────────────────────────
             function renderSections() {
                 sectionsContainer.innerHTML = "";
-                level.sections.forEach(key => {
+                level.sections.forEach((key, secIdx) => {
                     const def = SECTION_DEFS.find(d => d.key === key);
-                    if (def) sectionsContainer.appendChild(buildSectionPanel(def));
+                    if (def) sectionsContainer.appendChild(buildSectionPanel(def, secIdx, level.sections.length));
                 });
             }
 
