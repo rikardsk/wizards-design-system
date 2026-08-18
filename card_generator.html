@@ -7965,12 +7965,10 @@
                     if (l.rewardCards.length > 0 || l.rewardsDescription.trim()) secSet.add("rewardCards");
                     if (l.keywordRewardList.length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) secSet.add("keywordReward");
                     if (l.monsterUnlockManaCost !== 0) secSet.add("monsterUnlock");
-                    if (l.choiceRewardTypes.length > 0) secSet.add("choiceReward");
                     if (l.manaReward && l.manaReward.amount > 0) secSet.add("manaReward");
                     if (l.attributeReward && (l.attributeReward.power !== 0 || l.attributeReward.toughness !== 0)) secSet.add("attributeReward");
                     if (l.learnSpells.length > 0 || l.learnSpellRandomSubType.trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) secSet.add("learnSpell");
                     if (l.companionRewards.length > 0 || l.companionRewardRandomSubType.trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) secSet.add("companionReward");
-                    if (l.unlockCards.length > 0) secSet.add("unlockCards");
                     if (l.opponents.length > 0 || l.opponentsDescription.trim() || l.opponentsPower !== 0) secSet.add("opponents");
                     if (l.armySubTypes.length > 0 || l.armyPower !== 0) secSet.add("army");
                     if (l.xpReward !== 0) secSet.add("xpReward");
@@ -9473,7 +9471,6 @@
 
             function updateSummaryBadge() {
                 const rCount = (level.rewardCards || []).length;
-                const uCount = (level.unlockCards || []).length;
                 const oCount = (level.opponents || []).length;
                 const sCount = (level.learnSpells || []).length;
                 const cCount = (level.companionRewards || []).length;
@@ -9484,7 +9481,6 @@
                 const fmt = v => (v >= 0 ? `+${v}` : `${v}`);
                 const parts = [];
                 if (rCount) parts.push(`${rCount}R`);
-                if (uCount) parts.push(`${uCount}U`);
                 if (oCount) parts.push(`${oCount}O`);
                 if (sCount) parts.push(`${sCount}S`);
                 if (cCount) parts.push(`${cCount}C`);
@@ -9583,18 +9579,16 @@
                 if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim()) level.sections.push("rewardCards");
                 if ((level.keywordRewardList || []).length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) level.sections.push("keywordReward");
                 if (level.monsterUnlockManaCost !== undefined && level.monsterUnlockManaCost !== 0) level.sections.push("monsterUnlock");
-                if ((level.choiceRewardTypes || []).length > 0) level.sections.push("choiceReward");
                 if (level.manaReward && level.manaReward.amount > 0) level.sections.push("manaReward");
                 if (level.attributeReward && (level.attributeReward.power !== 0 || level.attributeReward.toughness !== 0)) level.sections.push("attributeReward");
                 if ((level.learnSpells || []).length > 0 || (level.learnSpellRandomSubType || "").trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) level.sections.push("learnSpell");
                 if ((level.companionRewards || []).length > 0 || (level.companionRewardRandomSubType || "").trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) level.sections.push("companionReward");
-                if ((level.unlockCards || []).length > 0) level.sections.push("unlockCards");
                 if ((level.opponents || []).length > 0 || (level.opponentsDescription || "").trim()) level.sections.push("opponents");
                 if ((level.armySubTypes && level.armySubTypes.length > 0) || (level.armySubType || "").trim() || level.armyPower) level.sections.push("army");
                 if (level.xpReward) level.sections.push("xpReward");
             } else {
                 if (!level.sections.includes("questDesc")) level.sections.unshift("questDesc");
-                level.sections = level.sections.filter(k => k !== "rewardsDesc" && k !== "opponentsDesc");
+                level.sections = level.sections.filter(k => k !== "rewardsDesc" && k !== "opponentsDesc" && k !== "choiceReward" && k !== "unlockCards");
             }
 
             const SECTION_DEFS = [
@@ -9602,12 +9596,10 @@
                 { key: "rewardCards",     label: "Card Reward",          icon: "fa-gift",               color: "#86efac" },
                 { key: "keywordReward",   label: "Keyword Reward",       icon: "fa-circle-check",       color: "#34d399" },
                 { key: "monsterUnlock",   label: "Monster Unlock",       icon: "fa-dragon",             color: "#f87171" },
-                { key: "choiceReward",    label: "Choice Reward",        icon: "fa-hand-pointer",       color: "#a5b4fc" },
                 { key: "manaReward",      label: "Mana Reward",          icon: "fa-droplet",            color: "#60a5fa" },
                 { key: "attributeReward", label: "Attribute Reward",     icon: "fa-bolt",               color: "#fde68a" },
                 { key: "learnSpell",      label: "Learn a Spell",        icon: "fa-wand-magic-sparkles", color: "#c4b5fd" },
                 { key: "companionReward", label: "Companion Reward",     icon: "fa-paw",               color: "#f9a8d4" },
-                { key: "unlockCards",     label: "Unlock Cards",         icon: "fa-lock-open",          color: "#fbbf24" },
                 { key: "opponents",       label: "Opponents",            icon: "fa-shield-halved",      color: "#fca5a5" },
                 { key: "army",            label: "Army",                 icon: "fa-users",              color: "#fb923c" },
                 { key: "xpReward",        label: "XP Reward",            icon: "fa-star",               color: "#fde68a" },
@@ -9666,10 +9658,6 @@
                         }
                         case "rewardCards": {
                             const names = cardNames(level.rewardCards);
-                            return names.length ? `— ${names.join(", ")}` : "";
-                        }
-                        case "unlockCards": {
-                            const names = cardNames(level.unlockCards);
                             return names.length ? `— ${names.join(", ")}` : "";
                         }
                         case "opponents": {
@@ -9736,10 +9724,6 @@
                         case "monsterUnlock": {
                             const mc = level.monsterUnlockManaCost;
                             return (mc !== undefined && mc !== 0) ? `— Mana Cost ${mc}` : "";
-                        }
-                        case "choiceReward": {
-                            const types = (level.choiceRewardTypes || []);
-                            return types.length ? `— ${types.join(", ")}` : "";
                         }
                         default: return "";
                     }
@@ -9814,12 +9798,10 @@
                         rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; },
                         keywordReward:   () => { level.keywordRewardMode = "choice"; level.keywordRewardList = []; },
                         monsterUnlock:   () => { level.monsterUnlockManaCost = 0; },
-                        choiceReward:    () => { level.choiceRewardTypes = []; },
                         manaReward:      () => { level.manaReward = { amount: 1, mode: "choice" }; },
                         attributeReward: () => { level.attributeReward = { power: 0, toughness: 0 }; },
                         learnSpell:      () => { level.learnSpells = []; level.learnSpellMode = "choice"; level.learnSpellRandomSubType = ""; },
                         companionReward: () => { level.companionRewards = []; level.companionRewardMode = "choice"; level.companionRewardRandomSubType = ""; },
-                        unlockCards:     () => { level.unlockCards = []; },
                         opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; level.opponentsQuestHp = 10; },
                         army:            () => { level.armySubTypes = []; level.armyPower = 0; level.armyQuestHp = 10; },
                         xpReward:        () => { level.xpReward = 0; },
@@ -10226,10 +10208,6 @@
                     crChoiceBtn.addEventListener("click", () => setCompanionRewardMode("choice"));
                     crPresetBtn.addEventListener("click", () => setCompanionRewardMode("preset"));
 
-                } else if (def.key === "unlockCards") {
-                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "unlockCards", "quest-unlock-chip",
-                        "Cards that become activated (unlocked) for the player", "all", updateSummaryBadge));
-
                 } else if (def.key === "opponents") {
                     function calcCombinedPower() {
                         let total = 0;
@@ -10597,47 +10575,6 @@
                     muRow.appendChild(muLabel);
                     muRow.appendChild(muInput);
                     pb.appendChild(muRow);
-
-                } else if (def.key === "choiceReward") {
-                    if (!Array.isArray(level.choiceRewardTypes)) level.choiceRewardTypes = [];
-
-                    const CR_OPTIONS = [
-                        { value: "Creature",      label: "Creature",      icon: "fa-dragon" },
-                        { value: "Spell",         label: "Spell",         icon: "fa-wand-magic-sparkles" },
-                        { value: "Attribute",     label: "Attribute",     icon: "fa-bolt" },
-                        { value: "Learn a Spell", label: "Learn a Spell", icon: "fa-book-open" },
-                        { value: "Companion",     label: "Companion",     icon: "fa-paw" },
-                        { value: "Artifact",      label: "Artifact",      icon: "fa-gem" },
-                        { value: "Hero",          label: "Hero",          icon: "fa-shield-halved" },
-                    ];
-
-                    const crBtnGrid = document.createElement("div");
-                    crBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-
-                    function refreshChoiceRewardBtns() {
-                        crBtnGrid.innerHTML = "";
-                        CR_OPTIONS.forEach(opt => {
-                            const isActive = level.choiceRewardTypes.includes(opt.value);
-                            const btn = document.createElement("button");
-                            btn.type = "button";
-                            btn.innerHTML = `<i class="fa-solid ${opt.icon}" style="margin-right:5px;"></i>${opt.label}`;
-                            btn.style.cssText = `display:inline-flex;align-items:center;font-size:0.78rem;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(165,180,252,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(165,180,252,0.18)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#a5b4fc' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
-                            btn.addEventListener("click", () => {
-                                const i = level.choiceRewardTypes.indexOf(opt.value);
-                                if (i === -1) {
-                                    level.choiceRewardTypes.push(opt.value);
-                                } else {
-                                    level.choiceRewardTypes.splice(i, 1);
-                                }
-                                updateSummaryBadge();
-                                saveQuestsToStorage();
-                                refreshChoiceRewardBtns();
-                            });
-                            crBtnGrid.appendChild(btn);
-                        });
-                    }
-                    refreshChoiceRewardBtns();
-                    pb.appendChild(crBtnGrid);
                 }
 
                 panel.appendChild(pb);
