@@ -1,0 +1,148 @@
+{
+  "cols": 11,
+  "rows": 9,
+  "seed": "12345",
+  "startVertical": true,
+  "mode": "manual",
+  "fixedDimensions": true,
+  "manualTowers": false,
+  "showCenter": false,
+  "maxCols": 30,
+  "maxRows": 30,
+  "playerCount": 2,
+  "playerStartCells": [
+    {
+      "col": 0,
+      "row": 4
+    },
+    {
+      "col": 10,
+      "row": 4
+    },
+    null,
+    null
+  ],
+  "mapData": [
+    [
+      "Forrest L4",
+      "Forrest L3",
+      "Forrest L2",
+      "Forrest L1",
+      "Wizards Tower L1",
+      "Plain L1",
+      "Plain L2",
+      "Plain L3",
+      "Plain L4"
+    ],
+    [
+      "Forrest L4",
+      "Forrest L3",
+      "Forrest L2",
+      "Forrest L1",
+      "Plain L1",
+      "Plain L2",
+      "Plain L3",
+      "Plain L4",
+      "Plain L1"
+    ],
+    [
+      "Forrest L1",
+      "Forrest L4",
+      "Forrest L2",
+      "Forrest L2",
+      "Grass",
+      "Plain L2",
+      "Grass",
+      "Plain L4",
+      "Plain L1"
+    ],
+    [
+      "Forrest L1",
+      "Forrest L1",
+      "Grass",
+      "Forrest L2",
+      "Plain L2",
+      "Grass",
+      "Grass",
+      "Plain L1",
+      "Plain L1"
+    ],
+    [
+      "Forrest L1",
+      "Forrest L1",
+      "Grass",
+      "Grass",
+      "Forrest L2",
+      "Plain L4",
+      "Grass",
+      "Grass",
+      "Plain L1"
+    ],
+    [
+      "Grass",
+      "Grass",
+      "Grass",
+      "Forrest L4",
+      "Wizards Tower L3",
+      "Grass",
+      "Grass",
+      "Grass",
+      "Grass"
+    ],
+    [
+      "Mountain L1",
+      "Mountain L1",
+      "Grass",
+      "Grass",
+      "Mountain L4",
+      "Swamp L4",
+      "Grass",
+      "Grass",
+      "Swamp L1"
+    ],
+    [
+      "Mountain L1",
+      "Mountain L1",
+      "Grass",
+      "Mountain L2",
+      "Swamp L2",
+      "Grass",
+      "Grass",
+      "Swamp L1",
+      "Swamp L1"
+    ],
+    [
+      "Mountain L1",
+      "Mountain L4",
+      "Grass",
+      "Mountain L2",
+      "Grass",
+      "Swamp L2",
+      "Grass",
+      "Swamp L4",
+      "Swamp L1"
+    ],
+    [
+      "Mountain L4",
+      "Mountain L3",
+      "Mountain L2",
+      "Mountain L1",
+      "Swamp L1",
+      "Swamp L2",
+      "Swamp L3",
+      "Swamp L4",
+      "Swamp L1"
+    ],
+    [
+      "Mountain L4",
+      "Mountain L3",
+      "Mountain L2",
+      "Mountain L1",
+      "Wizards Tower L1",
+      "Swamp L1",
+      "Swamp L2",
+      "Swamp L3",
+      "Swamp L4"
+    ]
+  ]
+}
