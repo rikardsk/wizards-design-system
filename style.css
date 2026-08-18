@@ -404,6 +404,13 @@ button:active {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.secondary-btn.active {
+    background: rgba(226, 183, 71, 0.15);
+    color: var(--accent-gold);
+    border-color: rgba(226, 183, 71, 0.4);
+    box-shadow: 0 0 10px rgba(226, 183, 71, 0.15);
+}
+
 .danger-btn {
     background: var(--danger-color);
     color: white;
@@ -578,7 +585,7 @@ button:active {
 
 /* Floating Palette at Bottom */
 .palette-container {
-    min-height: 120px;
+    min-height: 130px;
     margin-top: 12px;
     margin-left: 332px;
     margin-right: 12px;
@@ -638,23 +645,26 @@ button:active {
     gap: 12px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 8px 4px 6px 4px;
-    height: 76px;
+    padding: 8px 4px 14px 4px;
+    height: auto;
+    min-height: 86px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 }
 
 /* Custom Scrollbar for Tile Palette */
 .tile-palette::-webkit-scrollbar {
-    height: 4px;
+    height: 6px;
 }
 .tile-palette::-webkit-scrollbar-track {
     background: transparent;
 }
 .tile-palette::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 10px;
 }
 .tile-palette::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .palette-item {

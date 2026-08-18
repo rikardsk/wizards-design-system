@@ -3825,7 +3825,7 @@
                         activeTypeFilters.add(type.name);
                         btn.classList.add("active");
                     }
-                    populateSubtypeFilterSelect();
+                    populateDependentFilterSelects();
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
@@ -6188,6 +6188,42 @@
                             illustration: "Tower of Terror Quest.png"
                         },
                         {
+                            id: "default_dragons_lair_quest",
+                            cardName: "Dragons Lair Quest",
+                            frameStyle: "red",
+                            borderColor: "black",
+                            manaCost: ["R", "R"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find Fafnir's lair and kill the greatest dragon to ever live.\n\nReward: Receive a dragon card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Dragons Lair Quest.png"
+                        },
+                        {
+                            id: "default_tower_of_power_quest",
+                            cardName: "Tower of Power Quest",
+                            frameStyle: "blue",
+                            borderColor: "black",
+                            manaCost: ["U", "U"],
+                            cardType: "Quest",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Quest: Find and kill the powerful wizards of the famous wizard's tower called Tower of Power.\n\nReward: Receive a wizards card.",
+                            customDescriptionItalic: false,
+                            power: "1",
+                            toughness: "1",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Tower of Power Quest.png"
+                        },
+                        {
                             id: "default_dragons_nest_quest",
                             cardName: "Dragons Nest Quest",
                             frameStyle: "red",
@@ -6586,6 +6622,56 @@
                             state.deck.push(...defaultQuest);
                             saveDeckToStorage();
                         }
+                        const hasDragonsLairQuest = state.deck.some(card => card.id && card.id.includes("dragons_lair_quest"));
+                        if (!hasDragonsLairQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_dragons_lair_quest",
+                                    cardName: "Dragons Lair Quest",
+                                    frameStyle: "red",
+                                    borderColor: "black",
+                                    manaCost: ["R", "R"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find Fafnir's lair and kill the greatest dragon to ever live.\n\nReward: Receive a dragon card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Dragons Lair Quest.png"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
+                        const hasTowerOfPowerQuest = state.deck.some(card => card.id && card.id.includes("tower_of_power_quest"));
+                        if (!hasTowerOfPowerQuest) {
+                            const defaultQuest = [
+                                {
+                                    id: "default_tower_of_power_quest",
+                                    cardName: "Tower of Power Quest",
+                                    frameStyle: "blue",
+                                    borderColor: "black",
+                                    manaCost: ["U", "U"],
+                                    cardType: "Quest",
+                                    hasPt: false,
+                                    rulesText: "",
+                                    customDescription: "Quest: Find and kill the powerful wizards of the famous wizard's tower called Tower of Power.\n\nReward: Receive a wizards card.",
+                                    customDescriptionItalic: false,
+                                    power: "1",
+                                    toughness: "1",
+                                    keywords: [],
+                                    activatedAbilities: [],
+                                    abilityManaSize: 14,
+                                    illustration: "Tower of Power Quest.png"
+                                }
+                            ];
+                            state.deck.push(...defaultQuest);
+                            saveDeckToStorage();
+                        }
                         const hasDragonsNestQuest = state.deck.some(card => card.id && card.id.includes("dragons_nest_quest"));
                         if (!hasDragonsNestQuest) {
                             const defaultQuest = [
@@ -6782,6 +6868,14 @@
                                 card.illustration = "Tower of Terror Quest.png";
                                 deckUpdated = true;
                             }
+                            if ((id.includes("dragons_lair_quest") || name.includes("dragons lair quest") || (name.includes("dragons lair") && name.includes("quest"))) && card.illustration !== "Dragons Lair Quest.png" && card.illustration !== "Dragons Lair Quest.jpg") {
+                                card.illustration = "Dragons Lair Quest.png";
+                                deckUpdated = true;
+                            }
+                            if ((id.includes("tower_of_power_quest") || name.includes("tower of power quest") || (name.includes("tower of power") && name.includes("quest"))) && card.illustration !== "Tower of Power Quest.png" && card.illustration !== "Tower of Power Quest.jpg") {
+                                card.illustration = "Tower of Power Quest.png";
+                                deckUpdated = true;
+                            }
                             if ((id.includes("dragons_nest_quest") || name.includes("dragons nest quest") || (name.includes("dragons nest") && name.includes("quest"))) && card.illustration !== "Dragons Nest Quest.jpg") {
                                 card.illustration = "Dragons Nest Quest.jpg";
                                 deckUpdated = true;
@@ -6930,43 +7024,40 @@
             return true;
         }
 
+        // Helper: does this card pass mana + type filters?
+        function cardPassesPreSubtypeFilters(card) {
+            if (activeManaFilters.size > 0) {
+                const cardColors = new Set();
+                let hasColoredMana = false;
+                let hasColorlessMana = false;
+                (card.manaCost || []).forEach(sym => {
+                    if (["W", "U", "B", "R", "G"].includes(sym)) {
+                        cardColors.add(sym);
+                        hasColoredMana = true;
+                    } else if (sym && (sym.toString().startsWith("C") || !isNaN(sym))) {
+                        cardColors.add("C");
+                        hasColorlessMana = true;
+                    }
+                });
+                if (!hasColoredMana && !hasColorlessMana) cardColors.add("C");
+                let matchesMana = false;
+                for (const col of activeManaFilters) {
+                    if (cardColors.has(col)) { matchesMana = true; break; }
+                }
+                if (!matchesMana) return false;
+            }
+            if (activeTypeFilters.size > 0) {
+                if (!activeTypeFilters.has(card.cardType)) return false;
+            }
+            return true;
+        }
+
         // Populate the subtype filter dropdown with only subtypes used by cards
         // that already pass the active mana + type filters.
         function populateSubtypeFilterSelect() {
             const select = document.getElementById("subtype-filter-select");
             if (!select) return;
 
-            // Helper: does this card pass mana + type filters only (not subtype)?
-            const cardPassesPreSubtypeFilters = (card) => {
-                // Mana/Color filter
-                if (activeManaFilters.size > 0) {
-                    const cardColors = new Set();
-                    let hasColoredMana = false;
-                    let hasColorlessMana = false;
-                    (card.manaCost || []).forEach(sym => {
-                        if (["W", "U", "B", "R", "G"].includes(sym)) {
-                            cardColors.add(sym);
-                            hasColoredMana = true;
-                        } else if (sym && (sym.toString().startsWith("C") || !isNaN(sym))) {
-                            cardColors.add("C");
-                            hasColorlessMana = true;
-                        }
-                    });
-                    if (!hasColoredMana && !hasColorlessMana) cardColors.add("C");
-                    let matchesMana = false;
-                    for (const col of activeManaFilters) {
-                        if (cardColors.has(col)) { matchesMana = true; break; }
-                    }
-                    if (!matchesMana) return false;
-                }
-                // Type filter
-                if (activeTypeFilters.size > 0) {
-                    if (!activeTypeFilters.has(card.cardType)) return false;
-                }
-                return true;
-            };
-
-            // Collect subtypes only from cards that match the pre-subtype filters
             const subTypeSet = new Set();
             (state.deck || []).forEach(card => {
                 if (cardPassesPreSubtypeFilters(card) && card.cardSubType && card.cardSubType.trim()) {
@@ -6987,22 +7078,20 @@
 
             if (currentSelection && sortedSubtypes.includes(currentSelection)) {
                 select.value = currentSelection;
-            } else {
-                select.value = "";
-                if (currentSelection && !sortedSubtypes.includes(currentSelection)) {
-                    activeSubtypeFilter = "";
-                }
+                return;
             }
+            select.value = "";
+            activeSubtypeFilter = "";
         }
 
-        // Populate the keyword filter dropdown with all used keywords
+        // Populate the keyword filter dropdown with keywords from cards that pass active mana + type filters
         function populateKeywordFilterSelect() {
             const select = document.getElementById("keyword-filter-select");
             if (!select) return;
 
-            const keywordSet = new Set(availableKeywords || []);
+            const keywordSet = new Set();
             (state.deck || []).forEach(card => {
-                if (Array.isArray(card.keywords)) {
+                if (cardPassesPreSubtypeFilters(card) && Array.isArray(card.keywords)) {
                     card.keywords.forEach(kw => {
                         if (kw && kw.trim()) {
                             keywordSet.add(kw.trim());
@@ -7024,22 +7113,20 @@
 
             if (currentSelection && sortedKeywords.includes(currentSelection)) {
                 select.value = currentSelection;
-            } else {
-                select.value = "";
-                if (currentSelection && !sortedKeywords.includes(currentSelection)) {
-                    activeKeywordFilter = "";
-                }
+                return;
             }
+            select.value = "";
+            activeKeywordFilter = "";
         }
 
-        // Populate the ability filter dropdown with all unique activated abilities from the deck
+        // Populate the ability filter dropdown with unique activated abilities from cards that pass active mana + type filters
         function populateAbilityFilterSelect() {
             const select = document.getElementById("ability-filter-select");
             if (!select) return;
 
             const abilitySet = new Set();
             (state.deck || []).forEach(card => {
-                if (Array.isArray(card.activatedAbilities)) {
+                if (cardPassesPreSubtypeFilters(card) && Array.isArray(card.activatedAbilities)) {
                     card.activatedAbilities.forEach(ab => {
                         if (ab && ab.text && ab.text.trim()) {
                             abilitySet.add(ab.text.trim());
@@ -7061,12 +7148,16 @@
 
             if (currentSelection && sortedAbilities.includes(currentSelection)) {
                 select.value = currentSelection;
-            } else {
-                select.value = "";
-                if (currentSelection && !sortedAbilities.includes(currentSelection)) {
-                    activeAbilityFilter = "";
-                }
+                return;
             }
+            select.value = "";
+            activeAbilityFilter = "";
+        }
+
+        function populateDependentFilterSelects() {
+            populateSubtypeFilterSelect();
+            populateKeywordFilterSelect();
+            populateAbilityFilterSelect();
         }
 
         // Initialize filter buttons and handlers
@@ -7086,15 +7177,14 @@
                         activeManaFilters.add(color);
                         btn.classList.add("active");
                     }
+                    populateDependentFilterSelects();
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
             });
 
             renderTypeFilterButtons();
-            populateSubtypeFilterSelect();
-            populateKeywordFilterSelect();
-            populateAbilityFilterSelect();
+            populateDependentFilterSelects();
 
             const subtypeSelect = document.getElementById("subtype-filter-select");
             if (subtypeSelect) {
@@ -7126,7 +7216,7 @@
             document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
                 activeManaFilters.clear();
                 document.querySelectorAll(".mana-filter-btn").forEach(btn => btn.classList.remove("active"));
-                populateSubtypeFilterSelect();
+                populateDependentFilterSelects();
                 updateClearFilterButtonsVisibility();
                 renderDeckList();
             });
@@ -7134,7 +7224,7 @@
             document.getElementById("clear-type-filters-btn").addEventListener("click", () => {
                 activeTypeFilters.clear();
                 document.querySelectorAll(".type-filter-btn").forEach(btn => btn.classList.remove("active"));
-                populateSubtypeFilterSelect();
+                populateDependentFilterSelects();
                 updateClearFilterButtonsVisibility();
                 renderDeckList();
             });
@@ -7187,7 +7277,7 @@
                     activeAbilityFilter = "";
                     if (abilitySelect) abilitySelect.value = "";
                     
-                    populateSubtypeFilterSelect();
+                    populateDependentFilterSelects();
                     updateClearFilterButtonsVisibility();
                     renderDeckList();
                 });
@@ -7317,6 +7407,7 @@
             spellSelect.innerHTML = "<option value=''>-- Select a Spell --</option>";
             availableSpells
                 .filter(c => !addedIds.has(c.id))
+                .sort((a, b) => (a.cardName || "").localeCompare(b.cardName || ""))
                 .forEach(c => {
                     const opt = document.createElement("option");
                     opt.value = c.id;
@@ -7369,6 +7460,7 @@
             companionSelect.innerHTML = "<option value=''>-- Select a Creature --</option>";
             availableCreatures
                 .filter(c => !addedIds.has(c.id))
+                .sort((a, b) => (a.cardName || "").localeCompare(b.cardName || ""))
                 .forEach(c => {
                     const opt = document.createElement("option");
                     opt.value = c.id;
@@ -10705,36 +10797,44 @@
         function populateCardSelect(sel, excludeIds, filterCategory = "all", filterSubtype = "") {
             const prev = sel.value;
             sel.innerHTML = `<option value="">— Select a card —</option>`;
-            (state.deck || []).forEach(card => {
+            const cards = (state.deck || []).filter(card => {
                 const cardName = (card.cardName || card.name || "").trim();
-                if (!cardName) return;
-                if (excludeIds && excludeIds.includes(card.id)) return;
+                if (!cardName) return false;
+                if (excludeIds && excludeIds.includes(card.id)) return false;
 
                 const cardType = (card.cardType || "").trim();
                 const cardId = (card.id || "").trim().toLowerCase();
 
                 // 1. Exclude Quests
-                if (cardType === "Quest" || cardId.includes("quest")) return;
+                if (cardType === "Quest" || cardId.includes("quest")) return false;
 
                 // 2. Exclude Wizards & Towers
-                if (cardType === "Wizard" || cardType === "Tower") return;
-                if (cardId.includes("wizard") || cardId.includes("tower")) return;
-                if (/wizard/i.test(cardName) || /tower/i.test(cardName)) return;
+                if (cardType === "Wizard" || cardType === "Tower") return false;
+                if (cardId.includes("wizard") || cardId.includes("tower")) return false;
+                if (/wizard/i.test(cardName) || /tower/i.test(cardName)) return false;
 
                 // 3. Exclude Ability cards
-                if (/ability$/i.test(cardName) || cardId.endsWith("ability") || cardId.includes("_ability")) return;
+                if (/ability$/i.test(cardName) || cardId.endsWith("ability") || cardId.includes("_ability")) return false;
 
                 // 4. Type filter
                 if (filterCategory && filterCategory !== "all" && filterCategory !== "All") {
-                    if (cardType !== filterCategory) return;
+                    if (cardType !== filterCategory) return false;
                 }
 
                 // 5. Subtype filter
                 if (filterSubtype && filterSubtype.trim()) {
                     const cSub = (card.cardSubType || "").trim();
-                    if (cSub.toLowerCase() !== filterSubtype.toLowerCase()) return;
+                    if (cSub.toLowerCase() !== filterSubtype.toLowerCase()) return false;
                 }
 
+                return true;
+            });
+
+            cards.sort((a, b) => (a.cardName || a.name || "").localeCompare(b.cardName || b.name || ""));
+
+            cards.forEach(card => {
+                const cardName = (card.cardName || card.name || "").trim();
+                const cardType = (card.cardType || "").trim();
                 const opt = document.createElement("option");
                 opt.value = card.id;
                 opt.textContent = cardName + (cardType ? ` (${cardType}${card.cardSubType ? ' — ' + card.cardSubType : ''})` : "");

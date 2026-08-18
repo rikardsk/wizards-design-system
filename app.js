@@ -43,7 +43,9 @@ const TILE_MANIFEST = [
     { id: "Plains Town", label: "Plains Town", file: "Plains Town.png" },
     { id: "Ruined Mountain Pass", label: "Ruined Pass", file: "Ruined Mountain Pass.png" },
     { id: "Scorched Earth", label: "Scorched Earth", file: "Scorched Earth.png" },
-    { id: "Tower of terror", label: "Tower of Terror", file: "Tower of terror.png" }
+    { id: "Tower of terror", label: "Tower of Terror", file: "Tower of terror.png" },
+    { id: "Dragons Lair", label: "Dragon's Lair", file: "Dragons Lair.png" },
+    { id: "Tower of Power", label: "Tower of Power", file: "Tower of Power.png" }
 ];
 
 // Hexagon Dimensions (Perfect flat-topped regular hexagon)
@@ -103,6 +105,7 @@ const state = {
     maps: [],                                   // Saved maps list
     activeFilters: { size: null, players: null }, // Active filter state
     hiddenTiles: new Set(),                          // Tiles hidden from the paint brush palette
+    showBrushPalette: true,                         // Toggle showing manual paint brush panel
     quests: []                                      // Active quests configuration (each with name, tileId, x, y)
 };
 
@@ -190,6 +193,7 @@ const leftSidebar = document.getElementById("left-sidebar");
 const leftSidebarToggleBtn = document.getElementById("left-sidebar-toggle-btn");
 const viewportHeader = document.querySelector(".viewport-header");
 const paletteContainer = document.querySelector(".palette-container");
+const togglePaintBrushBtn = document.getElementById("toggle-paint-brush-btn");
 
 
 // Initialize application
@@ -276,6 +280,7 @@ async function init() {
 
     // Load hidden tiles from localStorage
     loadHiddenTiles();
+    updateBrushPaletteVisibility();
 
     draw();
 }
@@ -805,6 +810,14 @@ function setupEventListeners() {
         });
     }
 
+    // Toggle Paint Brush Panel Listener
+    if (togglePaintBrushBtn) {
+        togglePaintBrushBtn.addEventListener("click", () => {
+            state.showBrushPalette = !state.showBrushPalette;
+            updateBrushPaletteVisibility();
+        });
+    }
+
     // Tile Visibility Modal Listeners
     if (manageTilesBtn) {
         manageTilesBtn.addEventListener("click", () => {
@@ -844,6 +857,26 @@ function setupEventListeners() {
             renderPalette();
         });
     }
+}
+
+// Toggle brush palette visibility
+function updateBrushPaletteVisibility() {
+    if (!paletteContainer || !togglePaintBrushBtn) return;
+    const isVisible = state.showBrushPalette !== false;
+    if (isVisible) {
+        paletteContainer.style.display = "";
+        togglePaintBrushBtn.classList.add("active");
+        togglePaintBrushBtn.title = "Hide Paint Brush Panel";
+        const textEl = document.getElementById("toggle-brush-text");
+        if (textEl) textEl.textContent = "Paint Brush";
+    } else {
+        paletteContainer.style.display = "none";
+        togglePaintBrushBtn.classList.remove("active");
+        togglePaintBrushBtn.title = "Show Paint Brush Panel";
+        const textEl = document.getElementById("toggle-brush-text");
+        if (textEl) textEl.textContent = "Paint Brush (Off)";
+    }
+    if (typeof draw === "function") draw();
 }
 
 // Render available tiles to bottom palette
