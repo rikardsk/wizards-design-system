@@ -2830,7 +2830,7 @@
 
                 <!-- Panel Footer -->
                 <div style="padding: 12px 24px; border-top: 1px solid rgba(255,255,255,0.07); background: rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-shrink: 0;">
-                    <!-- Left: import / export -->
+                    <!-- Left: import / export / overview -->
                     <div style="display:flex;gap:8px;align-items:center;">
                         <button type="button" id="export-quests-btn" class="secondary-btn" style="width:auto;padding:7px 14px;font-size:0.8rem;margin:0;">
                             <i class="fa-solid fa-file-export"></i> Export Quests (JSON)
@@ -2838,12 +2838,36 @@
                         <button type="button" id="import-quests-btn" class="secondary-btn" style="width:auto;padding:7px 14px;font-size:0.8rem;margin:0;">
                             <i class="fa-solid fa-file-import"></i> Import Quests (JSON)
                         </button>
+                        <button type="button" id="reward-overview-btn" class="secondary-btn" style="width:auto;padding:7px 14px;font-size:0.8rem;margin:0;background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:#fde68a;">
+                            <i class="fa-solid fa-chart-pie"></i> Rewards Overview
+                        </button>
                         <input type="file" id="import-quests-file" accept=".json" style="display:none;">
                     </div>
                     <!-- Right: done -->
                     <button type="button" onclick="closeQuestsPanel()" class="primary-btn" style="background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(168,85,247,0.3)); border-color: rgba(139,92,246,0.7); width: auto; padding: 9px 24px; font-size: 0.88rem; margin: 0;">
                         Done &amp; Close
                     </button>
+                </div>
+
+                <!-- Quest Rewards Overview Modal Overlay -->
+                <div id="quest-rewards-overview-modal" class="glass-panel" style="display: none; position: absolute; inset: 0; z-index: 250; background: rgba(11, 14, 30, 0.98); border-radius: 16px; flex-direction: column; overflow: hidden;">
+                    <!-- Modal Header -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.3); flex-shrink: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-chart-pie" style="font-size: 1.4rem; color: #fde68a;"></i>
+                            <div>
+                                <h2 style="font-family: var(--font-heading); font-size: 1.2rem; color: #fde68a; margin: 0; line-height: 1.2;">Quest Rewards Overview & Balance</h2>
+                                <span style="font-size: 0.72rem; color: var(--text-muted);">Comprehensive distribution analysis and difficulty-to-reward balance across all quests</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="closeRewardsOverviewModal()" class="secondary-btn" style="width: auto; padding: 6px 14px; font-size: 0.8rem; margin: 0;">
+                            <i class="fa-solid fa-xmark"></i> Close Overview
+                        </button>
+                    </div>
+
+                    <!-- Modal Body Container -->
+                    <div id="quest-rewards-overview-body" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px;">
+                    </div>
                 </div>
             </div>
         </main>
@@ -7823,12 +7847,21 @@
                     if (desc.trim()) out.questDescription = desc.trim();
 
                     // Arrays — omit if empty
-                    if ((level.rewardCards     || []).length) out.rewardCards     = [...level.rewardCards];
                     if ((level.unlockCards     || []).length) out.unlockCards     = [...level.unlockCards];
                     if ((level.opponents       || []).length) out.opponents       = [...level.opponents];
                     const activeSections = level.sections || [];
                     const hasSectionsArray = Array.isArray(level.sections) && level.sections.length > 0;
                     const VALID_MODES = ["random", "choice", "preset"];
+
+                    // Card Reward
+                    const hasRewardCards = hasSectionsArray
+                        ? activeSections.includes("rewardCards")
+                        : ((level.rewardCards || []).length > 0 || !!(level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice"));
+                    if (hasRewardCards) {
+                        out.rewardCardMode = VALID_MODES.includes(level.rewardCardMode) ? level.rewardCardMode : "choice";
+                        if ((level.rewardCards || []).length) out.rewardCards = [...level.rewardCards];
+                        if ((level.rewardCardRandomSubType || "").trim()) out.rewardCardRandomSubType = level.rewardCardRandomSubType.trim();
+                    }
 
                     // Learn Spell Reward
                     const hasLearnSpell = hasSectionsArray
@@ -7919,6 +7952,8 @@
                     description: level.questDescription || level.description || "",
                     questDescription: level.questDescription || level.description || "",
                     rewardCards: Array.isArray(level.rewardCards) ? [...level.rewardCards] : [],
+                    rewardCardMode: level.rewardCardMode || level.rewardCardsMode || "choice",
+                    rewardCardRandomSubType: level.rewardCardRandomSubType || level.rewardCardsRandomSubType || "",
                     rewardsDescription: level.rewardsDescription || "",
                     keywordRewardMode: level.keywordRewardMode || "choice",
                     keywordRewardList: Array.isArray(level.keywordRewardList) ? [...level.keywordRewardList] : [],
@@ -7962,7 +7997,7 @@
                 if (Array.isArray(level.sections) && level.sections.length > 0) {
                     level.sections.forEach(s => secSet.add(s));
                 } else {
-                    if (l.rewardCards.length > 0 || l.rewardsDescription.trim()) secSet.add("rewardCards");
+                    if (l.rewardCards.length > 0 || l.rewardsDescription.trim() || l.rewardCardRandomSubType.trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) secSet.add("rewardCards");
                     if (l.keywordRewardList.length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) secSet.add("keywordReward");
                     if (l.monsterUnlockManaCost !== 0) secSet.add("monsterUnlock");
                     if (l.manaReward && l.manaReward.amount > 0) secSet.add("manaReward");
@@ -9576,7 +9611,7 @@
             // Backward-compat: auto-detect active sections from existing data
             if (!Array.isArray(level.sections)) {
                 level.sections = ["questDesc"]; // questDesc is always mandatory
-                if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim()) level.sections.push("rewardCards");
+                if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim() || (level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) level.sections.push("rewardCards");
                 if ((level.keywordRewardList || []).length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) level.sections.push("keywordReward");
                 if (level.monsterUnlockManaCost !== undefined && level.monsterUnlockManaCost !== 0) level.sections.push("monsterUnlock");
                 if (level.manaReward && level.manaReward.amount > 0) level.sections.push("manaReward");
@@ -9657,8 +9692,15 @@
                             return txt ? `— ${txt.slice(0, 40)}${txt.length > 40 ? "…" : ""}` : "";
                         }
                         case "rewardCards": {
+                            if (level.rewardCardMode === "random") {
+                                const sub = (level.rewardCardRandomSubType || "").trim();
+                                return sub ? `— Random · ${sub}` : "— Random";
+                            }
                             const names = cardNames(level.rewardCards);
-                            return names.length ? `— ${names.join(", ")}` : "";
+                            if (level.rewardCardMode === "preset") {
+                                return names.length ? `— Preset · ${names[0]}` : "";
+                            }
+                            return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
                         case "opponents": {
                             const names = cardNames(level.opponents);
@@ -9795,7 +9837,7 @@
 
                     // Reset the section's data back to its default empty state
                     const SECTION_RESETS = {
-                        rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; },
+                        rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; level.rewardCardMode = "choice"; level.rewardCardRandomSubType = ""; },
                         keywordReward:   () => { level.keywordRewardMode = "choice"; level.keywordRewardList = []; },
                         monsterUnlock:   () => { level.monsterUnlockManaCost = 0; },
                         manaReward:      () => { level.manaReward = { amount: 1, mode: "choice" }; },
@@ -9853,9 +9895,101 @@
                     pb.appendChild(ta);
 
                 } else if (def.key === "rewardCards") {
-                    // Chips section
-                    pb.appendChild(buildChipsSectionBody(quest, level, idx, "rewardCards", "quest-reward-chip",
-                        "Cards the player receives as reward", "all", updateSummaryBadge));
+                    if (!Array.isArray(level.rewardCards)) level.rewardCards = [];
+                    if (!level.rewardCardMode) level.rewardCardMode = "choice";
+                    if (level.rewardCardRandomSubType === undefined) level.rewardCardRandomSubType = "";
+
+                    // Mode toggle: Random / Choice / Preset
+                    const rcModeWrap = document.createElement("div");
+                    rcModeWrap.style.cssText = "display:flex;gap:4px;margin-bottom:8px;";
+                    const rcRandomBtn = document.createElement("button");
+                    rcRandomBtn.type = "button";
+                    rcRandomBtn.textContent = "Random";
+                    rcRandomBtn.className = "qs-mana-mode-btn" + (level.rewardCardMode === "random" ? " active" : "");
+                    const rcChoiceBtn = document.createElement("button");
+                    rcChoiceBtn.type = "button";
+                    rcChoiceBtn.textContent = "Choice";
+                    rcChoiceBtn.className = "qs-mana-mode-btn" + (level.rewardCardMode === "choice" ? " active" : "");
+                    const rcPresetBtn = document.createElement("button");
+                    rcPresetBtn.type = "button";
+                    rcPresetBtn.textContent = "Preset";
+                    rcPresetBtn.className = "qs-mana-mode-btn" + (level.rewardCardMode === "preset" ? " active" : "");
+                    rcModeWrap.appendChild(rcRandomBtn);
+                    rcModeWrap.appendChild(rcChoiceBtn);
+                    rcModeWrap.appendChild(rcPresetBtn);
+                    pb.appendChild(rcModeWrap);
+
+                    // Sub type picker (Random mode only) — sourced from all cards in deck
+                    const rcSubTypeWrap = document.createElement("div");
+                    rcSubTypeWrap.style.display = level.rewardCardMode === "random" ? "" : "none";
+                    const rcSubLabel = document.createElement("div");
+                    rcSubLabel.className = "qs-sub-label";
+                    rcSubLabel.innerHTML = `<i class="fa-solid fa-gift"></i> Card Sub Type`;
+                    rcSubTypeWrap.appendChild(rcSubLabel);
+                    const rcSubBtnGrid = document.createElement("div");
+                    rcSubBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
+                    const rcCardSubTypes = [...new Set(
+                        (state.deck || [])
+                            .filter(c => (c.cardSubType || "").trim())
+                            .map(c => c.cardSubType.trim())
+                    )].sort((a, b) => a.localeCompare(b));
+                    function refreshRcSubTypeBtns() {
+                        rcSubBtnGrid.innerHTML = "";
+                        if (rcCardSubTypes.length === 0) {
+                            const empty = document.createElement("span");
+                            empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
+                            empty.textContent = "No card sub types found in deck.";
+                            rcSubBtnGrid.appendChild(empty);
+                            return;
+                        }
+                        rcCardSubTypes.forEach(sub => {
+                            const isActive = level.rewardCardRandomSubType === sub;
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.textContent = sub;
+                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(134,239,172,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(134,239,172,0.18)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#86efac' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                level.rewardCardRandomSubType = isActive ? "" : sub;
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                                refreshRcSubTypeBtns();
+                            });
+                            rcSubBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshRcSubTypeBtns();
+                    rcSubTypeWrap.appendChild(rcSubBtnGrid);
+                    pb.appendChild(rcSubTypeWrap);
+
+                    // Card chips (Choice & Preset modes)
+                    const rcChipsWrap = document.createElement("div");
+                    rcChipsWrap.style.display = level.rewardCardMode !== "random" ? "" : "none";
+                    function renderRcChips() {
+                        rcChipsWrap.innerHTML = "";
+                        rcChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "rewardCards", "quest-reward-chip",
+                            level.rewardCardMode === "preset" ? "Select 1 preset card reward" : "Cards the player receives as reward", "all", updateSummaryBadge));
+                    }
+                    renderRcChips();
+                    pb.appendChild(rcChipsWrap);
+
+                    function setRewardCardMode(mode) {
+                        level.rewardCardMode = mode;
+                        if (mode === "preset" && level.rewardCards.length > 1) {
+                            level.rewardCards = level.rewardCards.slice(0, 1);
+                        }
+                        rcRandomBtn.classList.toggle("active", mode === "random");
+                        rcChoiceBtn.classList.toggle("active", mode === "choice");
+                        rcPresetBtn.classList.toggle("active", mode === "preset");
+                        rcSubTypeWrap.style.display = mode === "random" ? "" : "none";
+                        rcChipsWrap.style.display = mode !== "random" ? "" : "none";
+                        renderRcChips();
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    }
+                    rcRandomBtn.addEventListener("click", () => setRewardCardMode("random"));
+                    rcChoiceBtn.addEventListener("click", () => setRewardCardMode("choice"));
+                    rcPresetBtn.addEventListener("click", () => setRewardCardMode("preset"));
+
                     // Sub-section: Rewards Description
                     const hr1 = document.createElement("hr");
                     hr1.className = "qs-sub-divider";
@@ -10819,7 +10953,7 @@
             addBtn.addEventListener("click", () => {
                 const chosen = sel.value;
                 if (!chosen) return;
-                const modeKey = field === "learnSpells" ? level.learnSpellMode : (field === "companionRewards" ? level.companionRewardMode : "");
+                const modeKey = field === "learnSpells" ? level.learnSpellMode : (field === "companionRewards" ? level.companionRewardMode : (field === "rewardCards" ? level.rewardCardMode : ""));
                 const isPreset = modeKey === "preset";
                 if (isPreset) {
                     level[field] = [chosen];
@@ -10929,6 +11063,8 @@
             quest.levels.push({
                 description: "",
                 rewardCards: [],
+                rewardCardMode: "choice",
+                rewardCardRandomSubType: "",
                 unlockCards: [],
                 opponents: [],
                 learnSpells: [],
@@ -10956,6 +11092,325 @@
             renderQuestSidebarList();
         }
 
+        // ── Rewards Overview & Balance Modal ────────────
+
+        function closeRewardsOverviewModal() {
+            const modal = document.getElementById("quest-rewards-overview-modal");
+            if (modal) modal.style.display = "none";
+        }
+
+        function openRewardsOverviewModal() {
+            const modal = document.getElementById("quest-rewards-overview-modal");
+            if (!modal) return;
+            modal.style.display = "flex";
+            renderRewardsOverviewContent();
+        }
+
+        function calcSingleQuestStats(q) {
+            const levels = q.levels || [];
+            let cardCount = 0, spellCount = 0, companionCount = 0;
+            let manaTotal = 0, powerTotal = 0, toughnessTotal = 0;
+            let xpTotal = 0, keywordCount = 0, oppPowerTotal = 0, monsterUnlockCount = 0;
+
+            levels.forEach(lvl => {
+                cardCount += (lvl.rewardCards || []).length || (lvl.rewardCardMode === "random" ? 1 : 0);
+                spellCount += (lvl.learnSpells || []).length || (lvl.learnSpellMode === "random" ? 1 : 0);
+                companionCount += (lvl.companionRewards || []).length || (lvl.companionRewardMode === "random" ? 1 : 0);
+                if (lvl.manaReward && lvl.manaReward.amount) manaTotal += lvl.manaReward.amount;
+                if (lvl.attributeReward) {
+                    powerTotal += lvl.attributeReward.power || 0;
+                    toughnessTotal += lvl.attributeReward.toughness || 0;
+                }
+                if (lvl.xpReward) xpTotal += lvl.xpReward;
+                if (lvl.keywordRewardList) keywordCount += lvl.keywordRewardList.length;
+                if (lvl.opponentsPower) oppPowerTotal += lvl.opponentsPower;
+                if (lvl.monsterUnlockManaCost !== undefined && lvl.monsterUnlockManaCost > 0) monsterUnlockCount++;
+            });
+
+            const score = (cardCount * 3) + (spellCount * 3) + (companionCount * 4) + (manaTotal * 2) + (powerTotal + toughnessTotal) * 2.5 + (xpTotal / 5) + (keywordCount * 2);
+            return {
+                id: q.id,
+                name: q.name || q.cardName || "Unnamed Quest",
+                levelCount: levels.length,
+                cardCount, spellCount, companionCount,
+                manaTotal, powerTotal, toughnessTotal,
+                xpTotal, keywordCount, oppPowerTotal, monsterUnlockCount,
+                rewardScore: score
+            };
+        }
+
+        function calculateAllQuestsStats() {
+            const quests = state.quests || [];
+            let totalLevels = 0, totalCards = 0, totalSpells = 0, totalCompanions = 0;
+            let totalMana = 0, totalPower = 0, totalToughness = 0, totalXP = 0;
+            let totalKeywords = 0, totalOpponentPower = 0, totalMonsterUnlocks = 0;
+
+            const questDetails = quests.map(q => {
+                const d = calcSingleQuestStats(q);
+                totalLevels += d.levelCount;
+                totalCards += d.cardCount;
+                totalSpells += d.spellCount;
+                totalCompanions += d.companionCount;
+                totalMana += d.manaTotal;
+                totalPower += d.powerTotal;
+                totalToughness += d.toughnessTotal;
+                totalXP += d.xpTotal;
+                totalKeywords += d.keywordCount;
+                totalOpponentPower += d.oppPowerTotal;
+                totalMonsterUnlocks += d.monsterUnlockCount;
+                return d;
+            });
+
+            return {
+                questCount: quests.length,
+                totalLevels, totalCards, totalSpells, totalCompanions,
+                totalMana, totalPower, totalToughness, totalXP,
+                totalKeywords, totalOpponentPower, totalMonsterUnlocks,
+                questDetails
+            };
+        }
+
+        function buildKpiCardHtml(label, icon, color, val, subtitle) {
+            return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex:1;min-width:140px;">
+                <i class="fa-solid ${icon}" style="font-size:1.6rem;color:${color};flex-shrink:0;"></i>
+                <div>
+                    <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">${label}</div>
+                    <div style="font-size:1.25rem;font-weight:700;color:#fff;line-height:1.2;">${val}</div>
+                    ${subtitle ? `<div style="font-size:0.68rem;color:var(--text-muted);opacity:0.8;">${subtitle}</div>` : ""}
+                </div>
+            </div>`;
+        }
+
+        function renderOverviewKPIHeader(stats) {
+            const kpiWrap = document.createElement("div");
+            kpiWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;";
+            const fmt = v => (v >= 0 ? `+${v}` : `${v}`);
+            kpiWrap.innerHTML = [
+                buildKpiCardHtml("Total Quests", "fa-scroll", "#c4b5fd", stats.questCount, `${stats.totalLevels} total levels`),
+                buildKpiCardHtml("Card Rewards", "fa-gift", "#86efac", stats.totalCards, "Cards rewarded"),
+                buildKpiCardHtml("Spells Learnable", "fa-wand-magic-sparkles", "#c4b5fd", stats.totalSpells, "Spell rewards"),
+                buildKpiCardHtml("Companions", "fa-paw", "#f9a8d4", stats.totalCompanions, "Creature rewards"),
+                buildKpiCardHtml("Mana Granted", "fa-gem", "#60a5fa", `${stats.totalMana} M`, "Mana rewards"),
+                buildKpiCardHtml("Attributes", "fa-bolt", "#fde68a", `${fmt(stats.totalPower)}/${fmt(stats.totalToughness)}`, "PWR / TGH bonuses"),
+                buildKpiCardHtml("XP & Keywords", "fa-star", "#fb923c", `${stats.totalXP} XP`, `${stats.totalKeywords} keywords`),
+                buildKpiCardHtml("Opponent Power", "fa-shield-halved", "#fca5a5", stats.totalOpponentPower, "Total enemy power")
+            ].join("");
+            return kpiWrap;
+        }
+
+        function makeCollapsibleOverviewSection(titleHtml, contentEl, defaultOpen = true) {
+            const section = document.createElement("div");
+            section.className = "qs-panel";
+            section.style.cssText = "flex-shrink:0;background:rgba(15,18,38,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;";
+
+            const header = document.createElement("div");
+            header.className = "qs-panel-header" + (defaultOpen ? " open" : "");
+            header.style.cssText = "padding:0 18px;height:48px;min-height:48px;flex-shrink:0;background:rgba(255,255,255,0.03);cursor:pointer;display:flex;align-items:center;gap:10px;user-select:none;box-sizing:border-box;";
+
+            const toggleEl = document.createElement("span");
+            toggleEl.className = "qs-panel-toggle" + (defaultOpen ? " open" : "");
+            toggleEl.style.cssText = "font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;justify-content:center;width:14px;height:14px;flex-shrink:0;transition:transform 0.2s;";
+            toggleEl.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+            header.appendChild(toggleEl);
+
+            const titleSpan = document.createElement("span");
+            titleSpan.className = "qs-panel-label";
+            titleSpan.style.cssText = "font-size:0.92rem;font-weight:700;color:var(--accent-gold);display:flex;align-items:center;gap:10px;line-height:1.3;flex:1;";
+            titleSpan.innerHTML = titleHtml;
+            header.appendChild(titleSpan);
+            section.appendChild(header);
+
+            const body = document.createElement("div");
+            body.className = "qs-panel-body" + (defaultOpen ? "" : " collapsed");
+            body.style.cssText = "padding:16px 18px;background:rgba(0,0,0,0.15);overflow:hidden;";
+            body.appendChild(contentEl);
+            section.appendChild(body);
+
+            header.addEventListener("click", () => {
+                const isCollapsed = body.classList.toggle("collapsed");
+                header.classList.toggle("open", !isCollapsed);
+                toggleEl.classList.toggle("open", !isCollapsed);
+            });
+
+            return section;
+        }
+
+        function getQuestHeroAndArtifactRewards(quest) {
+            const heroes = [];
+            const artifacts = [];
+            const levels = quest.levels || [];
+
+            levels.forEach((lvl, lvlIdx) => {
+                const lvlNum = lvlIdx + 1;
+                const cardIds = [...(lvl.rewardCards || []), ...(lvl.unlockCards || [])];
+                cardIds.forEach(id => {
+                    const card = (state.deck || []).find(c => c.id === id);
+                    if (!card) return;
+                    const typeStr = `${card.cardType || ""} ${card.cardSubType || ""}`.toLowerCase();
+                    const frame = (card.frameStyle || "").toLowerCase();
+                    const name = card.cardName || card.name || id;
+
+                    if (typeStr.includes("hero") || name.toLowerCase().includes("hero")) {
+                        heroes.push({ name, level: lvlNum });
+                    }
+                    if (typeStr.includes("artifact") || frame === "artifact") {
+                        artifacts.push({ name, level: lvlNum });
+                    }
+                });
+
+                if (lvl.rewardCardMode === "random") {
+                    const sub = (lvl.rewardCardRandomSubType || "").toLowerCase();
+                    if (sub.includes("hero")) heroes.push({ name: `Random (${lvl.rewardCardRandomSubType})`, level: lvlNum });
+                    if (sub.includes("artifact")) artifacts.push({ name: `Random (${lvl.rewardCardRandomSubType})`, level: lvlNum });
+                }
+            });
+
+            return { heroes, artifacts };
+        }
+
+        function renderOverviewChartSection(stats) {
+            const wrap = document.createElement("div");
+            wrap.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+
+            const maxScore = Math.max(1, ...stats.questDetails.map(d => Math.max(d.rewardScore, d.oppPowerTotal)));
+            const chartGrid = document.createElement("div");
+            chartGrid.style.cssText = "display:flex;flex-direction:column;gap:10px;";
+
+            stats.questDetails.forEach(d => {
+                const rewardPct = Math.min(100, Math.round((d.rewardScore / maxScore) * 100));
+                const oppPct = Math.min(100, Math.round((d.oppPowerTotal / maxScore) * 100));
+
+                const row = document.createElement("div");
+                row.style.cssText = "display:flex;align-items:center;gap:12px;font-size:0.75rem;";
+                row.innerHTML = `<div style="width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;font-weight:600;" title="${d.name}">${d.name}</div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:${rewardPct}%;height:10px;background:linear-gradient(90deg, #86efac, #a78bfa);border-radius:4px;min-width:4px;"></div>
+                            <span style="font-size:0.68rem;color:#86efac;font-weight:600;">Reward Score ${Math.round(d.rewardScore)}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:${oppPct}%;height:6px;background:rgba(252,165,165,0.7);border-radius:3px;min-width:3px;"></div>
+                            <span style="font-size:0.65rem;color:#fca5a5;">Opp. PWR ${d.oppPowerTotal}</span>
+                        </div>
+                    </div>`;
+                chartGrid.appendChild(row);
+            });
+
+            wrap.appendChild(chartGrid);
+            return wrap;
+        }
+
+        function renderHeroArtifactMatrixSection(stats) {
+            const tableWrap = document.createElement("div");
+            tableWrap.style.cssText = "overflow-x:auto;";
+
+            const questData = (state.quests || []).map(q => {
+                const name = q.name || q.cardName || "Unnamed Quest";
+                const levelCount = (q.levels || []).length;
+                const { heroes, artifacts } = getQuestHeroAndArtifactRewards(q);
+                return { name, levelCount, heroes, artifacts };
+            });
+
+            const rows = questData.map(d => {
+                const heroNamesStr = d.heroes.length
+                    ? d.heroes.map(h => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(253,230,138,0.15);border:1px solid rgba(253,230,138,0.3);color:#fde68a;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-crown"></i> ${h.name}</span></div>`).join("")
+                    : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
+
+                const heroLvlStr = d.heroes.length
+                    ? d.heroes.map(h => `<div style="margin:2px 0;font-size:0.75rem;color:#fde68a;font-weight:600;">Lvl ${h.level}</div>`).join("")
+                    : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
+
+                const artifactNamesStr = d.artifacts.length
+                    ? d.artifacts.map(a => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-gem"></i> ${a.name}</span></div>`).join("")
+                    : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
+
+                const artifactLvlStr = d.artifacts.length
+                    ? d.artifacts.map(a => `<div style="margin:2px 0;font-size:0.75rem;color:#93c5fd;font-weight:600;">Lvl ${a.level}</div>`).join("")
+                    : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
+
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.78rem;">
+                    <td style="padding:8px 10px;color:#fff;font-weight:600;white-space:nowrap;">${d.name} (${d.levelCount})</td>
+                    <td style="padding:8px 10px;text-align:center;">${heroLvlStr}</td>
+                    <td style="padding:8px 10px;">${heroNamesStr}</td>
+                    <td style="padding:8px 10px;text-align:center;">${artifactLvlStr}</td>
+                    <td style="padding:8px 10px;">${artifactNamesStr}</td>
+                </tr>`;
+            }).join("");
+
+            tableWrap.innerHTML = `<table style="width:100%;border-collapse:collapse;text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);">
+                        <th style="padding:8px 10px;">Quest (Levels)</th>
+                        <th style="padding:8px 10px;text-align:center;color:#fde68a;">Hero Level</th>
+                        <th style="padding:8px 10px;color:#fde68a;"><i class="fa-solid fa-crown"></i> Hero Reward</th>
+                        <th style="padding:8px 10px;text-align:center;color:#93c5fd;">Artifact Level</th>
+                        <th style="padding:8px 10px;color:#93c5fd;"><i class="fa-solid fa-gem"></i> Artifact Reward</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+
+            return tableWrap;
+        }
+
+        function renderOverviewTableSection(stats) {
+            const tableWrap = document.createElement("div");
+            tableWrap.style.cssText = "overflow-x:auto;";
+
+            const fmt = v => (v >= 0 ? `+${v}` : `${v}`);
+            const rows = stats.questDetails.map(d => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.78rem;">
+                    <td style="padding:8px 10px;color:#fff;font-weight:600;">${d.name}</td>
+                    <td style="padding:8px 10px;text-align:center;">${d.levelCount}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#86efac;">${d.cardCount ? d.cardCount : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#c4b5fd;">${d.spellCount ? d.spellCount : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#f9a8d4;">${d.companionCount ? d.companionCount : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#60a5fa;">${d.manaTotal ? `${d.manaTotal} M` : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#fde68a;">${(d.powerTotal || d.toughnessTotal) ? `${fmt(d.powerTotal)}/${fmt(d.toughnessTotal)}` : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#fb923c;">${d.xpTotal ? `${d.xpTotal} XP` : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#34d399;">${d.keywordCount ? d.keywordCount : '—'}</td>
+                    <td style="padding:8px 10px;text-align:center;color:#fca5a5;">${d.oppPowerTotal ? d.oppPowerTotal : '—'}</td>
+                </tr>
+            `).join("");
+
+            tableWrap.innerHTML = `<table style="width:100%;border-collapse:collapse;text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);">
+                        <th style="padding:8px 10px;">Quest</th>
+                        <th style="padding:8px 10px;text-align:center;">Levels</th>
+                        <th style="padding:8px 10px;text-align:center;">Cards</th>
+                        <th style="padding:8px 10px;text-align:center;">Spells</th>
+                        <th style="padding:8px 10px;text-align:center;">Companions</th>
+                        <th style="padding:8px 10px;text-align:center;">Mana</th>
+                        <th style="padding:8px 10px;text-align:center;">P/T</th>
+                        <th style="padding:8px 10px;text-align:center;">XP</th>
+                        <th style="padding:8px 10px;text-align:center;">Keywords</th>
+                        <th style="padding:8px 10px;text-align:center;">Opp. PWR</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+
+            return tableWrap;
+        }
+
+        function renderRewardsOverviewContent() {
+            const container = document.getElementById("quest-rewards-overview-body");
+            if (!container) return;
+            container.innerHTML = "";
+
+            const stats = calculateAllQuestsStats();
+            if (stats.questCount === 0) {
+                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:40px;">No quests available to analyze.</div>`;
+                return;
+            }
+
+            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-gauge-high"></i> Reward KPI Overview', renderOverviewKPIHeader(stats), true));
+            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-chart-column"></i> Reward Score & Opponent Power Distribution Chart', renderOverviewChartSection(stats), true));
+            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-crown" style="color:#fde68a;"></i> Hero & Artifact Card Rewards Matrix', renderHeroArtifactMatrixSection(stats), true));
+            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-list-check"></i> Complete Quest Reward Matrix Table', renderOverviewTableSection(stats), true));
+        }
+
         // ── Wire up quest panel events ─────────────────
 
         function initQuestManagerEvents() {
@@ -10972,6 +11427,9 @@
 
             const exportQuestsBtn = document.getElementById("export-quests-btn");
             if (exportQuestsBtn) exportQuestsBtn.addEventListener("click", exportQuestsToJson);
+
+            const rewardOverviewBtn = document.getElementById("reward-overview-btn");
+            if (rewardOverviewBtn) rewardOverviewBtn.addEventListener("click", openRewardsOverviewModal);
 
             const importQuestsFile = document.getElementById("import-quests-file");
             const importQuestsBtn = document.getElementById("import-quests-btn");
