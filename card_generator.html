@@ -681,6 +681,12 @@
             border-color: var(--danger);
         }
 
+        .primary-btn:disabled, .secondary-btn:disabled, .danger-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         /* Viewport Styling */
         .viewport {
             flex: 1;
@@ -2984,7 +2990,7 @@
                         <button class="secondary-btn" id="export-deck-btn">
                             <i class="fa-solid fa-file-export"></i> Export Deck (JSON)
                         </button>
-                        <button class="secondary-btn" id="export-all-art-btn">
+                        <button class="secondary-btn" id="export-all-art-btn" disabled title="Disabled for now">
                             <i class="fa-solid fa-images"></i> Export All Art Only (PNGs)
                         </button>
                         <button class="secondary-btn" id="import-deck-btn">
