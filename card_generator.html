@@ -9699,12 +9699,16 @@
                         }
                         case "rewardCards": {
                             if (level.rewardCardMode === "random") {
+                                const cat = (level.rewardCardRandomCategory || "").trim();
                                 const sub = (level.rewardCardRandomSubType || "").trim();
-                                return sub ? `— Random · ${sub}` : "— Random";
+                                const parts = [];
+                                if (cat && cat.toLowerCase() !== "all" && cat.toLowerCase() !== "any") parts.push(cat);
+                                if (sub) parts.push(sub);
+                                return parts.length ? `— Random · ${parts.join(" / ")}` : "— Random";
                             }
                             const names = cardNames(level.rewardCards);
                             if (level.rewardCardMode === "preset") {
-                                return names.length ? `— Preset · ${names[0]}` : "";
+                                return names.length ? `— Preset · ${names.join(", ")}` : "";
                             }
                             return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
@@ -9731,7 +9735,7 @@
                             }
                             const names = cardNames(level.learnSpells);
                             if (level.learnSpellMode === "preset") {
-                                return names.length ? `— Preset · ${names[0]}` : "";
+                                return names.length ? `— Preset · ${names.join(", ")}` : "";
                             }
                             return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
@@ -9742,7 +9746,7 @@
                             }
                             const names = cardNames(level.companionRewards);
                             if (level.companionRewardMode === "preset") {
-                                return names.length ? `— Preset · ${names[0]}` : "";
+                                return names.length ? `— Preset · ${names.join(", ")}` : "";
                             }
                             return names.length ? `— Choice · ${names.join(", ")}` : "";
                         }
@@ -9903,6 +9907,7 @@
                 } else if (def.key === "rewardCards") {
                     if (!Array.isArray(level.rewardCards)) level.rewardCards = [];
                     if (!level.rewardCardMode) level.rewardCardMode = "choice";
+                    if (level.rewardCardRandomCategory === undefined) level.rewardCardRandomCategory = "";
                     if (level.rewardCardRandomSubType === undefined) level.rewardCardRandomSubType = "";
 
                     // Mode toggle: Random / Choice / Preset
@@ -9925,26 +9930,73 @@
                     rcModeWrap.appendChild(rcPresetBtn);
                     pb.appendChild(rcModeWrap);
 
-                    // Sub type picker (Random mode only) — sourced from all cards in deck
+                    // Random mode panel (Card Type + Sub Type pickers)
                     const rcSubTypeWrap = document.createElement("div");
                     rcSubTypeWrap.style.display = level.rewardCardMode === "random" ? "" : "none";
+
+                    // 1. Card Type picker
+                    const rcTypeLabel = document.createElement("div");
+                    rcTypeLabel.className = "qs-sub-label";
+                    rcTypeLabel.innerHTML = `<i class="fa-solid fa-filter"></i> Card Type`;
+                    rcSubTypeWrap.appendChild(rcTypeLabel);
+
+                    const rcTypeBtnGrid = document.createElement("div");
+                    rcTypeBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
+
+                    const rcCardTypes = ["Any", "Creature", "Spell", "Artifact", "Hero", "Enchantment", "Land"];
+
+                    function refreshRcTypeBtns() {
+                        rcTypeBtnGrid.innerHTML = "";
+                        rcCardTypes.forEach(typeName => {
+                            const isAny = typeName === "Any";
+                            const isActive = isAny ? (!level.rewardCardRandomCategory || level.rewardCardRandomCategory === "Any" || level.rewardCardRandomCategory === "all") : level.rewardCardRandomCategory === typeName;
+                            const btn = document.createElement("button");
+                            btn.type = "button";
+                            btn.textContent = typeName;
+                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(134,239,172,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(134,239,172,0.18)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#86efac' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.addEventListener("click", () => {
+                                level.rewardCardRandomCategory = isAny ? "" : typeName;
+                                refreshRcTypeBtns();
+                                refreshRcSubTypeBtns();
+                                updateSummaryBadge();
+                                saveQuestsToStorage();
+                            });
+                            rcTypeBtnGrid.appendChild(btn);
+                        });
+                    }
+                    refreshRcTypeBtns();
+                    rcSubTypeWrap.appendChild(rcTypeBtnGrid);
+
+                    // 2. Card Sub Type picker
                     const rcSubLabel = document.createElement("div");
                     rcSubLabel.className = "qs-sub-label";
                     rcSubLabel.innerHTML = `<i class="fa-solid fa-gift"></i> Card Sub Type`;
                     rcSubTypeWrap.appendChild(rcSubLabel);
+
                     const rcSubBtnGrid = document.createElement("div");
                     rcSubBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
-                    const rcCardSubTypes = [...new Set(
-                        (state.deck || [])
-                            .filter(c => (c.cardSubType || "").trim())
-                            .map(c => c.cardSubType.trim())
-                    )].sort((a, b) => a.localeCompare(b));
+
                     function refreshRcSubTypeBtns() {
                         rcSubBtnGrid.innerHTML = "";
+                        const chosenCat = (level.rewardCardRandomCategory || "").trim();
+                        const matchingCards = (state.deck || []).filter(c => {
+                            const cType = (c.cardType || "").trim();
+                            if (cType === "Quest" || cType === "Wizard" || cType === "Tower") return false;
+                            if (chosenCat && chosenCat !== "Any" && chosenCat !== "all") {
+                                return cType === chosenCat;
+                            }
+                            return true;
+                        });
+                        const rcCardSubTypes = [...new Set(
+                            matchingCards
+                                .filter(c => (c.cardSubType || "").trim())
+                                .map(c => c.cardSubType.trim())
+                        )].sort((a, b) => a.localeCompare(b));
+
                         if (rcCardSubTypes.length === 0) {
                             const empty = document.createElement("span");
                             empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
-                            empty.textContent = "No card sub types found in deck.";
+                            empty.textContent = "No card sub types found.";
                             rcSubBtnGrid.appendChild(empty);
                             return;
                         }
@@ -9973,16 +10025,13 @@
                     function renderRcChips() {
                         rcChipsWrap.innerHTML = "";
                         rcChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "rewardCards", "quest-reward-chip",
-                            level.rewardCardMode === "preset" ? "Select 1 preset card reward" : "Cards the player receives as reward", "all", updateSummaryBadge));
+                            level.rewardCardMode === "preset" ? "Select preset card reward(s)" : "Cards the player receives as reward", "all", updateSummaryBadge));
                     }
                     renderRcChips();
                     pb.appendChild(rcChipsWrap);
 
                     function setRewardCardMode(mode) {
                         level.rewardCardMode = mode;
-                        if (mode === "preset" && level.rewardCards.length > 1) {
-                            level.rewardCards = level.rewardCards.slice(0, 1);
-                        }
                         rcRandomBtn.classList.toggle("active", mode === "random");
                         rcChoiceBtn.classList.toggle("active", mode === "choice");
                         rcPresetBtn.classList.toggle("active", mode === "preset");
@@ -10229,16 +10278,13 @@
                     function renderLsChips() {
                         lsChipsWrap.innerHTML = "";
                         lsChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "learnSpells", "quest-unlock-chip",
-                            level.learnSpellMode === "preset" ? "Select 1 preset spell to learn" : "Select battle spells to learn (choice)", "Spell", updateSummaryBadge));
+                            level.learnSpellMode === "preset" ? "Select preset spell(s) to learn" : "Select battle spells to learn (choice)", "Spell", updateSummaryBadge));
                     }
                     renderLsChips();
                     pb.appendChild(lsChipsWrap);
 
                     function setLearnSpellMode(mode) {
                         level.learnSpellMode = mode;
-                        if (mode === "preset" && level.learnSpells.length > 1) {
-                            level.learnSpells = level.learnSpells.slice(0, 1);
-                        }
                         lsRandomBtn.classList.toggle("active", mode === "random");
                         lsChoiceBtn.classList.toggle("active", mode === "choice");
                         lsPresetBtn.classList.toggle("active", mode === "preset");
@@ -10325,16 +10371,13 @@
                     function renderCrChips() {
                         crChipsWrap.innerHTML = "";
                         crChipsWrap.appendChild(buildChipsSectionBody(quest, level, idx, "companionRewards", "quest-reward-chip",
-                            level.companionRewardMode === "preset" ? "Select 1 preset companion creature" : "Select companion creatures (choice)", "Creature", updateSummaryBadge));
+                            level.companionRewardMode === "preset" ? "Select preset companion creature(s)" : "Select companion creatures (choice)", "Creature", updateSummaryBadge));
                     }
                     renderCrChips();
                     pb.appendChild(crChipsWrap);
 
                     function setCompanionRewardMode(mode) {
                         level.companionRewardMode = mode;
-                        if (mode === "preset" && level.companionRewards.length > 1) {
-                            level.companionRewards = level.companionRewards.slice(0, 1);
-                        }
                         crRandomBtn.classList.toggle("active", mode === "random");
                         crChoiceBtn.classList.toggle("active", mode === "choice");
                         crPresetBtn.classList.toggle("active", mode === "preset");
@@ -10657,12 +10700,7 @@
                     kwAddBtn.addEventListener("click", () => {
                         const val = kwSelect.value;
                         if (!val) return;
-                        if (level.keywordRewardMode === "preset") {
-                            level.keywordRewardList = [val];
-                            renderKwChips();
-                            updateSummaryBadge();
-                            saveQuestsToStorage();
-                        } else if (!level.keywordRewardList.includes(val)) {
+                        if (!level.keywordRewardList.includes(val)) {
                             level.keywordRewardList.push(val);
                             renderKwChips();
                             updateSummaryBadge();
@@ -10678,10 +10716,6 @@
 
                     function setKwMode(mode) {
                         level.keywordRewardMode = mode;
-                        if (mode === "preset" && level.keywordRewardList.length > 1) {
-                            level.keywordRewardList = level.keywordRewardList.slice(0, 1);
-                            renderKwChips();
-                        }
                         kwRandomBtn.classList.toggle("active", mode === "random");
                         kwChoiceBtn.classList.toggle("active", mode === "choice");
                         kwPresetBtn.classList.toggle("active", mode === "preset");
@@ -10783,8 +10817,10 @@
                     const cardId  = (card.id || "").trim().toLowerCase();
                     if (cardType === "Quest"  || cardId.includes("quest"))   return false;
                     if (cardType === "Wizard" || cardType === "Tower")        return false;
-                    if (cardId.includes("wizard") || cardId.includes("tower")) return false;
-                    if (/wizard/i.test(cardName)  || /tower/i.test(cardName))  return false;
+                    if (cardType !== "Creature" && cardType !== "Hero") {
+                        if (cardId.includes("wizard_ability") || cardId.includes("tower_ability")) return false;
+                        if (/^wizard\s*l\d/i.test(cardName) || /^tower\s*l\d/i.test(cardName)) return false;
+                    }
                     if (/ability$/i.test(cardName) || cardId.endsWith("ability") || cardId.includes("_ability")) return false;
                     return true;
                 });
@@ -10792,9 +10828,19 @@
 
             // ── Collect card types actually present in the eligible deck ─────────
             function getAvailableTypes() {
-                const types = new Set();
-                getBaseCards().forEach(c => { if (c.cardType) types.add(c.cardType.trim()); });
-                return ["All", ...Array.from(types).sort()];
+                const standardTypes = ["Creature", "Spell", "Artifact", "Hero", "Enchantment", "Land"];
+                const presentTypes = new Set(standardTypes);
+                getBaseCards().forEach(c => { if (c.cardType && c.cardType.trim()) presentTypes.add(c.cardType.trim()); });
+                const typeList = Array.from(presentTypes);
+                const order = ["Creature", "Spell", "Artifact", "Hero", "Enchantment", "Land"];
+                typeList.sort((a, b) => {
+                    const idxA = order.indexOf(a), idxB = order.indexOf(b);
+                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                    if (idxA !== -1) return -1;
+                    if (idxB !== -1) return 1;
+                    return a.localeCompare(b);
+                });
+                return ["All", ...typeList];
             }
 
             // ── Collect subtypes for cards matching the current type filter ──────
@@ -10877,8 +10923,8 @@
             typeRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;align-items:center;";
 
             const typeLabel = document.createElement("span");
-            typeLabel.style.cssText = "font-size:0.65rem;color:var(--text-muted);margin-right:2px;opacity:0.7;";
-            typeLabel.textContent = "Type:";
+            typeLabel.style.cssText = "font-size:0.65rem;color:var(--text-muted);margin-right:2px;opacity:0.7;font-weight:600;";
+            typeLabel.innerHTML = `<i class="fa-solid fa-filter"></i> Type:`;
             typeRow.appendChild(typeLabel);
 
             function renderTypeRow() {
@@ -10959,16 +11005,7 @@
             addBtn.addEventListener("click", () => {
                 const chosen = sel.value;
                 if (!chosen) return;
-                const modeKey = field === "learnSpells" ? level.learnSpellMode : (field === "companionRewards" ? level.companionRewardMode : (field === "rewardCards" ? level.rewardCardMode : ""));
-                const isPreset = modeKey === "preset";
-                if (isPreset) {
-                    level[field] = [chosen];
-                    refreshChips();
-                    refreshSelect();
-                    sel.value = "";
-                    if (onUpdateCallback) onUpdateCallback();
-                    saveQuestsToStorage();
-                } else if (allowDuplicates || !level[field].includes(chosen)) {
+                if (allowDuplicates || !level[field].includes(chosen)) {
                     level[field].push(chosen);
                     refreshChips();
                     refreshSelect();
@@ -11004,10 +11041,12 @@
                 // 1. Exclude Quests
                 if (cardType === "Quest" || cardId.includes("quest")) return false;
 
-                // 2. Exclude Wizards & Towers
+                // 2. Exclude Wizards & Towers (structure/ability cards, but allow Creatures/Heroes like Towerguard)
                 if (cardType === "Wizard" || cardType === "Tower") return false;
-                if (cardId.includes("wizard") || cardId.includes("tower")) return false;
-                if (/wizard/i.test(cardName) || /tower/i.test(cardName)) return false;
+                if (cardType !== "Creature" && cardType !== "Hero") {
+                    if (cardId.includes("wizard_ability") || cardId.includes("tower_ability")) return false;
+                    if (/^wizard\s*l\d/i.test(cardName) || /^tower\s*l\d/i.test(cardName)) return false;
+                }
 
                 // 3. Exclude Ability cards
                 if (/ability$/i.test(cardName) || cardId.endsWith("ability") || cardId.includes("_ability")) return false;
@@ -11119,29 +11158,28 @@
             let xpTotal = 0, keywordCount = 0, oppPowerTotal = 0, monsterUnlockCount = 0;
 
             levels.forEach(lvl => {
-                cardCount += (lvl.rewardCards || []).length || (lvl.rewardCardMode === "random" ? 1 : 0);
-                spellCount += (lvl.learnSpells || []).length || (lvl.learnSpellMode === "random" ? 1 : 0);
-                companionCount += (lvl.companionRewards || []).length || (lvl.companionRewardMode === "random" ? 1 : 0);
-                if (lvl.manaReward && lvl.manaReward.amount) manaTotal += lvl.manaReward.amount;
-                if (lvl.attributeReward) {
+                const sec = Array.isArray(lvl.sections) ? lvl.sections : null;
+
+                if (!sec || sec.includes("rewardCards")) cardCount += (lvl.rewardCards || []).length || 1;
+                if (!sec || sec.includes("learnSpell")) spellCount += (lvl.learnSpells || []).length || 1;
+                if (!sec || sec.includes("companionReward")) companionCount += (lvl.companionRewards || []).length || 1;
+                if ((sec ? sec.includes("manaReward") : false) && lvl.manaReward && lvl.manaReward.amount) manaTotal += lvl.manaReward.amount;
+
+                if ((!sec || sec.includes("attributeReward")) && lvl.attributeReward) {
                     powerTotal += lvl.attributeReward.power || 0;
                     toughnessTotal += lvl.attributeReward.toughness || 0;
                 }
                 if (lvl.xpReward) xpTotal += lvl.xpReward;
-                if (lvl.keywordRewardList) keywordCount += lvl.keywordRewardList.length;
-                if (lvl.opponentsPower) oppPowerTotal += lvl.opponentsPower;
+                if ((!sec || sec.includes("keywordReward"))) keywordCount += (lvl.keywordRewardList || []).length || 1;
+                if ((!sec || sec.includes("opponents")) && lvl.opponentsPower) oppPowerTotal += lvl.opponentsPower;
                 if (lvl.monsterUnlockManaCost !== undefined && lvl.monsterUnlockManaCost > 0) monsterUnlockCount++;
             });
 
             const score = (cardCount * 3) + (spellCount * 3) + (companionCount * 4) + (manaTotal * 2) + (powerTotal + toughnessTotal) * 2.5 + (xpTotal / 5) + (keywordCount * 2);
             return {
-                id: q.id,
-                name: q.name || q.cardName || "Unnamed Quest",
-                levelCount: levels.length,
-                cardCount, spellCount, companionCount,
-                manaTotal, powerTotal, toughnessTotal,
-                xpTotal, keywordCount, oppPowerTotal, monsterUnlockCount,
-                rewardScore: score
+                id: q.id, name: q.name || q.cardName || "Unnamed Quest", levelCount: levels.length,
+                cardCount, spellCount, companionCount, manaTotal, powerTotal, toughnessTotal,
+                xpTotal, keywordCount, oppPowerTotal, monsterUnlockCount, rewardScore: score
             };
         }
 
@@ -11314,12 +11352,13 @@
                 const name = q.name || q.cardName || "Unnamed Quest";
                 const levelCount = (q.levels || []).length;
                 const { heroes, artifacts } = getQuestHeroAndArtifactRewards(q);
-                return { name, levelCount, heroes, artifacts };
+                const firstOpponent = getQuestLevel5FirstOpponent(q);
+                return { name, levelCount, heroes, artifacts, firstOpponent };
             });
 
             const rows = questData.map(d => {
                 const heroNamesStr = d.heroes.length
-                    ? d.heroes.map(h => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(253,230,138,0.15);border:1px solid rgba(253,230,138,0.3);color:#fde68a;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-crown"></i> ${h.name}</span></div>`).join("")
+                    ? d.heroes.map(h => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(253,230,138,0.15);border:1px solid rgba(253,230,138,0.3);color:#fde68a;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-crown"></i> ${escapeHtml(h.name)}</span></div>`).join("")
                     : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
 
                 const heroLvlStr = d.heroes.length
@@ -11327,7 +11366,7 @@
                     : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
 
                 const artifactNamesStr = d.artifacts.length
-                    ? d.artifacts.map(a => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-gem"></i> ${a.name}</span></div>`).join("")
+                    ? d.artifacts.map(a => `<div style="margin:2px 0;"><span style="display:inline-block;background:rgba(147,197,253,0.15);border:1px solid rgba(147,197,253,0.3);color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:0.72rem;"><i class="fa-solid fa-gem"></i> ${escapeHtml(a.name)}</span></div>`).join("")
                     : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
 
                 const artifactLvlStr = d.artifacts.length
@@ -11335,11 +11374,12 @@
                     : `<span style="color:var(--text-muted);opacity:0.5;">—</span>`;
 
                 return `<tr style="border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.78rem;">
-                    <td style="padding:8px 10px;color:#fff;font-weight:600;white-space:nowrap;">${d.name} (${d.levelCount})</td>
+                    <td style="padding:8px 10px;color:#fff;font-weight:600;white-space:nowrap;">${escapeHtml(d.name)} (${d.levelCount})</td>
                     <td style="padding:8px 10px;text-align:center;">${heroLvlStr}</td>
                     <td style="padding:8px 10px;">${heroNamesStr}</td>
                     <td style="padding:8px 10px;text-align:center;">${artifactLvlStr}</td>
                     <td style="padding:8px 10px;">${artifactNamesStr}</td>
+                    <td style="padding:8px 10px;">${d.firstOpponent.formatted}</td>
                 </tr>`;
             }).join("");
 
@@ -11351,6 +11391,7 @@
                         <th style="padding:8px 10px;color:#fde68a;"><i class="fa-solid fa-crown"></i> Hero Reward</th>
                         <th style="padding:8px 10px;text-align:center;color:#93c5fd;">Artifact Level</th>
                         <th style="padding:8px 10px;color:#93c5fd;"><i class="fa-solid fa-gem"></i> Artifact Reward</th>
+                        <th style="padding:8px 10px;color:#f87171;"><i class="fa-solid fa-skull"></i> Lvl 5 Opponent</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -11359,14 +11400,36 @@
             return tableWrap;
         }
 
+        function getQuestLevel5FirstOpponent(quest) {
+            const levels = quest.levels || [];
+            if (!levels.length) {
+                return { name: "—", formatted: `<span style="color:var(--text-muted);opacity:0.5;">—</span>` };
+            }
+            const lvl5 = levels[4] || levels.find((l, idx) => l.level === 5 || idx + 1 === 5);
+            if (!lvl5 || !lvl5.opponents || !lvl5.opponents.length) {
+                return { name: "—", formatted: `<span style="color:var(--text-muted);opacity:0.5;">—</span>` };
+            }
+            const firstId = lvl5.opponents[0];
+            const card = (state.deck || []).find(c => c.id === firstId);
+            const firstName = card ? (card.cardName || card.name || firstId) : firstId;
+            const formatted = `<span style="display:inline-block;background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#f87171;padding:2px 7px;border-radius:4px;font-size:0.72rem;font-weight:600;"><i class="fa-solid fa-skull"></i> ${escapeHtml(firstName)}</span>`;
+
+            return { name: firstName, formatted };
+        }
+
         function renderOverviewTableSection(stats) {
             const tableWrap = document.createElement("div");
             tableWrap.style.cssText = "overflow-x:auto;";
 
             const fmt = v => (v >= 0 ? `+${v}` : `${v}`);
-            const rows = stats.questDetails.map(d => `
+            const questMap = new Map((state.quests || []).map(q => [q.id, q]));
+
+            const rows = stats.questDetails.map(d => {
+                const questObj = questMap.get(d.id);
+                const firstOpponent = questObj ? getQuestLevel5FirstOpponent(questObj) : { formatted: `<span style="color:var(--text-muted);opacity:0.5;">—</span>` };
+                return `
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.78rem;">
-                    <td style="padding:8px 10px;color:#fff;font-weight:600;">${d.name}</td>
+                    <td style="padding:8px 10px;color:#fff;font-weight:600;">${escapeHtml(d.name)}</td>
                     <td style="padding:8px 10px;text-align:center;">${d.levelCount}</td>
                     <td style="padding:8px 10px;text-align:center;color:#86efac;">${d.cardCount ? d.cardCount : '—'}</td>
                     <td style="padding:8px 10px;text-align:center;color:#c4b5fd;">${d.spellCount ? d.spellCount : '—'}</td>
@@ -11376,8 +11439,9 @@
                     <td style="padding:8px 10px;text-align:center;color:#fb923c;">${d.xpTotal ? `${d.xpTotal} XP` : '—'}</td>
                     <td style="padding:8px 10px;text-align:center;color:#34d399;">${d.keywordCount ? d.keywordCount : '—'}</td>
                     <td style="padding:8px 10px;text-align:center;color:#fca5a5;">${d.oppPowerTotal ? d.oppPowerTotal : '—'}</td>
+                    <td style="padding:8px 10px;">${firstOpponent.formatted}</td>
                 </tr>
-            `).join("");
+            `;}).join("");
 
             tableWrap.innerHTML = `<table style="width:100%;border-collapse:collapse;text-align:left;">
                 <thead>
@@ -11392,6 +11456,7 @@
                         <th style="padding:8px 10px;text-align:center;">XP</th>
                         <th style="padding:8px 10px;text-align:center;">Keywords</th>
                         <th style="padding:8px 10px;text-align:center;">Opp. PWR</th>
+                        <th style="padding:8px 10px;color:#f87171;"><i class="fa-solid fa-skull"></i> Lvl 5 Opponent Card</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -11413,7 +11478,7 @@
 
             container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-gauge-high"></i> Reward KPI Overview', renderOverviewKPIHeader(stats), true));
             container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-chart-column"></i> Reward Score & Opponent Power Distribution Chart', renderOverviewChartSection(stats), true));
-            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-crown" style="color:#fde68a;"></i> Hero & Artifact Card Rewards Matrix', renderHeroArtifactMatrixSection(stats), true));
+            container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-crown" style="color:#fde68a;"></i> Hero, Artifact & Level 5 Opponent Matrix', renderHeroArtifactMatrixSection(stats), true));
             container.appendChild(makeCollapsibleOverviewSection('<i class="fa-solid fa-list-check"></i> Complete Quest Reward Matrix Table', renderOverviewTableSection(stats), true));
         }
 
