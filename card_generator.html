@@ -2847,6 +2847,9 @@
                         <button type="button" id="reward-overview-btn" class="secondary-btn" style="width:auto;padding:7px 14px;font-size:0.8rem;margin:0;background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:#fde68a;">
                             <i class="fa-solid fa-chart-pie"></i> Rewards Overview
                         </button>
+                        <button type="button" id="quest-lookup-card-btn" class="secondary-btn" style="width:auto;padding:7px 14px;font-size:0.8rem;margin:0;background:rgba(97,175,239,0.15);border-color:rgba(97,175,239,0.4);color:#93c5fd;" onclick="openCardLookupModal()">
+                            <i class="fa-solid fa-id-card"></i> Lookup Card ID
+                        </button>
                         <input type="file" id="import-quests-file" accept=".json" style="display:none;">
                     </div>
                     <!-- Right: done -->
@@ -2874,6 +2877,57 @@
                     <!-- Modal Body Container -->
                     <div id="quest-rewards-overview-body" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px;">
                     </div>
+                </div>
+            </div>
+
+            <!-- Card Lookup Overlay Panel -->
+            <div id="card-lookup-panel" class="glass-panel" style="display: none; position: fixed; top: 30px; left: 50%; transform: translateX(-50%); width: 640px; max-width: 95vw; max-height: 90vh; z-index: 10000; background: rgba(11, 14, 30, 0.98); border: 1px solid var(--border-gold); border-radius: 16px; flex-direction: column; overflow: hidden; box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(97, 175, 239, 0.3);">
+                
+                <!-- Panel Header -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.35); flex-shrink: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-id-card" style="font-size: 1.4rem; color: #61afef;"></i>
+                        <div>
+                            <h2 style="font-family: var(--font-heading); font-size: 1.15rem; color: var(--accent-gold); margin: 0; line-height: 1.2;">Card Lookup by Raw ID</h2>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Inspect card details and artwork for any raw card ID in your deck</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeCardLookupPanel()" class="secondary-btn" style="width: auto; padding: 6px 14px; font-size: 0.8rem; margin: 0; background: rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-xmark"></i> Close Panel
+                    </button>
+                </div>
+
+                <!-- Panel Body -->
+                <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1;">
+                    
+                    <!-- Search & Dropdown Bar -->
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">
+                            Raw Card ID / Select Card:
+                        </label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input type="text" id="card-lookup-input" placeholder="e.g. card_1782853578674 or card_summon_demon" 
+                                style="flex: 1; min-width: 220px; font-size: 0.85rem; padding: 8px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-family: monospace;"
+                                oninput="updateCardLookupResult()">
+                            <select id="card-lookup-select" class="subtype-filter-select" style="width: 220px; font-size: 0.82rem; padding: 8px; height: 38px;" onchange="onLookupSelectChange(this)">
+                                <option value="">-- Choose Card --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Card Result Box -->
+                    <div id="card-lookup-result" style="min-height: 200px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px;">
+                    </div>
+                </div>
+
+                <!-- Panel Footer -->
+                <div style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-shrink: 0;">
+                    <span id="card-lookup-count-info" style="font-size: 0.76rem; color: var(--text-muted);">
+                        0 cards available
+                    </span>
+                    <button type="button" class="primary-btn" onclick="closeCardLookupPanel()" style="width: auto; padding: 6px 20px; font-size: 0.82rem; margin: 0; background: linear-gradient(135deg, rgba(97, 175, 239, 0.35), rgba(97, 175, 239, 0.18)); border-color: rgba(97, 175, 239, 0.6);">
+                        Done &amp; Close
+                    </button>
                 </div>
             </div>
         </main>
@@ -2998,6 +3052,9 @@
                         </button>
                         <button class="primary-btn" id="manage-quests-btn" type="button" onclick="openQuestsPanel()" style="margin-top: 6px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(168, 85, 247, 0.25)); border-color: rgba(139, 92, 246, 0.65);">
                             <i class="fa-solid fa-scroll"></i> Manage Quests
+                        </button>
+                        <button class="secondary-btn" id="lookup-card-sidebar-btn" type="button" onclick="openCardLookupPanel()" style="margin-top: 4px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.4); color: #93c5fd;">
+                            <i class="fa-solid fa-id-card"></i> Card Lookup by ID
                         </button>
                         <button class="danger-btn" id="clear-deck-btn">
                             <i class="fa-solid fa-trash-can"></i> Clear Entire Deck
@@ -3192,7 +3249,8 @@
             </div>
         </div>
     </div>
-    </div>
+
+
 
 
 
@@ -5795,6 +5853,7 @@
             renderDeckList();
             showToast("Loaded card for editing!");
         }
+        window.loadCardDetails = loadCardDetails;
 
         function loadIllustrationForCard(card, forceLoad = false) {
             // If image loading is globally disabled and this isn't a manual per-card load, skip.
@@ -6471,6 +6530,24 @@
                             ],
                             abilityManaSize: 14,
                             illustration: "Sol Ring.jpg"
+                        },
+                        {
+                            id: "default_summon_demon",
+                            cardName: "Summon Demon",
+                            frameStyle: "black",
+                            borderColor: "black",
+                            manaCost: ["B", "B"],
+                            cardType: "Spell",
+                            hasPt: false,
+                            rulesText: "",
+                            customDescription: "Summons a temporary random Demon (creature of sub type Demon) that joins your army for the remainder of the battle. After battle it's discarded if still alive.",
+                            customDescriptionItalic: false,
+                            power: "0",
+                            toughness: "0",
+                            keywords: [],
+                            activatedAbilities: [],
+                            abilityManaSize: 14,
+                            illustration: "Summon Demon.jpg"
                         }
                     ];
                     saveDeckToStorage();
@@ -8160,6 +8237,268 @@
                 openArtErrorModal();
             }
         });
+
+        // ── Card Lookup by ID Panel Logic ──────────────────────────────
+        function openCardLookupPanel(initialCardId = "") {
+            const panel = document.getElementById("card-lookup-panel");
+            if (!panel) return;
+
+            const input = document.getElementById("card-lookup-input");
+            const select = document.getElementById("card-lookup-select");
+            const countInfo = document.getElementById("card-lookup-count-info");
+
+            // Populate dropdown with all cards in deck
+            if (select) {
+                select.innerHTML = `<option value="">-- Choose Card --</option>`;
+                const sortedCards = [...(state.deck || [])].sort((a, b) => 
+                    (a.cardName || a.name || "").localeCompare(b.cardName || b.name || "")
+                );
+                sortedCards.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = `${c.cardName || c.name || "Unnamed"} (${c.cardType || "Card"} · ${c.id})`;
+                    select.appendChild(opt);
+                });
+            }
+
+            if (countInfo) {
+                const count = (state.deck || []).length;
+                countInfo.textContent = `${count} card${count !== 1 ? "s" : ""} in deck database`;
+            }
+
+            if (input) {
+                input.value = initialCardId || "";
+                if (select && initialCardId) select.value = initialCardId;
+            }
+
+            panel.style.display = "flex";
+            updateCardLookupResult();
+
+            if (input) {
+                setTimeout(() => input.focus(), 50);
+            }
+        }
+
+        function closeCardLookupPanel() {
+            const panel = document.getElementById("card-lookup-panel");
+            if (panel) {
+                panel.style.display = "none";
+            }
+        }
+
+        function onLookupSelectChange(selectEl) {
+            if (!selectEl) return;
+            const input = document.getElementById("card-lookup-input");
+            if (input) input.value = selectEl.value;
+            updateCardLookupResult();
+        }
+
+        function updateCardLookupResult() {
+            const input = document.getElementById("card-lookup-input");
+            const select = document.getElementById("card-lookup-select");
+            const resultBox = document.getElementById("card-lookup-result");
+            if (!input || !resultBox) return;
+
+            const query = (input.value || "").trim();
+            if (select && select.value !== query) {
+                select.value = (state.deck || []).some(c => c.id === query) ? query : "";
+            }
+
+            if (!query) {
+                resultBox.innerHTML = `
+                    <div style="text-align:center;padding:36px 12px;color:var(--text-muted);font-size:0.85rem;">
+                        <i class="fa-solid fa-magnifying-glass" style="font-size:2.2rem;margin-bottom:10px;opacity:0.35;display:block;"></i>
+                        Enter a raw Card ID or choose a card from the dropdown to preview its details.
+                    </div>
+                `;
+                return;
+            }
+
+            // Exact or case-insensitive match
+            const card = (state.deck || []).find(c => 
+                c.id === query || (c.id && c.id.toLowerCase() === query.toLowerCase())
+            );
+
+            if (!card) {
+                const partialMatches = (state.deck || []).filter(c => 
+                    (c.id && c.id.toLowerCase().includes(query.toLowerCase())) || 
+                    ((c.cardName || c.name || "").toLowerCase().includes(query.toLowerCase()))
+                ).slice(0, 5);
+
+                let partialHtml = "";
+                if (partialMatches.length > 0) {
+                    partialHtml = `
+                        <div style="margin-top:14px;text-align:left;">
+                            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Suggested cards matching "${query}":</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                ${partialMatches.map(m => `
+                                    <button type="button" class="secondary-btn" style="font-size:0.75rem;padding:4px 10px;width:auto;margin:0;background:rgba(255,255,255,0.06);" onclick="selectLookupCardId('${m.id}')">
+                                        ${m.cardName || m.name} <code style="color:#61afef;font-size:0.7rem;margin-left:4px;">(${m.id})</code>
+                                    </button>
+                                `).join("")}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                resultBox.innerHTML = `
+                    <div style="text-align:center;padding:24px 12px;color:#f87171;font-size:0.85rem;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.8rem;margin-bottom:8px;display:block;"></i>
+                        No card found with raw ID <code style="background:rgba(248,113,113,0.15);padding:2px 7px;border-radius:4px;color:#fca5a5;font-family:monospace;">${query}</code>
+                        ${partialHtml}
+                    </div>
+                `;
+                return;
+            }
+
+            // Format card info
+            const typeLabel = `${card.cardType || "Card"}${card.cardSubType ? " — " + card.cardSubType : ""}`;
+            const frameColor = card.frameStyle || "red";
+            const ptText = card.hasPt ? `${card.power !== undefined ? card.power : "0"}/${card.toughness !== undefined ? card.toughness : "0"}` : null;
+            const manaCostStr = Array.isArray(card.manaCost) && card.manaCost.length ? card.manaCost.join(" ") : "None";
+            const descText = card.rulesText || card.customDescription || "No rules or custom description available.";
+            const imgFilename = card.illustration || (card.cardName + ".png");
+
+            resultBox.innerHTML = `
+                <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+                    <!-- Left: Card Info -->
+                    <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;">
+                            <span style="font-size:1.15rem;font-weight:700;color:var(--accent-gold);">${card.cardName || card.name || "Unnamed Card"}</span>
+                            <span style="font-size:0.75rem;padding:3px 9px;border-radius:4px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text-muted);font-weight:600;">${typeLabel}</span>
+                        </div>
+
+                        <div style="display:flex;gap:14px;font-size:0.8rem;color:var(--text-muted);flex-wrap:wrap;align-items:center;">
+                            <span><strong>Raw ID:</strong> <code style="color:#61afef;background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;font-family:monospace;">${card.id}</code></span>
+                            ${ptText ? `<span><strong>P/T:</strong> <strong style="color:#fff;background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">${ptText}</strong></span>` : ""}
+                            <span><strong>Frame:</strong> <span style="color:#fdba74;text-transform:capitalize;font-weight:600;">${frameColor}</span></span>
+                        </div>
+
+                        <div style="font-size:0.8rem;color:var(--text-muted);">
+                            <strong>Mana Cost:</strong> <span style="color:#93c5fd;font-family:monospace;font-weight:600;">${manaCostStr}</span>
+                        </div>
+
+                        ${card.keywords && card.keywords.length ? `
+                            <div style="font-size:0.8rem;color:var(--text-muted);">
+                                <strong>Keywords:</strong> <span style="color:#86efac;font-weight:500;">${card.keywords.join(", ")}</span>
+                            </div>
+                        ` : ""}
+
+                        <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 12px;font-size:0.82rem;color:var(--text-color);line-height:1.45;margin-top:2px;">
+                            ${descText}
+                        </div>
+
+                        <div style="margin-top:8px;display:flex;gap:8px;">
+                            <button type="button" id="btn-load-lookup-card-action" class="primary-btn" style="width:auto;padding:6px 14px;font-size:0.8rem;margin:0;" onclick="window.loadLookupCardInEditor('${card.id}')">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Card
+                            </button>
+                            <button type="button" id="btn-copy-lookup-id-action" class="secondary-btn" style="width:auto;padding:6px 12px;font-size:0.8rem;margin:0;" onclick="window.copyLookupCardId('${card.id}')">
+                                <i class="fa-solid fa-copy"></i> Copy Raw ID
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Artwork Thumbnail -->
+                    <div style="width:110px;display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+                        <div style="width:105px;height:105px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+                            <img id="card-lookup-img-preview" src="" alt="${card.cardName}" style="width:100%;height:100%;object-fit:cover;display:none;" 
+                                onerror="this.style.display='none';document.getElementById('card-lookup-img-fallback').style.display='flex';">
+                            <div id="card-lookup-img-fallback" style="display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.7rem;text-align:center;padding:4px;">
+                                <i class="fa-solid fa-image" style="font-size:1.5rem;margin-bottom:4px;opacity:0.4;"></i>
+                                ${imgFilename}
+                            </div>
+                        </div>
+                        <span style="font-size:0.68rem;color:var(--text-muted);max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;" title="${imgFilename}">${imgFilename}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById("btn-load-lookup-card-action")?.addEventListener("click", () => {
+                loadLookupCardInEditor(card.id);
+            });
+            document.getElementById("btn-copy-lookup-id-action")?.addEventListener("click", () => {
+                copyLookupCardId(card.id);
+            });
+
+            resolveCardLookupImage(card, imgFilename);
+        }
+
+        function resolveCardLookupImage(card, filename) {
+            const imgEl = document.getElementById("card-lookup-img-preview");
+            const fallbackEl = document.getElementById("card-lookup-img-fallback");
+            if (!imgEl || !filename) return;
+
+            const rawName = decodeURIComponent(filename.replace(/^.*[\\\/]/, ''));
+            const searchDirs = ["wizards", "Wizards", "creatures", "spells", "heroes", "legends", "quests", "artifacts", "portals", ""];
+            const exts = [".png", ".jpg", ".jpeg", ".webp"];
+            const baseName = rawName.replace(/\.(png|jpg|jpeg|webp)$/i, "");
+
+            const candidateUrls = [];
+            searchDirs.forEach(dir => {
+                exts.forEach(ext => {
+                    candidateUrls.push(dir ? `${dir}/${baseName}${ext}` : `${baseName}${ext}`);
+                });
+            });
+
+            let idx = 0;
+            const tryNext = () => {
+                if (idx >= candidateUrls.length) {
+                    imgEl.style.display = "none";
+                    if (fallbackEl) fallbackEl.style.display = "flex";
+                    return;
+                }
+                const testImg = new Image();
+                const url = candidateUrls[idx++];
+                testImg.onload = () => {
+                    imgEl.src = url;
+                    imgEl.style.display = "block";
+                    if (fallbackEl) fallbackEl.style.display = "none";
+                };
+                testImg.onerror = tryNext;
+                testImg.src = url;
+            };
+            tryNext();
+        }
+
+        function selectLookupCardId(id) {
+            const input = document.getElementById("card-lookup-input");
+            const select = document.getElementById("card-lookup-select");
+            if (input) input.value = id;
+            if (select) select.value = id;
+            updateCardLookupResult();
+        }
+
+        function loadLookupCardInEditor(id) {
+            closeCardLookupPanel();
+            const fn = window.loadCardDetails || (typeof loadCardDetails === "function" ? loadCardDetails : null);
+            if (fn) {
+                fn(id);
+                showToast("Card loaded into editor!");
+            }
+        }
+
+        function copyLookupCardId(id) {
+            navigator.clipboard.writeText(id).then(() => {
+                showToast("Card ID copied to clipboard!");
+            }).catch(() => {
+                showToast(`Card ID: ${id}`);
+            });
+        }
+
+        // Expose functions globally for inline HTML onclick attributes
+        window.openCardLookupModal = openCardLookupPanel;
+        window.openCardLookupPanel = openCardLookupPanel;
+        window.closeCardLookupModal = closeCardLookupPanel;
+        window.closeCardLookupPanel = closeCardLookupPanel;
+        window.onLookupSelectChange = onLookupSelectChange;
+        window.updateCardLookupResult = updateCardLookupResult;
+        window.selectLookupCardId = selectLookupCardId;
+        window.loadLookupCardInEditor = loadLookupCardInEditor;
+        window.copyLookupCardId = copyLookupCardId;
+
+        // Bind button click event listeners directly
+        document.getElementById("lookup-card-sidebar-btn")?.addEventListener("click", () => openCardLookupPanel());
+        document.getElementById("quest-lookup-card-btn")?.addEventListener("click", () => openCardLookupPanel());
 
         // Helper to normalize card properties on import
         function normalizeImportedCard(card) {
