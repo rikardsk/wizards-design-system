@@ -7862,10 +7862,11 @@
                     // Card Reward
                     const hasRewardCards = hasSectionsArray
                         ? activeSections.includes("rewardCards")
-                        : ((level.rewardCards || []).length > 0 || !!(level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice"));
+                        : ((level.rewardCards || []).length > 0 || !!(level.rewardCardRandomCategory || "").trim() || !!(level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice"));
                     if (hasRewardCards) {
                         out.rewardCardMode = VALID_MODES.includes(level.rewardCardMode) ? level.rewardCardMode : "choice";
                         if ((level.rewardCards || []).length) out.rewardCards = [...level.rewardCards];
+                        if ((level.rewardCardRandomCategory || "").trim()) out.rewardCardRandomCategory = level.rewardCardRandomCategory.trim();
                         if ((level.rewardCardRandomSubType || "").trim()) out.rewardCardRandomSubType = level.rewardCardRandomSubType.trim();
                     }
 
@@ -7963,6 +7964,7 @@
                     questDescription: level.questDescription || level.description || "",
                     rewardCards: Array.isArray(level.rewardCards) ? [...level.rewardCards] : [],
                     rewardCardMode: level.rewardCardMode || level.rewardCardsMode || "choice",
+                    rewardCardRandomCategory: level.rewardCardRandomCategory || level.rewardCardsRandomCategory || "",
                     rewardCardRandomSubType: level.rewardCardRandomSubType || level.rewardCardsRandomSubType || "",
                     rewardsDescription: level.rewardsDescription || "",
                     keywordRewardMode: level.keywordRewardMode || "choice",
@@ -8011,7 +8013,7 @@
                 if (Array.isArray(level.sections) && level.sections.length > 0) {
                     level.sections.forEach(s => secSet.add(s));
                 } else {
-                    if (l.rewardCards.length > 0 || l.rewardsDescription.trim() || l.rewardCardRandomSubType.trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) secSet.add("rewardCards");
+                    if (l.rewardCards.length > 0 || l.rewardsDescription.trim() || l.rewardCardRandomCategory.trim() || l.rewardCardRandomSubType.trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) secSet.add("rewardCards");
                     if (l.keywordRewardList.length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) secSet.add("keywordReward");
                     if (l.monsterUnlockManaCost !== 0) secSet.add("monsterUnlock");
                     if (l.manaReward && l.manaReward.amount > 0) secSet.add("manaReward");
@@ -9625,7 +9627,7 @@
             // Backward-compat: auto-detect active sections from existing data
             if (!Array.isArray(level.sections)) {
                 level.sections = ["questDesc"]; // questDesc is always mandatory
-                if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim() || (level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) level.sections.push("rewardCards");
+                if ((level.rewardCards || []).length > 0 || (level.rewardsDescription || "").trim() || (level.rewardCardRandomCategory || "").trim() || (level.rewardCardRandomSubType || "").trim() || (level.rewardCardMode && level.rewardCardMode !== "choice")) level.sections.push("rewardCards");
                 if ((level.keywordRewardList || []).length > 0 || (level.keywordRewardMode && level.keywordRewardMode !== "choice")) level.sections.push("keywordReward");
                 if (level.monsterUnlockManaCost !== undefined && level.monsterUnlockManaCost !== 0) level.sections.push("monsterUnlock");
                 if (level.manaReward && level.manaReward.amount > 0) level.sections.push("manaReward");
@@ -9863,7 +9865,7 @@
 
                     // Reset the section's data back to its default empty state
                     const SECTION_RESETS = {
-                        rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; level.rewardCardMode = "choice"; level.rewardCardRandomSubType = ""; },
+                        rewardCards:     () => { level.rewardCards = []; level.rewardsDescription = ""; level.rewardCardMode = "choice"; level.rewardCardRandomCategory = ""; level.rewardCardRandomSubType = ""; },
                         keywordReward:   () => { level.keywordRewardMode = "choice"; level.keywordRewardList = []; },
                         monsterUnlock:   () => { level.monsterUnlockManaCost = 0; },
                         manaReward:      () => { level.manaReward = { amount: 1, mode: "choice" }; },
@@ -11215,6 +11217,7 @@
                 description: "",
                 rewardCards: [],
                 rewardCardMode: "choice",
+                rewardCardRandomCategory: "",
                 rewardCardRandomSubType: "",
                 unlockCards: [],
                 opponents: [],
