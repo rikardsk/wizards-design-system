@@ -7909,9 +7909,13 @@
                     if ((level.opponentsDescription || "").trim()) out.opponentsDescription = level.opponentsDescription.trim();
                     if (level.opponentsPower !== undefined && level.opponentsPower !== 0) out.opponentsPower = level.opponentsPower;
                     if (level.opponentsQuestHp !== undefined && level.opponentsQuestHp !== 10) out.opponentsQuestHp = level.opponentsQuestHp;
+                    if (level.opponentsManaPool !== undefined && level.opponentsManaPool !== 0) out.opponentsManaPool = level.opponentsManaPool;
+                    if (level.opponentsSpells !== undefined && level.opponentsSpells !== 0) out.opponentsSpells = level.opponentsSpells;
                     if ((level.armySubTypes || []).length) out.armySubTypes = [...level.armySubTypes];
                     if (level.armyPower !== undefined && level.armyPower !== 0) out.armyPower = level.armyPower;
                     if (level.armyQuestHp !== undefined && level.armyQuestHp !== 10) out.armyQuestHp = level.armyQuestHp;
+                    if (level.armyManaPool !== undefined && level.armyManaPool !== 0) out.armyManaPool = level.armyManaPool;
+                    if (level.armySpells !== undefined && level.armySpells !== 0) out.armySpells = level.armySpells;
                     if (level.xpReward !== undefined && level.xpReward !== 0) out.xpReward = level.xpReward;
 
                     // attributeReward — omit if both are 0
@@ -7970,6 +7974,8 @@
                     opponentsDescription: level.opponentsDescription || "",
                     opponentsPower: level.opponentsPower !== undefined ? Number(level.opponentsPower) : 0,
                     opponentsQuestHp: level.opponentsQuestHp !== undefined ? Number(level.opponentsQuestHp) : 10,
+                    opponentsManaPool: level.opponentsManaPool !== undefined ? Number(level.opponentsManaPool) : 0,
+                    opponentsSpells: level.opponentsSpells !== undefined ? Number(level.opponentsSpells) : 0,
                     learnSpells: Array.isArray(level.learnSpells) ? [...level.learnSpells] : [],
                     learnSpellMode: level.learnSpellMode || "choice",
                     learnSpellRandomSubType: level.learnSpellRandomSubType || "",
@@ -7981,6 +7987,8 @@
                     armySubTypes: Array.isArray(level.armySubTypes) ? [...level.armySubTypes] : (level.armySubType ? [level.armySubType] : []),
                     armyPower: level.armyPower !== undefined ? Number(level.armyPower) : 0,
                     armyQuestHp: level.armyQuestHp !== undefined ? Number(level.armyQuestHp) : 10,
+                    armyManaPool: level.armyManaPool !== undefined ? Number(level.armyManaPool) : 0,
+                    armySpells: level.armySpells !== undefined ? Number(level.armySpells) : 0,
                     xpReward: level.xpReward !== undefined ? Number(level.xpReward) : 0,
                     collapsed: !!level.collapsed,
                     sectionCollapsed: level.sectionCollapsed || {},
@@ -8010,8 +8018,8 @@
                     if (l.attributeReward && (l.attributeReward.power !== 0 || l.attributeReward.toughness !== 0)) secSet.add("attributeReward");
                     if (l.learnSpells.length > 0 || l.learnSpellRandomSubType.trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) secSet.add("learnSpell");
                     if (l.companionRewards.length > 0 || l.companionRewardRandomSubType.trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) secSet.add("companionReward");
-                    if (l.opponents.length > 0 || l.opponentsDescription.trim() || l.opponentsPower !== 0) secSet.add("opponents");
-                    if (l.armySubTypes.length > 0 || l.armyPower !== 0) secSet.add("army");
+                    if (l.opponents.length > 0 || l.opponentsDescription.trim() || l.opponentsPower !== 0 || l.opponentsManaPool !== 0 || l.opponentsSpells !== 0) secSet.add("opponents");
+                    if (l.armySubTypes.length > 0 || l.armyPower !== 0 || l.armyManaPool !== 0 || l.armySpells !== 0) secSet.add("army");
                     if (l.xpReward !== 0) secSet.add("xpReward");
                 }
                 l.sections = Array.from(secSet);
@@ -9624,8 +9632,8 @@
                 if (level.attributeReward && (level.attributeReward.power !== 0 || level.attributeReward.toughness !== 0)) level.sections.push("attributeReward");
                 if ((level.learnSpells || []).length > 0 || (level.learnSpellRandomSubType || "").trim() || (level.learnSpellMode && level.learnSpellMode !== "choice")) level.sections.push("learnSpell");
                 if ((level.companionRewards || []).length > 0 || (level.companionRewardRandomSubType || "").trim() || (level.companionRewardMode && level.companionRewardMode !== "choice")) level.sections.push("companionReward");
-                if ((level.opponents || []).length > 0 || (level.opponentsDescription || "").trim()) level.sections.push("opponents");
-                if ((level.armySubTypes && level.armySubTypes.length > 0) || (level.armySubType || "").trim() || level.armyPower) level.sections.push("army");
+                if ((level.opponents || []).length > 0 || (level.opponentsDescription || "").trim() || level.opponentsPower || level.opponentsManaPool || level.opponentsSpells) level.sections.push("opponents");
+                if ((level.armySubTypes && level.armySubTypes.length > 0) || (level.armySubType || "").trim() || level.armyPower || level.armyManaPool || level.armySpells) level.sections.push("army");
                 if (level.xpReward) level.sections.push("xpReward");
             } else {
                 if (!level.sections.includes("questDesc")) level.sections.unshift("questDesc");
@@ -9715,17 +9723,25 @@
                         case "opponents": {
                             const names = cardNames(level.opponents);
                             const pwr = level.opponentsPower || 0;
+                            const mana = level.opponentsManaPool || 0;
+                            const spells = level.opponentsSpells || 0;
                             const parts = [];
                             if (names.length) parts.push(names.join(", "));
                             if (pwr !== 0) parts.push(`PWR ${pwr}`);
+                            if (mana !== 0) parts.push(`MANA ${mana}`);
+                            if (spells !== 0) parts.push(`SPL ${spells}`);
                             return parts.length ? `— ${parts.join(" · ")}` : "";
                         }
                         case "army": {
                             const subs = (level.armySubTypes || []);
                             const pwr = level.armyPower || 0;
+                            const mana = level.armyManaPool || 0;
+                            const spells = level.armySpells || 0;
                             const parts = [];
                             if (subs.length) parts.push(subs.join(", "));
                             if (pwr !== 0) parts.push(`PWR ${pwr}`);
+                            if (mana !== 0) parts.push(`MANA ${mana}`);
+                            if (spells !== 0) parts.push(`SPL ${spells}`);
                             return parts.length ? `— ${parts.join(" · ")}` : "";
                         }
                         case "learnSpell": {
@@ -9854,8 +9870,8 @@
                         attributeReward: () => { level.attributeReward = { power: 0, toughness: 0 }; },
                         learnSpell:      () => { level.learnSpells = []; level.learnSpellMode = "choice"; level.learnSpellRandomSubType = ""; },
                         companionReward: () => { level.companionRewards = []; level.companionRewardMode = "choice"; level.companionRewardRandomSubType = ""; },
-                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; level.opponentsQuestHp = 10; },
-                        army:            () => { level.armySubTypes = []; level.armyPower = 0; level.armyQuestHp = 10; },
+                        opponents:       () => { level.opponents = []; level.opponentsDescription = ""; level.opponentsPower = 0; level.opponentsQuestHp = 10; level.opponentsManaPool = 0; level.opponentsSpells = 0; },
+                        army:            () => { level.armySubTypes = []; level.armyPower = 0; level.armyQuestHp = 10; level.armyManaPool = 0; level.armySpells = 0; },
                         xpReward:        () => { level.xpReward = 0; },
                     };
                     if (SECTION_RESETS[def.key]) SECTION_RESETS[def.key]();
@@ -10477,26 +10493,71 @@
                     });
                     pb.appendChild(odTA);
 
-                    // Sub-section: Quest HP spinner
-                    const oHpHr = document.createElement("hr");
-                    oHpHr.className = "qs-sub-divider";
-                    pb.appendChild(oHpHr);
+                    // Sub-section: Single-row stats (Quest HP, Mana Pool, Spells)
+                    const oStatsHr = document.createElement("hr");
+                    oStatsHr.className = "qs-sub-divider";
+                    pb.appendChild(oStatsHr);
+
+                    const oStatsRow = document.createElement("div");
+                    oStatsRow.style.cssText = "display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px;";
+
+                    // Quest HP
+                    const oHpCol = document.createElement("div");
+                    oHpCol.style.cssText = "display:flex;align-items:center;gap:6px;";
                     const oHpSubLabel = document.createElement("div");
                     oHpSubLabel.className = "qs-sub-label";
-                    oHpSubLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP`;
-                    pb.appendChild(oHpSubLabel);
-                    const oHpRow = document.createElement("div");
-                    oHpRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    oHpSubLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP:`;
                     const oHpInput = document.createElement("input");
                     oHpInput.type = "number";
                     oHpInput.value = level.opponentsQuestHp !== undefined ? level.opponentsQuestHp : 10;
-                    oHpInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    oHpInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
                     oHpInput.addEventListener("input", () => {
                         level.opponentsQuestHp = oHpInput.value === "" ? 10 : Number(oHpInput.value);
                         saveQuestsToStorage();
                     });
-                    oHpRow.appendChild(oHpInput);
-                    pb.appendChild(oHpRow);
+                    oHpCol.appendChild(oHpSubLabel);
+                    oHpCol.appendChild(oHpInput);
+
+                    // Mana Pool (no clamp, default 0)
+                    const oManaCol = document.createElement("div");
+                    oManaCol.style.cssText = "display:flex;align-items:center;gap:6px;";
+                    const oManaSubLabel = document.createElement("div");
+                    oManaSubLabel.className = "qs-sub-label";
+                    oManaSubLabel.innerHTML = `<i class="fa-solid fa-droplet"></i> Mana Pool:`;
+                    const oManaInput = document.createElement("input");
+                    oManaInput.type = "number";
+                    oManaInput.value = level.opponentsManaPool !== undefined ? level.opponentsManaPool : 0;
+                    oManaInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    oManaInput.addEventListener("input", () => {
+                        level.opponentsManaPool = oManaInput.value === "" ? 0 : Number(oManaInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+                    oManaCol.appendChild(oManaSubLabel);
+                    oManaCol.appendChild(oManaInput);
+
+                    // Spells (default 0)
+                    const oSpellsCol = document.createElement("div");
+                    oSpellsCol.style.cssText = "display:flex;align-items:center;gap:6px;";
+                    const oSpellsSubLabel = document.createElement("div");
+                    oSpellsSubLabel.className = "qs-sub-label";
+                    oSpellsSubLabel.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Spells:`;
+                    const oSpellsInput = document.createElement("input");
+                    oSpellsInput.type = "number";
+                    oSpellsInput.value = level.opponentsSpells !== undefined ? level.opponentsSpells : 0;
+                    oSpellsInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    oSpellsInput.addEventListener("input", () => {
+                        level.opponentsSpells = oSpellsInput.value === "" ? 0 : Number(oSpellsInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+                    oSpellsCol.appendChild(oSpellsSubLabel);
+                    oSpellsCol.appendChild(oSpellsInput);
+
+                    oStatsRow.appendChild(oHpCol);
+                    oStatsRow.appendChild(oManaCol);
+                    oStatsRow.appendChild(oSpellsCol);
+                    pb.appendChild(oStatsRow);
 
                 } else if (def.key === "army") {
                     // Ensure armySubTypes is an array (migrate old string value)
@@ -10572,26 +10633,71 @@
                     armyPowerRow.appendChild(armyPowerInput);
                     pb.appendChild(armyPowerRow);
 
-                    // Sub-section: Quest HP spinner
-                    const armyHpHr = document.createElement("hr");
-                    armyHpHr.className = "qs-sub-divider";
-                    pb.appendChild(armyHpHr);
+                    // Sub-section: Single-row stats (Quest HP, Mana Pool, Spells)
+                    const armyStatsHr = document.createElement("hr");
+                    armyStatsHr.className = "qs-sub-divider";
+                    pb.appendChild(armyStatsHr);
+
+                    const armyStatsRow = document.createElement("div");
+                    armyStatsRow.style.cssText = "display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px;";
+
+                    // Quest HP
+                    const armyHpCol = document.createElement("div");
+                    armyHpCol.style.cssText = "display:flex;align-items:center;gap:6px;";
                     const armyHpLabel = document.createElement("div");
                     armyHpLabel.className = "qs-sub-label";
-                    armyHpLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP`;
-                    pb.appendChild(armyHpLabel);
-                    const armyHpRow = document.createElement("div");
-                    armyHpRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px;";
+                    armyHpLabel.innerHTML = `<i class="fa-solid fa-heart"></i> Quest HP:`;
                     const armyHpInput = document.createElement("input");
                     armyHpInput.type = "number";
                     armyHpInput.value = level.armyQuestHp !== undefined ? level.armyQuestHp : 10;
-                    armyHpInput.style.cssText = "width:80px;font-size:0.85rem;padding:4px 8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    armyHpInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
                     armyHpInput.addEventListener("input", () => {
                         level.armyQuestHp = armyHpInput.value === "" ? 10 : Number(armyHpInput.value);
                         saveQuestsToStorage();
                     });
-                    armyHpRow.appendChild(armyHpInput);
-                    pb.appendChild(armyHpRow);
+                    armyHpCol.appendChild(armyHpLabel);
+                    armyHpCol.appendChild(armyHpInput);
+
+                    // Mana Pool (no clamp, default 0)
+                    const armyManaCol = document.createElement("div");
+                    armyManaCol.style.cssText = "display:flex;align-items:center;gap:6px;";
+                    const armyManaLabel = document.createElement("div");
+                    armyManaLabel.className = "qs-sub-label";
+                    armyManaLabel.innerHTML = `<i class="fa-solid fa-droplet"></i> Mana Pool:`;
+                    const armyManaInput = document.createElement("input");
+                    armyManaInput.type = "number";
+                    armyManaInput.value = level.armyManaPool !== undefined ? level.armyManaPool : 0;
+                    armyManaInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    armyManaInput.addEventListener("input", () => {
+                        level.armyManaPool = armyManaInput.value === "" ? 0 : Number(armyManaInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+                    armyManaCol.appendChild(armyManaLabel);
+                    armyManaCol.appendChild(armyManaInput);
+
+                    // Spells (default 0)
+                    const armySpellsCol = document.createElement("div");
+                    armySpellsCol.style.cssText = "display:flex;align-items:center;gap:6px;";
+                    const armySpellsLabel = document.createElement("div");
+                    armySpellsLabel.className = "qs-sub-label";
+                    armySpellsLabel.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Spells:`;
+                    const armySpellsInput = document.createElement("input");
+                    armySpellsInput.type = "number";
+                    armySpellsInput.value = level.armySpells !== undefined ? level.armySpells : 0;
+                    armySpellsInput.style.cssText = "width:65px;font-size:0.85rem;padding:4px 6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;text-align:center;";
+                    armySpellsInput.addEventListener("input", () => {
+                        level.armySpells = armySpellsInput.value === "" ? 0 : Number(armySpellsInput.value);
+                        updateSummaryBadge();
+                        saveQuestsToStorage();
+                    });
+                    armySpellsCol.appendChild(armySpellsLabel);
+                    armySpellsCol.appendChild(armySpellsInput);
+
+                    armyStatsRow.appendChild(armyHpCol);
+                    armyStatsRow.appendChild(armyManaCol);
+                    armyStatsRow.appendChild(armySpellsCol);
+                    pb.appendChild(armyStatsRow);
                 } else if (def.key === "xpReward") {
                     // Sub-section: XP Spinner
                     const xpRow = document.createElement("div");
@@ -11112,6 +11218,10 @@
                 rewardCardRandomSubType: "",
                 unlockCards: [],
                 opponents: [],
+                opponentsPower: 0,
+                opponentsQuestHp: 10,
+                opponentsManaPool: 0,
+                opponentsSpells: 0,
                 learnSpells: [],
                 learnSpellMode: "choice",
                 companionRewards: [],
@@ -11120,6 +11230,9 @@
                 manaReward: { amount: 1, mode: "choice" },
                 armySubTypes: [],
                 armyPower: 0,
+                armyQuestHp: 10,
+                armyManaPool: 0,
+                armySpells: 0,
                 xpReward: 0,
                 sections: ["questDesc"],  // questDesc is always mandatory
                 sectionCollapsed: {}
