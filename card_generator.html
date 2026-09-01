@@ -8057,7 +8057,7 @@
                     opponentsSpells: level.opponentsSpells !== undefined ? Number(level.opponentsSpells) : 0,
                     learnSpells: Array.isArray(level.learnSpells) ? [...level.learnSpells] : [],
                     learnSpellMode: level.learnSpellMode || "choice",
-                    learnSpellRandomSubType: level.learnSpellRandomSubType || "",
+                    learnSpellRandomSubType: level.learnSpellRandomSubType || level.learnSpellsRandomSubType || level.learnSpellSubType || level.learnSpellsSubType || "",
                     companionRewards: Array.isArray(level.companionRewards) ? [...level.companionRewards] : [],
                     companionRewardMode: level.companionRewardMode || "choice",
                     companionRewardRandomSubType: level.companionRewardRandomSubType || "",
@@ -10587,46 +10587,60 @@
                     lsModeWrap.appendChild(lsPresetBtn);
                     pb.appendChild(lsModeWrap);
 
-                    // Sub type picker (Random mode only) — sourced from Spell cards in deck
+                    // Sub type picker (Random mode only) — styled identically to Choice/Preset subtype filter row
                     const lsSubTypeWrap = document.createElement("div");
-                    lsSubTypeWrap.style.display = level.learnSpellMode === "random" ? "" : "none";
-                    const lsSubLabel = document.createElement("div");
-                    lsSubLabel.className = "qs-sub-label";
-                    lsSubLabel.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Spell Sub Type`;
-                    lsSubTypeWrap.appendChild(lsSubLabel);
-                    const lsSubBtnGrid = document.createElement("div");
-                    lsSubBtnGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
-                    const lsSpellSubTypes = [...new Set(
-                        (state.deck || [])
-                            .filter(c => (c.cardType || "").trim() === "Spell" && (c.cardSubType || "").trim())
-                            .map(c => c.cardSubType.trim())
-                    )].sort((a, b) => a.localeCompare(b));
+                    lsSubTypeWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;align-items:center;";
+                    lsSubTypeWrap.style.display = level.learnSpellMode === "random" ? "flex" : "none";
+
                     function refreshLsSubTypeBtns() {
-                        lsSubBtnGrid.innerHTML = "";
-                        if (lsSpellSubTypes.length === 0) {
-                            const empty = document.createElement("span");
-                            empty.style.cssText = "font-size:0.75rem;color:var(--text-muted);padding:4px 2px;";
-                            empty.textContent = "No spell sub types found in deck.";
-                            lsSubBtnGrid.appendChild(empty);
-                            return;
-                        }
-                        lsSpellSubTypes.forEach(sub => {
-                            const isActive = level.learnSpellRandomSubType === sub;
+                        lsSubTypeWrap.innerHTML = "";
+                        if (level.learnSpellMode !== "random") return;
+
+                        const subLabel = document.createElement("span");
+                        subLabel.style.cssText = "font-size:0.65rem;color:var(--text-muted);margin-right:2px;opacity:0.7;";
+                        subLabel.textContent = "Subtype:";
+                        lsSubTypeWrap.appendChild(subLabel);
+
+                        const activeSub = level.learnSpellRandomSubType || "";
+
+                        function makePillBtn(label, isActive) {
                             const btn = document.createElement("button");
                             btn.type = "button";
-                            btn.textContent = sub;
-                            btn.style.cssText = `font-size:0.75rem;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(196,181,253,0.6)' : 'rgba(255,255,255,0.1)'};background:${isActive ? 'rgba(167,139,250,0.22)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#c4b5fd' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            btn.textContent = label;
+                            btn.style.cssText = `font-size:0.67rem;padding:2px 8px;border-radius:4px;cursor:pointer;transition:all 0.15s;border:1px solid ${isActive ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.08)'};background:${isActive ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)'};color:${isActive ? '#c4b5fd' : 'var(--text-muted)'};font-weight:${isActive ? '600' : 'normal'};`;
+                            return btn;
+                        }
+
+                        // "Any" reset button
+                        const anyBtn = makePillBtn("Any", activeSub === "");
+                        anyBtn.addEventListener("click", () => {
+                            if (level.learnSpellRandomSubType === "") return;
+                            level.learnSpellRandomSubType = "";
+                            updateSummaryBadge();
+                            saveQuestsToStorage();
+                            refreshLsSubTypeBtns();
+                        });
+                        lsSubTypeWrap.appendChild(anyBtn);
+
+                        const lsSpellSubTypes = [...new Set(
+                            (state.deck || [])
+                                .filter(c => (c.cardType || "").trim() === "Spell" && (c.cardSubType || "").trim())
+                                .map(c => c.cardSubType.trim())
+                        )].sort((a, b) => a.localeCompare(b));
+
+                        lsSpellSubTypes.forEach(sub => {
+                            const btn = makePillBtn(sub, activeSub === sub);
                             btn.addEventListener("click", () => {
-                                level.learnSpellRandomSubType = isActive ? "" : sub;
+                                if (level.learnSpellRandomSubType === sub) return;
+                                level.learnSpellRandomSubType = sub;
                                 updateSummaryBadge();
                                 saveQuestsToStorage();
                                 refreshLsSubTypeBtns();
                             });
-                            lsSubBtnGrid.appendChild(btn);
+                            lsSubTypeWrap.appendChild(btn);
                         });
                     }
                     refreshLsSubTypeBtns();
-                    lsSubTypeWrap.appendChild(lsSubBtnGrid);
                     pb.appendChild(lsSubTypeWrap);
 
                     // Card chips (Choice & Preset modes)
@@ -10645,8 +10659,9 @@
                         lsRandomBtn.classList.toggle("active", mode === "random");
                         lsChoiceBtn.classList.toggle("active", mode === "choice");
                         lsPresetBtn.classList.toggle("active", mode === "preset");
-                        lsSubTypeWrap.style.display = mode === "random" ? "" : "none";
+                        lsSubTypeWrap.style.display = mode === "random" ? "flex" : "none";
                         lsChipsWrap.style.display = mode !== "random" ? "" : "none";
+                        if (mode === "random") refreshLsSubTypeBtns();
                         renderLsChips();
                         updateSummaryBadge();
                         saveQuestsToStorage();
@@ -11252,8 +11267,21 @@
 
             const wrapper = document.createElement("div");
 
-            let activeCategory = defaultCategory; // "all" or a cardType name
-            let activeSubtype = ""; // "" means no subtype filter
+            let activeCategory = level[field + "FilterCategory"] || defaultCategory; // "all" or a cardType name
+            let activeSubtype = level[field + "FilterSubtype"] !== undefined
+                ? level[field + "FilterSubtype"]
+                : (field === "learnSpells" ? (level.learnSpellRandomSubType || "")
+                  : field === "rewardCards" ? (level.rewardCardRandomSubType || "")
+                  : field === "companionRewards" ? (level.companionRewardRandomSubType || "") : "");
+
+            function setSubtypeFilter(sub) {
+                activeSubtype = sub;
+                level[field + "FilterSubtype"] = sub;
+                if (field === "learnSpells") level.learnSpellRandomSubType = sub;
+                if (field === "rewardCards") level.rewardCardRandomSubType = sub;
+                if (field === "companionRewards") level.companionRewardRandomSubType = sub;
+                saveQuestsToStorage();
+            }
 
             // ── Helper: get the base card list (applying base exclusions) ────────
             function getBaseCards() {
@@ -11298,7 +11326,8 @@
                 });
                 const subs = new Set();
                 cards.forEach(c => { if (c.cardSubType && c.cardSubType.trim()) subs.add(c.cardSubType.trim()); });
-                return Array.from(subs).sort();
+                if (activeSubtype && activeSubtype.trim()) subs.add(activeSubtype.trim());
+                return Array.from(subs).sort((a, b) => a.localeCompare(b));
             }
 
             // ── Refresh the select dropdown ──────────────────────────────────────
@@ -11328,7 +11357,7 @@
                 const anyBtn = makeFilterBtn("Any", activeSubtype === "");
                 anyBtn.addEventListener("click", () => {
                     if (activeSubtype === "") return;
-                    activeSubtype = "";
+                    setSubtypeFilter("");
                     renderSubtypeRow();
                     refreshSelect();
                 });
@@ -11338,7 +11367,7 @@
                     const btn = makeFilterBtn(sub, activeSubtype === sub);
                     btn.addEventListener("click", () => {
                         if (activeSubtype === sub) return;
-                        activeSubtype = sub;
+                        setSubtypeFilter(sub);
                         renderSubtypeRow();
                         refreshSelect();
                     });
@@ -11388,7 +11417,8 @@
                         } else {
                             activeCategory = typeName;
                         }
-                        activeSubtype = ""; // reset subtype when type changes
+                        level[field + "FilterCategory"] = activeCategory;
+                        setSubtypeFilter(""); // reset subtype when type changes
                         renderTypeRow();
                         renderSubtypeRow();
                         refreshSelect();
@@ -11566,8 +11596,10 @@
                 opponentsSpells: 0,
                 learnSpells: [],
                 learnSpellMode: "choice",
+                learnSpellRandomSubType: "",
                 companionRewards: [],
                 companionRewardMode: "choice",
+                companionRewardRandomSubType: "",
                 attributeReward: { power: 0, toughness: 0 },
                 manaReward: { amount: 1, mode: "choice" },
                 armySubTypes: [],
