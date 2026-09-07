@@ -1317,6 +1317,32 @@
             height: 11px;
         }
 
+        .deck-card-use-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            font-size: 0.85rem;
+            transition: color 0.2s, transform 0.15s, opacity 0.2s;
+            margin-right: 2px;
+        }
+
+        .deck-card-use-btn:hover {
+            color: var(--accent-gold);
+            transform: scale(1.1);
+        }
+
+        .deck-card-use-btn.active {
+            color: #ef4444;
+            opacity: 0.9;
+        }
+
+        .deck-card-use-btn.active:hover {
+            color: #f87171;
+            transform: scale(1.15);
+        }
+
         .deck-card-delete-btn {
             background: none;
             border: none;
@@ -1329,6 +1355,17 @@
 
         .deck-card-delete-btn:hover {
             color: var(--danger);
+        }
+
+        .deck-card-row.not-in-use {
+            opacity: 0.55;
+            filter: grayscale(40%);
+            border-left: 3px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .deck-card-row.not-in-use .deck-card-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
         }
 
         .deck-empty-placeholder {
@@ -1655,6 +1692,98 @@
         
         .close-modal-btn:hover {
             color: var(--danger);
+        }
+
+        /* ─── Deck Card Delete Modal Styling ─── */
+        .delete-card-modal-content {
+            width: 440px;
+            max-width: 92%;
+            border-color: rgba(239, 68, 68, 0.45);
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.25), 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .delete-card-header h3 {
+            color: #ef4444 !important;
+            text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .delete-card-warning-icon {
+            font-size: 1.25rem;
+            color: #ef4444;
+            animation: pulseWarning 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseWarning {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .delete-card-preview-box {
+            background: rgba(18, 22, 45, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .delete-card-preview-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--card-frame-color, #ef4444);
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .delete-card-preview-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .delete-card-preview-name {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .delete-card-preview-type {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .delete-card-preview-mana {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .delete-card-preview-mana svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .delete-card-warning-msg {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: var(--text-color);
+            margin-bottom: 18px;
         }
         
         .keyword-input-row {
@@ -3017,6 +3146,17 @@
                             <option value="">All Abilities</option>
                         </select>
                     </div>
+                    <div class="filter-group">
+                        <div class="filter-label">
+                            <span>Filter by Usage</span>
+                            <button class="clear-filters-btn" id="clear-status-filters-btn">Clear</button>
+                        </div>
+                        <select id="status-filter-select" class="subtype-filter-select">
+                            <option value="">All Cards (Active & Not in Use)</option>
+                            <option value="active">Active / In Use Only</option>
+                            <option value="not_in_use">Not in Use Only</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Deck items container -->
@@ -3164,6 +3304,32 @@
                 <div style="display: flex; justify-content: flex-end; gap: 12px;">
                     <button type="button" class="secondary-btn" id="confirm-cancel-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; margin: 0;">Cancel</button>
                     <button type="button" class="danger-btn" id="confirm-ok-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; margin: 0;">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Delete Card / Clear Deck Modal for Deck Manager -->
+    <div class="modal-overlay" id="delete-deck-card-modal">
+        <div class="modal-content delete-card-modal-content">
+            <div class="modal-header delete-card-header">
+                <h3 id="delete-card-modal-title">
+                    <i class="fa-solid fa-triangle-exclamation delete-card-warning-icon"></i> <span id="delete-card-modal-title-text">Delete Card</span>
+                </h3>
+                <button type="button" class="close-modal-btn" id="close-delete-card-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-bottom: 8px;">
+                <div id="delete-card-preview-container" class="delete-card-preview-box">
+                    <!-- Dynamic preview card content -->
+                </div>
+                <p id="delete-card-modal-msg" class="delete-card-warning-msg">
+                    Are you sure you want to delete this card from your deck? This action cannot be undone.
+                </p>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+                    <button type="button" class="secondary-btn" id="cancel-delete-card-btn" style="width: auto; padding: 8px 18px; font-size: 0.85rem; margin: 0;">Cancel</button>
+                    <button type="button" class="danger-btn" id="confirm-delete-card-btn" style="width: auto; padding: 8px 18px; font-size: 0.85rem; margin: 0;">
+                        <i class="fa-solid fa-trash-can"></i> <span id="confirm-delete-card-btn-text">Delete Card</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -3820,6 +3986,108 @@
             if (!affirmationModal) return;
             affirmationModal.classList.remove("show");
             affirmationCallback = null;
+        }
+
+        // Delete Deck Card Modal DOM Elements & Logic
+        const deleteDeckCardModal = document.getElementById("delete-deck-card-modal");
+        const closeDeleteCardModalBtn = document.getElementById("close-delete-card-modal-btn");
+        const cancelDeleteCardBtn = document.getElementById("cancel-delete-card-btn");
+        const confirmDeleteCardBtn = document.getElementById("confirm-delete-card-btn");
+        const deleteCardModalTitleText = document.getElementById("delete-card-modal-title-text");
+        const deleteCardPreviewContainer = document.getElementById("delete-card-preview-container");
+        const deleteCardModalMsg = document.getElementById("delete-card-modal-msg");
+        const confirmDeleteCardBtnText = document.getElementById("confirm-delete-card-btn-text");
+
+        let pendingDeleteAction = null;
+
+        function getFrameColorCss(frameStyle) {
+            const map = {
+                white: "#f8fafc",
+                blue: "#3b82f6",
+                black: "#64748b",
+                red: "#ef4444",
+                green: "#22c55e",
+                gold: "#eab308",
+                colorless: "#94a3b8",
+                artifact: "#cbd5e1"
+            };
+            return map[(frameStyle || "").toLowerCase()] || "#ef4444";
+        }
+
+        function renderDeleteCardPreview(options) {
+            if (!deleteCardPreviewContainer) return;
+            deleteCardPreviewContainer.innerHTML = "";
+            deleteCardPreviewContainer.style.display = "flex";
+
+            if (options.card) {
+                const frameColor = options.card.frameStyle || "red";
+                deleteCardPreviewContainer.style.setProperty("--card-frame-color", getFrameColorCss(frameColor));
+
+                const infoDiv = document.createElement("div");
+                infoDiv.className = "delete-card-preview-info";
+
+                const nameDiv = document.createElement("div");
+                nameDiv.className = "delete-card-preview-name";
+                nameDiv.textContent = options.card.cardName || "Unnamed Card";
+
+                const typeDiv = document.createElement("div");
+                typeDiv.className = "delete-card-preview-type";
+                let typeStr = options.card.cardType || "Creature";
+                if (options.card.cardSubType) typeStr += " — " + options.card.cardSubType;
+                typeDiv.textContent = typeStr;
+
+                infoDiv.appendChild(nameDiv);
+                infoDiv.appendChild(typeDiv);
+
+                const manaDiv = document.createElement("div");
+                manaDiv.className = "delete-card-preview-mana";
+                if (Array.isArray(options.card.manaCost)) {
+                    options.card.manaCost.forEach(sym => manaDiv.appendChild(createManaSvg(sym)));
+                }
+
+                deleteCardPreviewContainer.appendChild(infoDiv);
+                deleteCardPreviewContainer.appendChild(manaDiv);
+                return;
+            }
+
+            if (options.cardCount !== undefined) {
+                deleteCardPreviewContainer.style.setProperty("--card-frame-color", "#ef4444");
+                const infoDiv = document.createElement("div");
+                infoDiv.className = "delete-card-preview-info";
+                const nameDiv = document.createElement("div");
+                nameDiv.className = "delete-card-preview-name";
+                nameDiv.textContent = `${options.cardCount} Cards in Deck`;
+                const typeDiv = document.createElement("div");
+                typeDiv.className = "delete-card-preview-type";
+                typeDiv.textContent = "All cards in the current deck will be permanently removed.";
+
+                infoDiv.appendChild(nameDiv);
+                infoDiv.appendChild(typeDiv);
+                deleteCardPreviewContainer.appendChild(infoDiv);
+                return;
+            }
+
+            deleteCardPreviewContainer.style.display = "none";
+        }
+
+        function showDeleteCardConfirmation(options) {
+            if (!deleteDeckCardModal) return;
+
+            if (deleteCardModalTitleText) deleteCardModalTitleText.textContent = options.title || "Delete Card";
+            if (deleteCardModalMsg) deleteCardModalMsg.textContent = options.message || "Are you sure you want to delete this card from your deck?";
+            if (confirmDeleteCardBtnText) confirmDeleteCardBtnText.textContent = options.btnText || "Delete Card";
+
+            renderDeleteCardPreview(options);
+
+            pendingDeleteAction = options.onConfirm;
+            deleteDeckCardModal.classList.add("show");
+            if (confirmDeleteCardBtn) confirmDeleteCardBtn.focus();
+        }
+
+        function closeDeleteCardModal() {
+            if (!deleteDeckCardModal) return;
+            deleteDeckCardModal.classList.remove("show");
+            pendingDeleteAction = null;
         }
 
         // Helper to combine colorless mana in an array and move it to the front
@@ -4754,6 +5022,44 @@
                 });
             }
 
+            // Delete Deck Card Modal Event Listeners
+            if (closeDeleteCardModalBtn) {
+                closeDeleteCardModalBtn.addEventListener("click", closeDeleteCardModal);
+            }
+            if (cancelDeleteCardBtn) {
+                cancelDeleteCardBtn.addEventListener("click", closeDeleteCardModal);
+            }
+            if (deleteDeckCardModal) {
+                deleteDeckCardModal.addEventListener("click", (e) => {
+                    if (e.target === deleteDeckCardModal) {
+                        closeDeleteCardModal();
+                    }
+                });
+            }
+            if (confirmDeleteCardBtn) {
+                confirmDeleteCardBtn.addEventListener("click", () => {
+                    if (typeof pendingDeleteAction === "function") {
+                        pendingDeleteAction();
+                    }
+                    closeDeleteCardModal();
+                });
+            }
+
+            // Global Keydown listener for modal ESC and Enter key accessibility
+            window.addEventListener("keydown", (e) => {
+                if (deleteDeckCardModal && deleteDeckCardModal.classList.contains("show")) {
+                    if (e.key === "Escape") {
+                        closeDeleteCardModal();
+                    } else if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (typeof pendingDeleteAction === "function") {
+                            pendingDeleteAction();
+                        }
+                        closeDeleteCardModal();
+                    }
+                }
+            });
+
             // Function to handle adding keyword
             const handleAddKeyword = () => {
                 const keyword = newKeywordInput.value.trim();
@@ -5676,6 +5982,7 @@
             state.rulesText = "";
             state.customDescription = "";
             state.customDescriptionItalic = true;
+            state.notInUse = false;
             state.power = "1";
             state.toughness = "1";
             state.upkeepCost = [];
@@ -5746,6 +6053,7 @@
                 rulesText: state.rulesText || "",
                 customDescription: getEffectiveCustomDescription(state),
                 customDescriptionItalic: state.customDescriptionItalic !== false,
+                notInUse: !!state.notInUse,
                 upkeepCost: [...(state.upkeepCost || [])],
                 spells: [...(state.deckSpells || [])],
                 companions: [...(state.deckCompanions || [])],
@@ -5784,22 +6092,55 @@
                 if (card.cardSubType) typeStr += " — " + card.cardSubType;
                 typeSpan.textContent = typeStr;
             }
+            if (card.notInUse) {
+                row.classList.add("not-in-use");
+            } else {
+                row.classList.remove("not-in-use");
+            }
+            const useBtn = row.querySelector(".deck-card-use-btn");
+            if (useBtn) {
+                useBtn.className = "deck-card-use-btn" + (card.notInUse ? " active" : "");
+                useBtn.innerHTML = card.notInUse ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-circle-check"></i>';
+                useBtn.title = card.notInUse ? "Card is marked as Not in Use (click to activate)" : "Card is Active / In Use (click to mark Not in Use)";
+            }
+        }
+
+        // Toggle card "not in use" property
+        function toggleCardNotInUse(id) {
+            const card = (state.deck || []).find(c => c.id === id);
+            if (!card) return;
+
+            card.notInUse = !card.notInUse;
+            if (state.selectedCardId === id) {
+                state.notInUse = card.notInUse;
+            }
+
+            saveDeckToStorage();
+            renderDeckList();
+            showToast(card.notInUse ? `"${card.cardName}" marked as Not in Use.` : `"${card.cardName}" marked as Active.`);
         }
 
         // Delete card from deck
         function deleteCard(id, e) {
-            e.stopPropagation(); // Avoid loading card on row click
-            if (!confirm("Are you sure you want to delete this card from the deck?")) return;
-            
-            state.deck = state.deck.filter(c => c.id !== id);
-            
-            if (state.selectedCardId === id) {
-                resetForm();
-            }
-            
-            saveDeckToStorage();
-            renderDeckList();
-            showToast("Card deleted from deck.");
+            if (e) e.stopPropagation(); // Avoid loading card on row click
+            const card = (state.deck || []).find(c => c.id === id);
+            if (!card) return;
+
+            showDeleteCardConfirmation({
+                title: "Delete Card",
+                message: `Are you sure you want to delete "${card.cardName || 'this card'}" from the deck? This action cannot be undone.`,
+                card: card,
+                btnText: "Delete Card",
+                onConfirm: () => {
+                    state.deck = state.deck.filter(c => c.id !== id);
+                    if (state.selectedCardId === id) {
+                        resetForm();
+                    }
+                    saveDeckToStorage();
+                    renderDeckList();
+                    showToast("Card deleted from deck.");
+                }
+            });
         }
 
         // Load card details from deck item click
@@ -5818,6 +6159,7 @@
             state.rulesText = card.rulesText || "";
             state.customDescription = card.customDescription || "";
             state.customDescriptionItalic = card.customDescriptionItalic !== false;
+            state.notInUse = !!card.notInUse;
             state.power = card.power;
             state.toughness = card.toughness;
             state.upkeepCost = mergeColorlessMana(card.upkeepCost || []);
@@ -7089,6 +7431,7 @@
         let activeSubtypeFilter = "";
         let activeKeywordFilter = "";
         let activeAbilityFilter = "";
+        let activeStatusFilter = "";
         let activeSpellSubtypeFilter = "";
         let activeCompanionSubtypeFilter = "";
 
@@ -7150,6 +7493,13 @@
                 if (!card.activatedAbilities || !card.activatedAbilities.some(ab => ab.text && ab.text.trim().toLowerCase() === activeAbilityFilter.toLowerCase())) {
                     return false;
                 }
+            }
+
+            // 6. Status / Usage filtering
+            if (activeStatusFilter === "active") {
+                if (card.notInUse) return false;
+            } else if (activeStatusFilter === "not_in_use") {
+                if (!card.notInUse) return false;
             }
 
             return true;
@@ -7344,6 +7694,15 @@
                 });
             }
 
+            const statusSelect = document.getElementById("status-filter-select");
+            if (statusSelect) {
+                statusSelect.addEventListener("change", (e) => {
+                    activeStatusFilter = e.target.value;
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
             document.getElementById("clear-mana-filters-btn").addEventListener("click", () => {
                 activeManaFilters.clear();
                 document.querySelectorAll(".mana-filter-btn").forEach(btn => btn.classList.remove("active"));
@@ -7390,6 +7749,16 @@
                 });
             }
 
+            const clearStatusBtn = document.getElementById("clear-status-filters-btn");
+            if (clearStatusBtn) {
+                clearStatusBtn.addEventListener("click", () => {
+                    activeStatusFilter = "";
+                    if (statusSelect) statusSelect.value = "";
+                    updateClearFilterButtonsVisibility();
+                    renderDeckList();
+                });
+            }
+
             const resetDeckFiltersBtn = document.getElementById("reset-deck-filters-btn");
             if (resetDeckFiltersBtn) {
                 resetDeckFiltersBtn.addEventListener("click", () => {
@@ -7407,6 +7776,9 @@
                     
                     activeAbilityFilter = "";
                     if (abilitySelect) abilitySelect.value = "";
+                    
+                    activeStatusFilter = "";
+                    if (statusSelect) statusSelect.value = "";
                     
                     populateDependentFilterSelects();
                     updateClearFilterButtonsVisibility();
@@ -7461,6 +7833,11 @@
             const clearAbilityBtn = document.getElementById("clear-ability-filters-btn");
             if (clearAbilityBtn) {
                 clearAbilityBtn.style.display = activeAbilityFilter ? "inline-block" : "none";
+            }
+
+            const clearStatusBtn = document.getElementById("clear-status-filters-btn");
+            if (clearStatusBtn) {
+                clearStatusBtn.style.display = activeStatusFilter ? "inline-block" : "none";
             }
         }
 
@@ -7722,7 +8099,7 @@
             const filteredDeck = sortedDeck(state.deck.filter(cardMatchesFilters));
 
             // Update deck count text
-            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter || activeKeywordFilter || activeAbilityFilter) {
+            if (activeManaFilters.size > 0 || activeTypeFilters.size > 0 || activeSubtypeFilter || activeKeywordFilter || activeAbilityFilter || activeStatusFilter) {
                 deckCount.textContent = `${filteredDeck.length} of ${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} shown`;
             } else {
                 deckCount.textContent = `${state.deck.length} Card${state.deck.length === 1 ? '' : 's'} in Deck`;
@@ -7794,12 +8171,30 @@
                     row.appendChild(info);
                 }
 
+                if (card.notInUse) {
+                    row.classList.add("not-in-use");
+                }
+
+                const notInUseBtn = document.createElement("button");
+                notInUseBtn.className = "deck-card-use-btn" + (card.notInUse ? " active" : "");
+                notInUseBtn.innerHTML = card.notInUse 
+                    ? '<i class="fa-solid fa-ban"></i>' 
+                    : '<i class="fa-solid fa-circle-check"></i>';
+                notInUseBtn.title = card.notInUse 
+                    ? "Card is marked as Not in Use (click to activate)" 
+                    : "Card is Active / In Use (click to mark Not in Use)";
+                notInUseBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    toggleCardNotInUse(card.id);
+                });
+
                 const deleteBtn = document.createElement("button");
                 deleteBtn.className = "deck-card-delete-btn";
                 deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
                 deleteBtn.title = "Delete card";
                 deleteBtn.addEventListener("click", (e) => deleteCard(card.id, e));
 
+                row.appendChild(notInUseBtn);
                 row.appendChild(deleteBtn);
                 deckListContainer.appendChild(row);
             });
@@ -7851,12 +8246,24 @@
 
         // Clear entire deck list
         function clearDeck() {
-            if (!confirm("Are you sure you want to clear the entire deck? This cannot be undone.")) return;
-            state.deck = [];
-            saveDeckToStorage();
-            renderDeckList();
-            resetForm();
-            showToast("Deck cleared!");
+            if (!state.deck || state.deck.length === 0) {
+                showToast("Deck is already empty.");
+                return;
+            }
+
+            showDeleteCardConfirmation({
+                title: "Clear Entire Deck",
+                message: `Are you sure you want to clear all ${state.deck.length} cards from the deck? This action cannot be undone.`,
+                cardCount: state.deck.length,
+                btnText: "Clear All Cards",
+                onConfirm: () => {
+                    state.deck = [];
+                    saveDeckToStorage();
+                    renderDeckList();
+                    resetForm();
+                    showToast("Deck cleared!");
+                }
+            });
         }
 
         // Get JSON config for the current card under edit
@@ -7874,6 +8281,7 @@
                 rulesText: state.rulesText || "",
                 customDescription: state.customDescription || "",
                 customDescriptionItalic: state.customDescriptionItalic !== false,
+                notInUse: !!state.notInUse,
                 upkeepCost: [...(state.upkeepCost || [])],
                 spells: [...(state.deckSpells || [])],
                 companions: [...(state.deckCompanions || [])],
@@ -8135,6 +8543,7 @@
                     rulesText: card.rulesText || "",
                     customDescription: card.customDescription || "",
                     customDescriptionItalic: card.customDescriptionItalic !== false,
+                    notInUse: !!card.notInUse,
                     upkeepCost: Array.isArray(card.upkeepCost) ? card.upkeepCost : [],
                     spells: Array.isArray(card.spells) ? card.spells : [],
                     companions: Array.isArray(card.companions) ? card.companions : [],
@@ -8518,6 +8927,7 @@
                 rulesText: card.rulesText || "",
                 customDescription: card.customDescription || "",
                 customDescriptionItalic: card.customDescriptionItalic !== false,
+                notInUse: !!(card.notInUse || card.not_in_use || card.unused),
                 upkeepCost: Array.isArray(card.upkeepCost) ? [...card.upkeepCost] : [],
                 spells: Array.isArray(card.spells) ? [...card.spells] : [],
                 companions: Array.isArray(card.companions) ? [...card.companions] : [],
