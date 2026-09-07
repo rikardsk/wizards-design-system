@@ -2948,6 +2948,9 @@
                             <!-- Map Coordinates -->
                             <div id="quest-map-coords"></div>
 
+                            <!-- Quest Options / Toggles -->
+                            <div id="quest-settings-toggles"></div>
+
                             <!-- Levels Section -->
                             <div>
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -8308,6 +8311,36 @@
             jsonPreviewModal.classList.add("show");
         }
 
+        // Auto-assign default map coordinates and tile names for known quests
+        function applyDefaultQuestProperties(quest) {
+            if (!quest) return;
+            const lookupKey = (quest.id || quest.cardId || "").toLowerCase();
+            const nameKey = (quest.name || quest.cardName || "").toLowerCase().trim();
+
+            const defaults = [
+                { match: ["tower_of_terror", "tower of terror"], x: 5, y: 4, tileName: "Tower of terror.png" },
+                { match: ["dragons_nest", "dragons nest", "dragon's nest"], x: 5, y: 0, tileName: "Dragons Nest.png" },
+                { match: ["ancient_temple_ruins", "ancient temple ruins"], x: 5, y: 2, tileName: "Ancient Temple Ruins.png" },
+                { match: ["city_of_the_dead", "city of the dead"], x: 5, y: 8, tileName: "City of the dead.png" },
+                { match: ["goblin_camp", "goblin camp"], x: 9, y: 1, tileName: "Goblin Camp.png" },
+                { match: ["crypt_of_the_undead", "crypt of the undead"], x: 9, y: 7, tileName: "Crypt of the undead.png" },
+                { match: ["gladiator_school", "gladiator school"], x: 3, y: 7, tileName: "Gladiator School.png" },
+                { match: ["battle_arena", "battle arena"], x: 5, y: 5, tileName: "Battle Arena.png" },
+                { match: ["dragons_lair", "dragons lair", "dragon's lair"], x: 6, y: 4, tileName: "Dragons Lair.png" },
+                { match: ["tower_of_power", "tower of power"], x: 2, y: 1, tileName: "Tower of Power.png" }
+            ];
+
+            const found = defaults.find(d => d.match.some(m => lookupKey.includes(m) || nameKey.includes(m)));
+            if (found) {
+                if (!quest.mapCoords || (quest.mapCoords.x === 0 && quest.mapCoords.y === 0)) {
+                    quest.mapCoords = { x: found.x, y: found.y };
+                }
+                if (!quest.tileName || !quest.tileName.trim()) {
+                    quest.tileName = found.tileName;
+                }
+            }
+        }
+
         // ── Strip empty / default quest fields from export output ──────────────
         function normalizeQuestForExport(quest) {
             const out = {
@@ -8316,16 +8349,19 @@
                 name:   quest.name || "Unnamed Quest",
             };
 
-            // Map coordinates — only include when non-zero
+            // Map coordinates — include when set
             const coords = quest.mapCoords;
-            if (coords && (coords.x !== 0 || coords.y !== 0)) {
-                out.mapCoords = { x: coords.x, y: coords.y };
+            if (coords && coords.x !== undefined && coords.y !== undefined) {
+                out.mapCoords = { x: Number(coords.x) || 0, y: Number(coords.y) || 0 };
             }
 
             // Tile Name — only include when set
             if (quest.tileName && quest.tileName.trim()) {
                 out.tileName = quest.tileName.trim();
             }
+
+            if (quest.placeTileAtStart !== undefined) out.placeTileAtStart = !!quest.placeTileAtStart;
+            if (quest.enabled !== undefined) out.enabled = !!quest.enabled;
 
             out.levels = (quest.levels || []).map(level => {
                     const out = {};
@@ -8439,9 +8475,14 @@
                 cardId: quest.cardId || quest.id || "",
                 name: quest.name || quest.cardName || "Unnamed Quest",
                 tileName: quest.tileName || "",
-                mapCoords: quest.mapCoords ? { x: Number(quest.mapCoords.x) || 0, y: Number(quest.mapCoords.y) || 0 } : { x: 0, y: 0 },
+                mapCoords: quest.mapCoords ? { x: Number(quest.mapCoords.x) || 0, y: Number(quest.mapCoords.y) || 0 } : undefined,
+                placeTileAtStart: quest.placeTileAtStart !== undefined ? !!quest.placeTileAtStart : true,
+                enabled: quest.enabled !== undefined ? !!quest.enabled : true,
                 levels: []
             };
+
+            applyDefaultQuestProperties(q);
+            if (!q.mapCoords) q.mapCoords = { x: 0, y: 0 };
 
             q.levels = (quest.levels || []).map(level => {
                 const l = {
@@ -9989,6 +10030,7 @@
                     quest.cardId = card.id;
                     quest.name = card.cardName || card.name || quest.name || "Unnamed Quest";
                 }
+                applyDefaultQuestProperties(quest);
             });
         }
 
@@ -10096,6 +10138,7 @@
 
             renderQuestTileName(quest);
             renderQuestMapCoords(quest);
+            renderQuestSettingsToggles(quest);
             renderQuestLevels(quest);
         }
 
@@ -10105,6 +10148,9 @@
             if (!container) return;
             container.innerHTML = "";
 
+            if (!quest.tileName || !quest.tileName.trim()) {
+                applyDefaultQuestProperties(quest);
+            }
             if (quest.tileName === undefined) quest.tileName = "";
 
             const lbl = document.createElement("label");
@@ -10139,6 +10185,9 @@
             if (!container) return;
             container.innerHTML = "";
 
+            if (!quest.mapCoords || (quest.mapCoords.x === 0 && quest.mapCoords.y === 0)) {
+                applyDefaultQuestProperties(quest);
+            }
             if (!quest.mapCoords) quest.mapCoords = { x: 0, y: 0 };
 
             const row = document.createElement("div");
@@ -10199,6 +10248,62 @@
             });
             row.appendChild(resetBtn);
 
+            container.appendChild(row);
+        }
+
+        // ── Render placeTileAtStart and enabled toggles for the active quest ──
+        function renderQuestSettingsToggles(quest) {
+            const container = document.getElementById("quest-settings-toggles");
+            if (!container) return;
+            container.innerHTML = "";
+
+            if (quest.placeTileAtStart === undefined) quest.placeTileAtStart = true;
+            if (quest.enabled === undefined) quest.enabled = true;
+
+            const row = document.createElement("div");
+            row.style.cssText = "display: flex; gap: 20px; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 14px; flex-wrap: wrap;";
+
+            function makeToggle(iconClass, labelText, value, onChange) {
+                const label = document.createElement("label");
+                label.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-primary); cursor: pointer; user-select: none;";
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = !!value;
+                checkbox.style.cssText = "width: 16px; height: 16px; accent-color: var(--accent-gold); cursor: pointer;";
+                checkbox.addEventListener("change", () => {
+                    onChange(checkbox.checked);
+                    saveQuestsToStorage();
+                });
+
+                const icon = document.createElement("i");
+                icon.className = iconClass;
+
+                const textSpan = document.createElement("span");
+                textSpan.textContent = " " + labelText;
+
+                label.appendChild(checkbox);
+                label.appendChild(icon);
+                label.appendChild(textSpan);
+                return label;
+            }
+
+            const placeTileToggle = makeToggle(
+                "fa-solid fa-map-location-dot",
+                "Place Tile At Start",
+                quest.placeTileAtStart,
+                (val) => { quest.placeTileAtStart = val; }
+            );
+
+            const enabledToggle = makeToggle(
+                "fa-solid fa-power-off",
+                "Enabled",
+                quest.enabled,
+                (val) => { quest.enabled = val; }
+            );
+
+            row.appendChild(placeTileToggle);
+            row.appendChild(enabledToggle);
             container.appendChild(row);
         }
 
