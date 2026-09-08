@@ -1020,14 +1020,6 @@ function setupEventListeners() {
         newMapBtn.addEventListener("click", resetMapForm);
     }
 
-    if (deleteMapBtn) {
-        deleteMapBtn.addEventListener("click", () => {
-            if (state.selectedMapId) {
-                deleteMap(state.selectedMapId);
-            }
-        });
-    }
-
     if (exportMapsBtn) {
         exportMapsBtn.addEventListener("click", exportMapsJSON);
     }
