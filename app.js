@@ -71,6 +71,19 @@ class SeededRandom {
 }
 
 // App State
+const DEFAULT_QUESTS = [
+    { name: "Tower of Terror Quest", tileId: "Tower of terror", x: 5, y: 4 },
+    { name: "Dragons Nest Quest", tileId: "Dragons Nest", x: 5, y: 0 },
+    { name: "Ancient Temple Ruins Quest", tileId: "Ancient Temple Ruins", x: 5, y: 2 },
+    { name: "City of the Dead Quest", tileId: "City of the dead", x: 5, y: 8 },
+    { name: "Goblin Camp Quest", tileId: "Goblin Camp", x: 9, y: 1 },
+    { name: "Crypt of the undead Quest", tileId: "Crypt of the undead", x: 9, y: 7 },
+    { name: "Gladiator School Quest", tileId: "Gladiator School", x: 3, y: 7 },
+    { name: "Battle Arena Quest", tileId: "Battle Arena", x: 5, y: 5 },
+    { name: "Dragons Lair Quest", tileId: "Dragons Lair", x: 6, y: 4 },
+    { name: "Tower of Power Quest", tileId: "Tower of Power", x: 2, y: 1 }
+];
+
 const state = {
     cols: 15,
     rows: 10,
@@ -106,8 +119,22 @@ const state = {
     activeFilters: { size: null, players: null }, // Active filter state
     hiddenTiles: new Set(),                          // Tiles hidden from the paint brush palette
     showBrushPalette: true,                         // Toggle showing manual paint brush panel
-    quests: []                                      // Active quests configuration (each with name, tileId, x, y)
+    quests: JSON.parse(JSON.stringify(DEFAULT_QUESTS)), // Active quests configuration
+    cellHighlights: [],                             // 2D Array of boolean highlights per cell
+    showScrollbars: false,                          // Toggle window scrollbars in main map viewport
+    showQuests: true                                // Toggle quest tiles and highlights visibility
 };
+
+// Helpers for cell highlights
+function isCellHighlighted(c, r) {
+    return !!(state.cellHighlights && state.cellHighlights[c] && state.cellHighlights[c][r]);
+}
+
+function setCellHighlight(c, r, val) {
+    if (!state.cellHighlights) state.cellHighlights = [];
+    if (!state.cellHighlights[c]) state.cellHighlights[c] = [];
+    state.cellHighlights[c][r] = !!val;
+}
 
 // UI Elements
 const canvas = document.getElementById("map-canvas");
@@ -144,6 +171,154 @@ const resetModeBtn = document.getElementById("reset-mode-btn");
 const exportPngBtn = document.getElementById("export-png-btn");
 const exportSvgBtn = document.getElementById("export-svg-btn");
 const centerMapBtn = document.getElementById("center-map-btn");
+const centerMapHeaderBtn = document.getElementById("center-map-header-btn");
+const undoBtn = document.getElementById("undo-btn");
+const redoBtn = document.getElementById("redo-btn");
+const toggleScrollbarsBtn = document.getElementById("toggle-scrollbars-btn");
+const toggleScrollbarsText = document.getElementById("toggle-scrollbars-text");
+const canvasScrollContent = document.getElementById("canvas-scroll-content");
+const toggleQuestsBtn = document.getElementById("toggle-quests-btn");
+const toggleQuestsText = document.getElementById("toggle-quests-text");
+
+function toggleQuests() {
+    state.showQuests = !state.showQuests;
+    if (toggleQuestsBtn) {
+        toggleQuestsBtn.classList.toggle("active", state.showQuests);
+    }
+    if (toggleQuestsText) {
+        toggleQuestsText.textContent = state.showQuests ? "Quests" : "Quests OFF";
+    }
+    draw();
+}
+
+function getCenteredPanAndSizer() {
+    const wrapperW = canvasWrapper.clientWidth || 800;
+    const wrapperH = canvasWrapper.clientHeight || 600;
+    const { minC, maxC, minR, maxR } = getMapBounds();
+    
+    const activeCenterX = minC * DX + ((maxC - minC) * DX + HEX_WIDTH) / 2;
+    const activeCenterY = minR * DY + ((maxR - minR) * DY + (maxC > minC ? HEX_HEIGHT / 2 : 0) + HEX_HEIGHT) / 2;
+    
+    const panX_centered = wrapperW / 2 - activeCenterX * state.zoom;
+    const panY_centered = wrapperH / 2 - activeCenterY * state.zoom;
+    
+    const paddingX = wrapperW;
+    const paddingY = wrapperH;
+    
+    const sizerW = Math.max(wrapperW * 3, Math.round(activeCenterX * 2 * state.zoom + paddingX * 2));
+    const sizerH = Math.max(wrapperH * 3, Math.round(activeCenterY * 2 * state.zoom + paddingY * 2));
+    
+    const centerScrollX = (sizerW - wrapperW) / 2;
+    const centerScrollY = (sizerH - wrapperH) / 2;
+    
+    return { sizerW, sizerH, centerScrollX, centerScrollY, panX_centered, panY_centered };
+}
+
+function updateScrollSizer() {
+    if (!state.showScrollbars || !canvasScrollContent) return;
+    const { sizerW, sizerH } = getCenteredPanAndSizer();
+    canvasScrollContent.style.width = `${sizerW}px`;
+    canvasScrollContent.style.height = `${sizerH}px`;
+}
+
+function toggleScrollbars() {
+    state.showScrollbars = !state.showScrollbars;
+    if (toggleScrollbarsBtn) {
+        toggleScrollbarsBtn.classList.toggle("active", state.showScrollbars);
+    }
+    if (toggleScrollbarsText) {
+        toggleScrollbarsText.textContent = state.showScrollbars ? "Scrollbars ON" : "Scrollbars";
+    }
+    canvasWrapper.classList.toggle("show-scrollbars", state.showScrollbars);
+    
+    if (state.showScrollbars) {
+        updateScrollSizer();
+        const { centerScrollX, centerScrollY } = getCenteredPanAndSizer();
+        canvasWrapper.scrollLeft = centerScrollX;
+        canvasWrapper.scrollTop = centerScrollY;
+    } else {
+        canvasWrapper.scrollLeft = 0;
+        canvasWrapper.scrollTop = 0;
+    }
+    draw();
+}
+
+// History Stack for Undo/Redo
+let historyStack = [];
+let redoStack = [];
+const MAX_HISTORY_SIZE = 50;
+let isRestoringHistory = false;
+
+function getMapStateSnapshot() {
+    return {
+        cols: state.cols,
+        rows: state.rows,
+        mapData: state.mapData ? JSON.parse(JSON.stringify(state.mapData)) : [],
+        cellHighlights: state.cellHighlights ? JSON.parse(JSON.stringify(state.cellHighlights)) : [],
+        playerStartCells: state.playerStartCells ? JSON.parse(JSON.stringify(state.playerStartCells)) : [null, null, null, null],
+        quests: state.quests ? JSON.parse(JSON.stringify(state.quests)) : [],
+        mode: state.mode
+    };
+}
+
+function updateUndoRedoButtons() {
+    if (undoBtn) undoBtn.disabled = historyStack.length === 0;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+}
+
+function pushHistoryState() {
+    if (isRestoringHistory) return;
+    historyStack.push(getMapStateSnapshot());
+    if (historyStack.length > MAX_HISTORY_SIZE) {
+        historyStack.shift();
+    }
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+function applyMapStateSnapshot(snapshot) {
+    if (!snapshot) return;
+    isRestoringHistory = true;
+    
+    state.cols = snapshot.cols;
+    state.rows = snapshot.rows;
+    state.mapData = snapshot.mapData ? JSON.parse(JSON.stringify(snapshot.mapData)) : [];
+    state.cellHighlights = snapshot.cellHighlights ? JSON.parse(JSON.stringify(snapshot.cellHighlights)) : [];
+    state.playerStartCells = snapshot.playerStartCells ? JSON.parse(JSON.stringify(snapshot.playerStartCells)) : [null, null, null, null];
+    state.quests = snapshot.quests ? JSON.parse(JSON.stringify(snapshot.quests)) : [];
+    setMode(snapshot.mode || "manual");
+
+    if (colsSlider) colsSlider.value = state.cols;
+    if (rowsSlider) rowsSlider.value = state.rows;
+    if (colsVal) colsVal.value = state.cols;
+    if (rowsVal) rowsVal.value = state.rows;
+
+    updateTileCounts();
+    updateTerrainStats();
+    updatePlayerDropdowns();
+    draw();
+    autoSaveCurrentMap();
+    
+    isRestoringHistory = false;
+}
+
+function undo() {
+    if (historyStack.length === 0) return;
+    const current = getMapStateSnapshot();
+    redoStack.push(current);
+    const previous = historyStack.pop();
+    applyMapStateSnapshot(previous);
+    updateUndoRedoButtons();
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    const current = getMapStateSnapshot();
+    historyStack.push(current);
+    const next = redoStack.pop();
+    applyMapStateSnapshot(next);
+    updateUndoRedoButtons();
+}
 const exportJsonBtn = document.getElementById("export-json-btn");
 const importJsonBtn = document.getElementById("import-json-btn");
 const importJsonInput = document.getElementById("import-json-input");
@@ -273,7 +448,11 @@ async function init() {
     setupEventListeners();
     renderPalette();
     await loadTileImages();
-    generateProceduralMap();
+    if (state.maps && state.maps.length > 0) {
+        loadMapDetails(PRELOADED_WIZARDS_MAP.id);
+    } else {
+        generateProceduralMap();
+    }
     updatePlayerDropdowns();
     centerMap();
     updateCanvasCursor();
@@ -283,6 +462,9 @@ async function init() {
     updateBrushPaletteVisibility();
 
     draw();
+    historyStack = [];
+    redoStack = [];
+    updateUndoRedoButtons();
 }
 
 // Setup all event handlers
@@ -620,6 +802,52 @@ function setupEventListeners() {
         draw();
     });
 
+    if (centerMapHeaderBtn) {
+        centerMapHeaderBtn.addEventListener("click", () => {
+            centerMap();
+            draw();
+        });
+    }
+
+    if (toggleQuestsBtn) {
+        toggleQuestsBtn.addEventListener("click", toggleQuests);
+    }
+
+    if (toggleScrollbarsBtn) {
+        toggleScrollbarsBtn.addEventListener("click", toggleScrollbars);
+    }
+
+    canvasWrapper.addEventListener("scroll", () => {
+        if (!state.showScrollbars || !canvasScrollContent) return;
+        const { centerScrollX, centerScrollY, panX_centered, panY_centered } = getCenteredPanAndSizer();
+        state.panX = centerScrollX - canvasWrapper.scrollLeft + panX_centered;
+        state.panY = centerScrollY - canvasWrapper.scrollTop + panY_centered;
+        draw();
+    });
+
+    if (undoBtn) {
+        undoBtn.addEventListener("click", undo);
+    }
+    if (redoBtn) {
+        redoBtn.addEventListener("click", redo);
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
+        const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+        if (isCmdOrCtrl && (e.key === "z" || e.key === "Z")) {
+            if (e.shiftKey) {
+                redo();
+            } else {
+                undo();
+            }
+            e.preventDefault();
+        } else if (isCmdOrCtrl && (e.key === "y" || e.key === "Y")) {
+            redo();
+            e.preventDefault();
+        }
+    });
+
     // Painting UI
     clearCanvasBtn.addEventListener("click", () => {
         setMode("manual");
@@ -857,107 +1085,6 @@ function setupEventListeners() {
             renderPalette();
         });
     }
-}
-
-// Toggle brush palette visibility
-function updateBrushPaletteVisibility() {
-    if (!paletteContainer || !togglePaintBrushBtn) return;
-    const isVisible = state.showBrushPalette !== false;
-    if (isVisible) {
-        paletteContainer.style.display = "";
-        togglePaintBrushBtn.classList.add("active");
-        togglePaintBrushBtn.title = "Hide Paint Brush Panel";
-        const textEl = document.getElementById("toggle-brush-text");
-        if (textEl) textEl.textContent = "Paint Brush";
-    } else {
-        paletteContainer.style.display = "none";
-        togglePaintBrushBtn.classList.remove("active");
-        togglePaintBrushBtn.title = "Show Paint Brush Panel";
-        const textEl = document.getElementById("toggle-brush-text");
-        if (textEl) textEl.textContent = "Paint Brush (Off)";
-    }
-    if (typeof draw === "function") draw();
-}
-
-// Render available tiles to bottom palette
-function renderPalette() {
-    tilePalette.innerHTML = "";
-
-    // Update visible tile count badge
-    const visibleCount = TILE_MANIFEST.filter(t => !state.hiddenTiles.has(t.id)).length;
-    const tileCountBadge = document.getElementById("tile-count");
-    if (tileCountBadge) tileCountBadge.textContent = `(${visibleCount})`;
-    
-    // Add Eraser Tool at the beginning of the palette
-    const eraserItem = document.createElement("div");
-    eraserItem.className = "palette-item eraser-item";
-    eraserItem.dataset.id = "Eraser";
-    eraserItem.title = "Eraser (Delete Tile)";
-    
-    const eraserIcon = document.createElement("div");
-    eraserIcon.className = "palette-icon-wrapper";
-    eraserIcon.innerHTML = '<i class="fa-solid fa-eraser"></i>';
-    
-    const eraserLabel = document.createElement("span");
-    eraserLabel.className = "item-label";
-    eraserLabel.textContent = "Eraser";
-    
-    eraserItem.appendChild(eraserIcon);
-    eraserItem.appendChild(eraserLabel);
-    
-    if (state.selectedBrush === "Eraser") {
-        eraserItem.classList.add("active");
-    }
-    
-    eraserItem.addEventListener("click", () => {
-        document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
-        if (state.selectedBrush === "Eraser") {
-            state.selectedBrush = null;
-        } else {
-            state.selectedBrush = "Eraser";
-            eraserItem.classList.add("active");
-            setMode("manual"); // Switch to manual mode immediately
-        }
-        updateCanvasCursor();
-    });
-    
-    tilePalette.appendChild(eraserItem);
-    
-    TILE_MANIFEST.forEach(tile => {
-        // Skip tiles that are hidden
-        if (state.hiddenTiles.has(tile.id)) return;
-
-        const item = document.createElement("div");
-        item.className = "palette-item";
-        item.dataset.id = tile.id;
-        item.title = tile.label;
-        
-        // Show low-res thumbnail in palette regardless of high-res toggle for smooth loading
-        const img = document.createElement("img");
-        img.src = `game tiles/${tile.file}`;
-        img.alt = tile.label;
-        
-        const label = document.createElement("span");
-        label.className = "item-label";
-        label.textContent = tile.label;
-        
-        item.appendChild(img);
-        item.appendChild(label);
-        
-        item.addEventListener("click", () => {
-            document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
-            if (state.selectedBrush === tile.id) {
-                state.selectedBrush = null;
-            } else {
-                state.selectedBrush = tile.id;
-                item.classList.add("active");
-                setMode("manual"); // Switch to manual mode immediately
-            }
-            updateCanvasCursor();
-        });
-        
-        tilePalette.appendChild(item);
-    });
 
     // Reset Dimensions handler
     dimensionsResetBtn.addEventListener("click", () => {
@@ -1035,6 +1162,208 @@ function renderPalette() {
         
         draw();
     });
+}
+
+// Toggle brush palette visibility
+function updateBrushPaletteVisibility() {
+    if (!paletteContainer || !togglePaintBrushBtn) return;
+    const isVisible = state.showBrushPalette !== false;
+    if (isVisible) {
+        paletteContainer.style.display = "";
+        togglePaintBrushBtn.classList.add("active");
+        togglePaintBrushBtn.title = "Hide Paint Brush Panel";
+        const textEl = document.getElementById("toggle-brush-text");
+        if (textEl) textEl.textContent = "Paint Brush";
+    } else {
+        paletteContainer.style.display = "none";
+        togglePaintBrushBtn.classList.remove("active");
+        togglePaintBrushBtn.title = "Show Paint Brush Panel";
+        const textEl = document.getElementById("toggle-brush-text");
+        if (textEl) textEl.textContent = "Paint Brush (Off)";
+    }
+    if (typeof draw === "function") draw();
+}
+
+// Calculate count of each tile placed on current map
+function getTileCountsOnMap() {
+    const counts = {};
+    if (state.mapData) {
+        for (let c = 0; c < state.mapData.length; c++) {
+            if (!state.mapData[c]) continue;
+            for (let r = 0; r < state.mapData[c].length; r++) {
+                const tileId = state.mapData[c][r];
+                if (tileId) {
+                    counts[tileId] = (counts[tileId] || 0) + 1;
+                }
+            }
+        }
+    }
+    
+    let highlightCount = 0;
+    if (state.cellHighlights) {
+        for (let c = 0; c < state.cellHighlights.length; c++) {
+            if (!state.cellHighlights[c]) continue;
+            for (let r = 0; r < state.cellHighlights[c].length; r++) {
+                if (state.cellHighlights[c][r]) {
+                    highlightCount++;
+                }
+            }
+        }
+    }
+    counts["Highlight"] = highlightCount;
+    
+    return counts;
+}
+
+// Update tile count badges in the manual paint brush palette
+function updateTileCounts() {
+    if (!tilePalette) return;
+    const counts = getTileCountsOnMap();
+    const items = tilePalette.querySelectorAll(".palette-item[data-id]");
+    items.forEach(item => {
+        const id = item.dataset.id;
+        if (id === "Eraser") return;
+        const countBadge = item.querySelector(".item-count-badge");
+        if (!countBadge) return;
+        const count = counts[id] || 0;
+        countBadge.textContent = count;
+        countBadge.title = `${count} on map`;
+        if (count > 0) {
+            countBadge.classList.add("has-count");
+        } else {
+            countBadge.classList.remove("has-count");
+        }
+    });
+}
+
+// Render available tiles to bottom palette
+function renderPalette() {
+    tilePalette.innerHTML = "";
+
+    // Update visible tile count badge
+    const visibleCount = TILE_MANIFEST.filter(t => !state.hiddenTiles.has(t.id)).length;
+    const tileCountBadge = document.getElementById("tile-count");
+    if (tileCountBadge) tileCountBadge.textContent = `(${visibleCount})`;
+    
+    // Add Eraser Tool at the beginning of the palette
+    const eraserItem = document.createElement("div");
+    eraserItem.className = "palette-item eraser-item";
+    eraserItem.dataset.id = "Eraser";
+    eraserItem.title = "Eraser (Delete Tile)";
+    
+    const eraserIcon = document.createElement("div");
+    eraserIcon.className = "palette-icon-wrapper";
+    eraserIcon.innerHTML = '<i class="fa-solid fa-eraser"></i>';
+    
+    const eraserLabel = document.createElement("span");
+    eraserLabel.className = "item-label";
+    eraserLabel.textContent = "Eraser";
+    
+    eraserItem.appendChild(eraserIcon);
+    eraserItem.appendChild(eraserLabel);
+    
+    if (state.selectedBrush === "Eraser") {
+        eraserItem.classList.add("active");
+    }
+    
+    eraserItem.addEventListener("click", () => {
+        document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
+        if (state.selectedBrush === "Eraser") {
+            state.selectedBrush = null;
+        } else {
+            state.selectedBrush = "Eraser";
+            eraserItem.classList.add("active");
+            setMode("manual"); // Switch to manual mode immediately
+        }
+        updateCanvasCursor();
+        draw();
+    });
+    
+    tilePalette.appendChild(eraserItem);
+    
+    // Add Highlight Brush between Eraser and Grass
+    const highlightItem = document.createElement("div");
+    highlightItem.className = "palette-item highlight-item";
+    highlightItem.dataset.id = "Highlight";
+    highlightItem.title = "Highlight Brush (Mark Tile in Distinct Color)";
+    
+    const highlightCountBadge = document.createElement("span");
+    highlightCountBadge.className = "item-count-badge";
+    
+    const highlightIcon = document.createElement("div");
+    highlightIcon.className = "palette-icon-wrapper highlight-icon-wrapper";
+    highlightIcon.innerHTML = '<i class="fa-solid fa-highlighter"></i>';
+    
+    const highlightLabel = document.createElement("span");
+    highlightLabel.className = "item-label";
+    highlightLabel.textContent = "Highlight";
+    
+    highlightItem.appendChild(highlightCountBadge);
+    highlightItem.appendChild(highlightIcon);
+    highlightItem.appendChild(highlightLabel);
+    
+    if (state.selectedBrush === "Highlight") {
+        highlightItem.classList.add("active");
+    }
+    
+    highlightItem.addEventListener("click", () => {
+        document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
+        if (state.selectedBrush === "Highlight") {
+            state.selectedBrush = null;
+        } else {
+            state.selectedBrush = "Highlight";
+            highlightItem.classList.add("active");
+            setMode("manual"); // Switch to manual mode immediately
+        }
+        updateCanvasCursor();
+        draw();
+    });
+    
+    tilePalette.appendChild(highlightItem);
+    
+    TILE_MANIFEST.forEach(tile => {
+        // Skip tiles that are hidden
+        if (state.hiddenTiles.has(tile.id)) return;
+
+        const item = document.createElement("div");
+        item.className = "palette-item";
+        item.dataset.id = tile.id;
+        item.title = tile.label;
+        
+        // Count badge on top right of palette item
+        const countBadge = document.createElement("span");
+        countBadge.className = "item-count-badge";
+        
+        // Show low-res thumbnail in palette regardless of high-res toggle for smooth loading
+        const img = document.createElement("img");
+        img.src = `game tiles/${tile.file}`;
+        img.alt = tile.label;
+        
+        const label = document.createElement("span");
+        label.className = "item-label";
+        label.textContent = tile.label;
+        
+        item.appendChild(countBadge);
+        item.appendChild(img);
+        item.appendChild(label);
+        
+        item.addEventListener("click", () => {
+            document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
+            if (state.selectedBrush === tile.id) {
+                state.selectedBrush = null;
+            } else {
+                state.selectedBrush = tile.id;
+                item.classList.add("active");
+                setMode("manual"); // Switch to manual mode immediately
+            }
+            updateCanvasCursor();
+            draw();
+        });
+        
+        tilePalette.appendChild(item);
+    });
+
+    updateTileCounts();
 }
 
 // Load hidden tiles from localStorage
@@ -1158,6 +1487,7 @@ function setMode(mode) {
         modeBadge.className = "mode-badge manual-mode";
     }
     updateCanvasCursor();
+    draw();
 }
 
 // Get center coordinates of cell (c, r)
@@ -1168,20 +1498,23 @@ function getCellCenter(c, r) {
     return { x, y };
 }
 
-// Centering the map grid inside the viewport
+// Centering the map grid inside the viewport without altering current zoom
 function centerMap() {
     const wrapperRect = canvasWrapper.getBoundingClientRect();
     const { minC, maxC, minR, maxR } = getMapBounds();
     
-    state.zoom = 1.0;
-    zoomSlider.value = 100;
-    zoomVal.textContent = "100%";
-    
-    const activeCenterX = minC * DX + ((maxC - minC) * DX + HEX_WIDTH) / 2;
-    const activeCenterY = minR * DY + ((maxR - minR) * DY + (maxC > minC ? HEX_HEIGHT / 2 : 0) + HEX_HEIGHT) / 2;
+    const activeCenterX = (minC * DX + ((maxC - minC) * DX + HEX_WIDTH) / 2) * state.zoom;
+    const activeCenterY = (minR * DY + ((maxR - minR) * DY + (maxC > minC ? HEX_HEIGHT / 2 : 0) + HEX_HEIGHT) / 2) * state.zoom;
     
     state.panX = wrapperRect.width / 2 - activeCenterX;
     state.panY = wrapperRect.height / 2 - activeCenterY;
+
+    if (state.showScrollbars) {
+        updateScrollSizer();
+        const { centerScrollX, centerScrollY } = getCenteredPanAndSizer();
+        canvasWrapper.scrollLeft = centerScrollX;
+        canvasWrapper.scrollTop = centerScrollY;
+    }
 }
 
 // Set zoom scale and clamp limits
@@ -1194,6 +1527,7 @@ function setZoom(val) {
 
 // Procedural generation using cellular-smoothed random grid
 function generateProceduralMap() {
+    pushHistoryState();
     const rand = new SeededRandom(state.seed);
     
     // 1. Initialize random grid
@@ -1275,17 +1609,16 @@ function chooseTerrainByNoise(val) {
     }
 }
 
-// Apply configured quest tiles at their locations
+// Apply configured quest tiles at their locations and paint highlight overlays
 function enforceQuestTiles() {
-    if (!state.quests || state.quests.length === 0) return;
+    if (!state.quests || state.quests.length === 0) {
+        state.quests = JSON.parse(JSON.stringify(DEFAULT_QUESTS));
+    }
     state.quests.forEach(quest => {
         const c = quest.x;
         const r = quest.y;
         if (c >= 0 && c < state.cols && r >= 0 && r < state.rows) {
-            if (!state.mapData[c]) {
-                state.mapData[c] = [];
-            }
-            state.mapData[c][r] = quest.tileId;
+            setCellHighlight(c, r, true);
         }
     });
 }
@@ -1339,6 +1672,7 @@ function enforceStartTowers() {
 
 // Resize manual grid keeping existing painted tiles
 function resizeManualGrid() {
+    pushHistoryState();
     const newGrid = [];
     for (let c = 0; c < state.cols; c++) {
         newGrid[c] = [];
@@ -1359,7 +1693,9 @@ function resizeManualGrid() {
 
 // Fill entire map with Grass
 function clearToGrass() {
+    pushHistoryState();
     state.mapData = [];
+    state.cellHighlights = [];
     for (let c = 0; c < state.cols; c++) {
         state.mapData[c] = [];
         for (let r = 0; r < state.rows; r++) {
@@ -1373,7 +1709,9 @@ function clearToGrass() {
 
 // Clear entire map to empty space (null), keeping only start towers
 function clearCanvas() {
+    pushHistoryState();
     state.mapData = [];
+    state.cellHighlights = [];
     for (let c = 0; c < state.cols; c++) {
         state.mapData[c] = [];
         for (let r = 0; r < state.rows; r++) {
@@ -1388,6 +1726,8 @@ function clearCanvas() {
 // Draw the grid and tiles on Canvas
 function draw() {
     updateDimensionsDisplay();
+    updateTileCounts();
+    if (state.showScrollbars) updateScrollSizer();
     const wrapperRect = canvasWrapper.getBoundingClientRect();
     canvas.width = wrapperRect.width;
     canvas.height = wrapperRect.height;
@@ -1406,10 +1746,15 @@ function draw() {
         for (let r = minR; r <= maxR; r++) {
             const tileId = state.mapData[c]?.[r];
             const { x, y } = getCellCenter(c, r);
+            const quest = state.quests?.find(q => q.x === c && q.y === r);
+            let displayTileId = tileId;
+            if (state.showQuests && quest && quest.tileId) {
+                displayTileId = quest.tileId;
+            }
             
             // Draw tile image or flat color based on toggle
-            if (tileId) {
-                const img = state.images[tileId];
+            if (displayTileId) {
+                const img = state.images[displayTileId];
                 if (state.showTiles && img) {
                     ctx.drawImage(
                         img, 
@@ -1419,15 +1764,31 @@ function draw() {
                         HEX_HEIGHT
                     );
                 } else {
-                    drawHexagonFillOnCtx(ctx, x, y, getTerrainColor(tileId), 0.0);
+                    drawHexagonFillOnCtx(ctx, x, y, getTerrainColor(displayTileId), 0.0);
                 }
                 
                 // Draw inside border if enabled and the tile type has one
                 if (state.showBorders) {
-                    const borderColor = getTileBorderColor(tileId);
+                    const borderColor = getTileBorderColor(displayTileId);
                     if (borderColor) {
                         drawHexagonGridLine(x, y, borderColor, 3.0, 1.5);
                     }
+                }
+            }
+            
+            // Draw transparent bright purple highlight overlay if this cell is highlighted
+            if (isCellHighlighted(c, r) && (state.showQuests || !quest)) {
+                drawHexagonFilled(x, y, "rgba(192, 38, 211, 0.95)", "rgba(192, 38, 211, 0.32)", 3.0, 1.0);
+            }
+            
+            // Highlight matching tiles when a brush is selected
+            if (state.selectedBrush && state.selectedBrush !== "Eraser") {
+                if (state.selectedBrush === "Highlight") {
+                    if (isCellHighlighted(c, r)) {
+                        drawHexagonFilled(x, y, "rgba(239, 68, 68, 0.95)", "rgba(239, 68, 68, 0.3)", 3.0, 1.0);
+                    }
+                } else if (tileId === state.selectedBrush) {
+                    drawHexagonFilled(x, y, "rgba(239, 68, 68, 0.95)", "rgba(239, 68, 68, 0.3)", 3.0, 1.0);
                 }
             }
             
@@ -1681,6 +2042,14 @@ function getCellFromMouse(mx, my) {
 function paintCell(cell) {
     if (!cell || !state.selectedBrush) return;
     
+    if (state.selectedBrush === "Highlight") {
+        const targetState = state.highlightDragAction !== undefined ? state.highlightDragAction : !isCellHighlighted(cell.col, cell.row);
+        setCellHighlight(cell.col, cell.row, targetState);
+        draw();
+        autoSaveCurrentMap();
+        return;
+    }
+    
     // Protect starting wizard towers (if NOT manual tower mode)
     if (!state.manualTowers) {
         const midRow = Math.floor(state.rows / 2);
@@ -1715,6 +2084,9 @@ function paintCell(cell) {
     const placingTower = state.selectedBrush && state.selectedBrush.startsWith("Wizards Tower");
     
     state.mapData[cell.col][cell.row] = state.selectedBrush === "Eraser" ? null : state.selectedBrush;
+    if (state.selectedBrush === "Eraser") {
+        setCellHighlight(cell.col, cell.row, false);
+    }
     
     if (hadTower || placingTower || state.selectedBrush === "Eraser") {
         updatePlayerDropdowns();
@@ -1739,8 +2111,12 @@ function handleMouseDown(e) {
         // Left click
         if (state.selectedBrush) {
             // Active brush: start painting
+            pushHistoryState();
             state.isPainting = true;
             const cell = getCellFromMouse(mouseX, mouseY);
+            if (state.selectedBrush === "Highlight" && cell) {
+                state.highlightDragAction = !isCellHighlighted(cell.col, cell.row);
+            }
             paintCell(cell);
             mapTooltip.style.display = "none";
         } else {
@@ -1808,6 +2184,7 @@ function handleMouseMove(e) {
 function handleMouseUp(e) {
     state.isPanning = false;
     state.isPainting = false;
+    state.highlightDragAction = undefined;
 }
 
 function handleMouseLeave(e) {
@@ -1820,6 +2197,10 @@ function handleMouseLeave(e) {
 }
 
 function handleWheel(e) {
+    if (state.showScrollbars) {
+        return;
+    }
+    
     e.preventDefault();
     
     const rect = canvasWrapper.getBoundingClientRect();
@@ -2462,6 +2843,10 @@ function getTerrainColor(tileId) {
         if (level === 3) return "#a17f1a";
         return "#654d09"; // L4
     }
+
+    if (tileId.startsWith("Highlight")) {
+        return "#c026d3";
+    }
     
     return "#111424";
 }
@@ -2472,6 +2857,7 @@ function getTileBorderColor(tileId) {
     if (tileId.startsWith("Mountain")) return "#ff3333";   // red
     if (tileId.startsWith("Forrest")) return "#2ecc71";    // green
     if (tileId.startsWith("Plain")) return "#ffffff";      // white
+    if (tileId.startsWith("Highlight")) return "#c026d3";  // bright purple
     return null;
 }
 
@@ -2671,7 +3057,8 @@ function updateTerrainStats() {
         Forrest: 0,
         Swamp: 0,
         Mountain: 0,
-        Tower: 0
+        Tower: 0,
+        Highlight: 0
     };
 
     for (let c = 0; c < state.mapData.length; c++) {
@@ -2686,6 +3073,7 @@ function updateTerrainStats() {
             else if (tile.startsWith("Swamp")) counts.Swamp++;
             else if (tile.startsWith("Mountain")) counts.Mountain++;
             else if (tile.startsWith("Wizards Tower")) counts.Tower++;
+            else if (tile.startsWith("Highlight")) counts.Highlight++;
         }
     }
 
@@ -2699,7 +3087,10 @@ function updateTerrainStats() {
                 <div class="stats-bar-wrapper">
                     <div class="stats-bar ${colorClass}" style="width: ${pct}%"></div>
                 </div>
-                <span class="stats-pct">${pct}%</span>
+                <span class="stats-val">
+                    <strong class="stats-count">${count}</strong>
+                    <span class="stats-pct">(${pct}%)</span>
+                </span>
             </div>
         `;
     };
@@ -2711,6 +3102,7 @@ function updateTerrainStats() {
         ${createRowHTML("Swamp", "fa-solid fa-water", counts.Swamp, "bar-swamp")}
         ${createRowHTML("Mountain", "fa-solid fa-mountain", counts.Mountain, "bar-mountain")}
         ${createRowHTML("Tower", "fa-solid fa-chess-rook", counts.Tower, "bar-tower")}
+        ${counts.Highlight > 0 ? createRowHTML("Highlight", "fa-solid fa-highlighter", counts.Highlight, "bar-highlight") : ""}
     `;
 }
 
@@ -2859,6 +3251,128 @@ function initMapsDB() {
     });
 }
 
+const PRELOADED_WIZARDS_MAP = {
+    id: "preset_wizards_map_fp_vs_ms_2_player",
+    name: "Wizards Map Fp Vs Ms 2 Player",
+    cols: 11,
+    rows: 9,
+    seed: "12345",
+    startVertical: true,
+    mode: "manual",
+    fixedDimensions: true,
+    manualTowers: false,
+    showCenter: false,
+    maxCols: 30,
+    maxRows: 30,
+    playerCount: 2,
+    playerStartCells: [
+        { col: 0, row: 4 },
+        { col: 10, row: 4 },
+        null,
+        null
+    ],
+    mapData: [
+        ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L2", "Wizards Tower L1", "Plain L2", "Plain L2", "Plain L3", "Plain L4"],
+        ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4", "Plain L1"],
+        ["Forrest L1", "Tower of Power", "Forrest L2", "Forrest L2", "Plain L1", "Plain L2", "Plain L1", "Plain L4", "Plain L1"],
+        ["Forrest L2", "Forrest L1", "Forrest L1", "Forrest L2", "Plain L2", "Plain L1", "Grass", "Gladiator School", "Plain L1"],
+        ["Forrest L1", "Forrest L2", "Grass", "Forrest L3", "Forrest L2", "Plain L4", "Grass", "Grass", "Plain L1"],
+        ["Dragons Nest", "Mountain L1", "Ancient Temple Ruins", "Forrest L4", "Tower of terror", "Battle Arena", "Grass", "Plain L2", "City of the dead"],
+        ["Mountain L2", "Mountain L1", "Grass", "Mountain L1", "Dragons Lair", "Swamp L4", "Grass", "Grass", "Swamp L1"],
+        ["Mountain L2", "Mountain L1", "Grass", "Mountain L2", "Swamp L2", "Swamp L1", "Swamp L2", "Swamp L1", "Swamp L1"],
+        ["Mountain L1", "Mountain L4", "Mountain L2", "Mountain L2", "Mountain L1", "Swamp L2", "Swamp L1", "Swamp L4", "Swamp L1"],
+        ["Mountain L4", "Goblin Camp", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Crypt of the undead", "Swamp L1"],
+        ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L2", "Wizards Tower L1", "Swamp L2", "Swamp L2", "Swamp L3", "Swamp L4"]
+    ],
+    quests: [
+        { name: "Tower of Terror Quest", tileId: "Tower of terror", x: 5, y: 4 },
+        { name: "Dragons Nest Quest", tileId: "Dragons Nest", x: 5, y: 0 },
+        { name: "Ancient Temple Ruins Quest", tileId: "Ancient Temple Ruins", x: 5, y: 2 },
+        { name: "City of the Dead Quest", tileId: "City of the dead", x: 5, y: 8 },
+        { name: "Goblin Camp Quest", tileId: "Goblin Camp", x: 9, y: 1 },
+        { name: "Crypt of the undead Quest", tileId: "Crypt of the undead", x: 9, y: 7 },
+        { name: "Gladiator School Quest", tileId: "Gladiator School", x: 3, y: 7 },
+        { name: "Battle Arena Quest", tileId: "Battle Arena", x: 5, y: 5 },
+        { name: "Dragons Lair Quest", tileId: "Dragons Lair", x: 6, y: 4 },
+        { name: "Tower of Power Quest", tileId: "Tower of Power", x: 2, y: 1 }
+    ],
+    cellHighlights: [
+        [false, false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, true,  false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, true,  false],
+        [false, false, false, false, false, false, false, false, false],
+        [true,  false, true,  false, true,  true,  false, false, true ],
+        [false, false, false, false, true,  false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, true,  false, false, false, false, false, true,  false],
+        [false, false, false, false, false, false, false, false, false]
+    ]
+};
+
+const PRELOADED_WIZARDS_MAP_OLD = {
+    id: "preset_wizards_map_fp_vs_ms_2_player_old",
+    name: "Wizards Map Fp Vs Ms 2 PlayerOLD",
+    cols: 11,
+    rows: 9,
+    seed: "12345",
+    startVertical: true,
+    mode: "manual",
+    fixedDimensions: true,
+    manualTowers: false,
+    showCenter: false,
+    maxCols: 30,
+    maxRows: 30,
+    playerCount: 2,
+    playerStartCells: [
+        { col: 0, row: 4 },
+        { col: 10, row: 4 },
+        null,
+        null
+    ],
+    mapData: [
+        ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Wizards Tower L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4"],
+        ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4", "Plain L1"],
+        ["Forrest L1", "Tower of Power", "Forrest L2", "Forrest L2", "Grass", "Plain L2", "Grass", "Plain L4", "Plain L1"],
+        ["Forrest L1", "Forrest L1", "Grass", "Forrest L2", "Plain L2", "Grass", "Grass", "Gladiator School", "Plain L1"],
+        ["Forrest L1", "Forrest L1", "Grass", "Grass", "Forrest L2", "Plain L4", "Grass", "Grass", "Plain L1"],
+        ["Dragons Nest", "Grass", "Ancient Temple Ruins", "Forrest L4", "Tower of terror", "Battle Arena", "Grass", "Grass", "City of the dead"],
+        ["Mountain L1", "Mountain L1", "Grass", "Grass", "Dragons Lair", "Swamp L4", "Grass", "Grass", "Swamp L1"],
+        ["Mountain L1", "Mountain L1", "Grass", "Mountain L2", "Swamp L2", "Grass", "Grass", "Swamp L1", "Swamp L1"],
+        ["Mountain L1", "Mountain L4", "Grass", "Mountain L2", "Grass", "Swamp L2", "Grass", "Swamp L4", "Swamp L1"],
+        ["Mountain L4", "Goblin Camp", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Crypt of the undead", "Swamp L1"],
+        ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L1", "Wizards Tower L1", "Swamp L1", "Swamp L2", "Swamp L3", "Swamp L4"]
+    ],
+    quests: [
+        { name: "Tower of Terror Quest", tileId: "Tower of terror", x: 5, y: 4 },
+        { name: "Dragons Nest Quest", tileId: "Dragons Nest", x: 5, y: 0 },
+        { name: "Ancient Temple Ruins Quest", tileId: "Ancient Temple Ruins", x: 5, y: 2 },
+        { name: "City of the Dead Quest", tileId: "City of the dead", x: 5, y: 8 },
+        { name: "Goblin Camp Quest", tileId: "Goblin Camp", x: 9, y: 1 },
+        { name: "Crypt of the undead Quest", tileId: "Crypt of the undead", x: 9, y: 7 },
+        { name: "Gladiator School Quest", tileId: "Gladiator School", x: 3, y: 7 },
+        { name: "Battle Arena Quest", tileId: "Battle Arena", x: 5, y: 5 },
+        { name: "Dragons Lair Quest", tileId: "Dragons Lair", x: 6, y: 4 },
+        { name: "Tower of Power Quest", tileId: "Tower of Power", x: 2, y: 1 }
+    ],
+    cellHighlights: [
+        [false, false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, true,  false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, true,  false],
+        [false, false, false, false, false, false, false, false, false],
+        [true,  false, true,  false, true,  true,  false, false, true ],
+        [false, false, false, false, true,  false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false, false],
+        [false, true,  false, false, false, false, false, true,  false],
+        [false, false, false, false, false, false, false, false, false]
+    ]
+};
+
+const PRELOADED_MAPS = [PRELOADED_WIZARDS_MAP, PRELOADED_WIZARDS_MAP_OLD];
+
 function loadMapsFromDB() {
     return new Promise((resolve) => {
         if (!mapsDb) {
@@ -2871,22 +3385,30 @@ function loadMapsFromDB() {
             const request = store.get("saved_maps");
             
             request.onsuccess = (event) => {
-                if (event.target.result) {
-                    state.maps = event.target.result.maps || [];
-                } else {
-                    state.maps = [];
-                }
+                state.maps = (event.target.result && event.target.result.maps) ? event.target.result.maps : [];
+                
+                PRELOADED_MAPS.forEach(preset => {
+                    const existingIndex = state.maps.findIndex(m => m.name === preset.name || m.id === preset.id);
+                    if (existingIndex >= 0) {
+                        state.maps[existingIndex] = JSON.parse(JSON.stringify(preset));
+                    } else {
+                        state.maps.push(JSON.parse(JSON.stringify(preset)));
+                    }
+                });
+                
                 updateMapsListUI();
                 resolve();
             };
             
             request.onerror = () => {
-                state.maps = [];
+                state.maps = JSON.parse(JSON.stringify(PRELOADED_MAPS));
+                updateMapsListUI();
                 resolve();
             };
         } catch (e) {
             console.error("Failed to load maps from IndexedDB:", e);
-            state.maps = [];
+            state.maps = JSON.parse(JSON.stringify(PRELOADED_MAPS));
+            updateMapsListUI();
             resolve();
         }
     });
@@ -2985,6 +3507,7 @@ function autoSaveCurrentMap() {
                         playerCount: state.playerCount,
                         playerStartCells: JSON.parse(JSON.stringify(state.playerStartCells)),
                         mapData: JSON.parse(JSON.stringify(state.mapData)),
+                        cellHighlights: JSON.parse(JSON.stringify(state.cellHighlights || [])),
                         quests: JSON.parse(JSON.stringify(state.quests)),
                         lastModified: Date.now()
                     };
@@ -3134,6 +3657,7 @@ function loadMapDetails(id) {
     state.playerCount = map.playerCount !== undefined ? parseInt(map.playerCount) : 2;
     state.playerStartCells = map.playerStartCells !== undefined ? JSON.parse(JSON.stringify(map.playerStartCells)) : [null, null, null, null];
     state.mapData = JSON.parse(JSON.stringify(map.mapData));
+    state.cellHighlights = map.cellHighlights ? JSON.parse(JSON.stringify(map.cellHighlights)) : [];
     state.quests = map.quests !== undefined ? JSON.parse(JSON.stringify(map.quests)) : [];
     
     // Sync UI elements
@@ -3164,28 +3688,75 @@ function loadMapDetails(id) {
     updateMapsListUI();
 }
 
-function deleteMap(id) {
+function showConfirmModal(title, message, confirmBtnText = "Delete Map") {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("confirm-delete-modal");
+        const titleEl = document.getElementById("confirm-delete-title");
+        const msgEl = document.getElementById("confirm-delete-message");
+        const confirmBtn = document.getElementById("action-confirm-delete-btn");
+        const cancelBtn = document.getElementById("cancel-confirm-delete-btn");
+        const closeBtn = document.getElementById("close-confirm-delete-btn");
+
+        if (!modal) {
+            resolve(confirm(message));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (confirmBtn) confirmBtn.innerHTML = `<i class="fa-solid fa-trash-can"></i> ${confirmBtnText}`;
+
+        modal.style.display = "flex";
+
+        function cleanup(result) {
+            modal.style.display = "none";
+            if (confirmBtn) confirmBtn.removeEventListener("click", onConfirm);
+            if (cancelBtn) cancelBtn.removeEventListener("click", onCancel);
+            if (closeBtn) closeBtn.removeEventListener("click", onCancel);
+            modal.removeEventListener("click", onBackdrop);
+            document.removeEventListener("keydown", onKeyDown);
+            resolve(result);
+        }
+
+        function onConfirm() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+        function onBackdrop(e) { if (e.target === modal) cleanup(false); }
+        function onKeyDown(e) { if (e.key === "Escape") cleanup(false); }
+
+        if (confirmBtn) confirmBtn.addEventListener("click", onConfirm);
+        if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
+        if (closeBtn) closeBtn.addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKeyDown);
+    });
+}
+
+async function deleteMap(id) {
     const map = state.maps.find(m => m.id === id);
     if (!map) return;
     
-    if (confirm(`Are you sure you want to delete "${map.name || 'this map'}"?`)) {
-        state.maps = state.maps.filter(m => m.id !== id);
-        
-        if (state.selectedMapId === id) {
-            state.selectedMapId = null;
-            state.isNewSessionMap = true;
-            state.mapName = "";
-            if (mapNameInput) {
-                mapNameInput.value = "";
-                mapNameInput.placeholder = "Enter Map Name...";
-            }
+    const confirmed = await showConfirmModal(
+        "Delete Map?",
+        `Are you sure you want to delete "${map.name || 'this map'}"? This action cannot be undone.`,
+        "Delete Map"
+    );
+    if (!confirmed) return;
+
+    state.maps = state.maps.filter(m => m.id !== id);
+    
+    if (state.selectedMapId === id) {
+        state.selectedMapId = null;
+        state.isNewSessionMap = true;
+        state.mapName = "";
+        if (mapNameInput) {
+            mapNameInput.value = "";
+            mapNameInput.placeholder = "Enter Map Name...";
         }
-        
-        saveMapsToDB().then(() => {
-            updateMapsListUI();
-            showToast("Map deleted");
-        });
     }
+    
+    await saveMapsToDB();
+    updateMapsListUI();
+    showToast("Map deleted");
 }
 
 function resetStateAndInputs() {
@@ -3319,23 +3890,28 @@ function importMapsJSON(event) {
     reader.readAsText(file);
 }
 
-function clearAllMaps() {
+async function clearAllMaps() {
     if (state.maps.length === 0) return;
-    if (confirm("Are you sure you want to delete ALL saved maps? This action cannot be undone.")) {
-        state.maps = [];
-        state.selectedMapId = null;
-        state.isNewSessionMap = true;
-        state.mapName = "";
-        if (mapNameInput) {
-            mapNameInput.value = "";
-            mapNameInput.placeholder = "Enter Map Name...";
-        }
-        
-        saveMapsToDB().then(() => {
-            updateMapsListUI();
-            showToast("All maps deleted");
-        });
+    
+    const confirmed = await showConfirmModal(
+        "Delete All Maps?",
+        "Are you sure you want to delete ALL saved maps? This action cannot be undone.",
+        "Delete All Maps"
+    );
+    if (!confirmed) return;
+
+    state.maps = [];
+    state.selectedMapId = null;
+    state.isNewSessionMap = true;
+    state.mapName = "";
+    if (mapNameInput) {
+        mapNameInput.value = "";
+        mapNameInput.placeholder = "Enter Map Name...";
     }
+    
+    await saveMapsToDB();
+    updateMapsListUI();
+    showToast("All maps deleted");
 }
 
 function setupFilterListeners() {

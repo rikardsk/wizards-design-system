@@ -440,6 +440,15 @@ button:active {
     font-size: 0.75rem;
 }
 
+button:disabled,
+.secondary-btn:disabled,
+.primary-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
     font-size: 0.7rem;
@@ -483,8 +492,14 @@ button:active {
     margin-left: 12px;
 }
 
-.tool-status, .tool-tips {
+.tool-status, .tool-tips, .header-action-btns {
     flex-shrink: 0;
+}
+
+.header-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .tool-status {
@@ -583,18 +598,68 @@ button:active {
     transform-origin: 0 0;
 }
 
+.canvas-wrapper.show-scrollbars {
+    overflow: auto !important;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-width: thin;
+}
+
+.canvas-wrapper.show-scrollbars::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.canvas-wrapper.show-scrollbars::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.canvas-wrapper.show-scrollbars::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.canvas-wrapper.show-scrollbars::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-gold);
+    background-clip: content-box;
+}
+
+.canvas-wrapper.show-scrollbars::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+#canvas-scroll-content {
+    display: none;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.canvas-wrapper.show-scrollbars #canvas-scroll-content {
+    display: block;
+}
+
+.canvas-wrapper.show-scrollbars canvas {
+    position: sticky;
+    top: 0;
+    left: 0;
+}
+
 /* Floating Palette at Bottom */
 .palette-container {
-    min-height: 130px;
+    min-height: 110px;
     margin-top: 12px;
     margin-left: 332px;
     margin-right: 12px;
-    padding: 14px 20px;
+    padding: 10px 18px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     z-index: 5;
     flex-shrink: 0;
+    overflow: hidden;
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -607,7 +672,7 @@ button:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     overflow-x: auto;
     overflow-y: hidden;
     gap: 16px;
@@ -645,16 +710,17 @@ button:active {
     gap: 12px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 8px 4px 14px 4px;
+    padding: 8px 4px 6px 4px;
     height: auto;
-    min-height: 86px;
+    min-height: 72px;
+    align-items: flex-start;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 }
 
 /* Custom Scrollbar for Tile Palette */
 .tile-palette::-webkit-scrollbar {
-    height: 6px;
+    height: 5px;
 }
 .tile-palette::-webkit-scrollbar-track {
     background: transparent;
@@ -680,7 +746,33 @@ button:active {
 }
 
 .palette-item:hover {
-    transform: translateY(-4px) scale(1.05);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.item-count-badge {
+    position: absolute;
+    top: -5px;
+    right: 1px;
+    background: rgba(13, 17, 33, 0.85);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    min-width: 17px;
+    text-align: center;
+    line-height: 1.2;
+    z-index: 3;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.item-count-badge.has-count {
+    background: var(--primary-color);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 6px var(--primary-glow);
 }
 
 .palette-item img {
@@ -727,6 +819,25 @@ button:active {
     background: rgba(239, 68, 68, 0.28);
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
     color: #ff6b6b;
+}
+
+.palette-icon-wrapper.highlight-icon-wrapper {
+    background: rgba(192, 38, 211, 0.15);
+    border: 1px solid rgba(192, 38, 211, 0.35);
+    color: #c026d3;
+}
+
+.palette-item:hover .palette-icon-wrapper.highlight-icon-wrapper {
+    border-color: #c026d3;
+    background: rgba(192, 38, 211, 0.25);
+    box-shadow: 0 0 10px rgba(192, 38, 211, 0.4);
+}
+
+.palette-item.active .palette-icon-wrapper.highlight-icon-wrapper {
+    border-color: #e879f9;
+    background: rgba(192, 38, 211, 0.38);
+    box-shadow: 0 0 12px rgba(192, 38, 211, 0.6);
+    color: #e879f9;
 }
 
 .palette-item .item-label {
@@ -799,13 +910,25 @@ button:active {
     transition: width 0.3s ease;
 }
 
-.stats-pct {
+.stats-val {
     font-family: monospace;
-    font-weight: bold;
-    width: 32px;
-    text-align: right;
-    color: var(--text-main);
     font-size: 0.72rem;
+    text-align: right;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stats-count {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.stats-pct {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    margin-left: 2px;
 }
 
 /* Terrain stats colors */
@@ -815,6 +938,7 @@ button:active {
 .bar-swamp { background-color: #16a085; }
 .bar-mountain { background-color: #2b5c8f; }
 .bar-tower { background-color: #e2b747; }
+.bar-highlight { background-color: #c026d3; }
 
 /* CORS Warning Box */
 .warning-box {
@@ -980,6 +1104,33 @@ button:active {
     color: var(--text-muted);
     margin-bottom: 20px;
     line-height: 1.4;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.confirm-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin: 4px auto 14px auto;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.confirm-title {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
 }
 
 .modal-body .input-container {
