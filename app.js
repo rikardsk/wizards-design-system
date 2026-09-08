@@ -2167,7 +2167,7 @@ function handleMouseMove(e) {
                 mapTooltip.innerHTML = tooltipHtml;
                 mapTooltip.style.display = "block";
             } else {
-                coordinatesDisplay.textContent = "Hover a tile to see coordinates";
+                coordinatesDisplay.textContent = "";
                 mapTooltip.style.display = "none";
             }
             draw();
@@ -2191,7 +2191,7 @@ function handleMouseLeave(e) {
     state.isPanning = false;
     state.isPainting = false;
     state.hoveredCell = null;
-    coordinatesDisplay.textContent = "Hover a tile to see coordinates";
+    coordinatesDisplay.textContent = "";
     mapTooltip.style.display = "none";
     draw();
 }
