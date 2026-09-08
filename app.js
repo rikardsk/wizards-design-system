@@ -154,7 +154,6 @@ const zoomSlider = document.getElementById("zoom-slider");
 const zoomVal = document.getElementById("zoom-val");
 const modeBadge = document.getElementById("mode-badge");
 const dimensionsDisplay = document.getElementById("dimensions-display");
-const coordinatesDisplay = document.getElementById("coordinates-display");
 
 // Settings Modal Selectors
 const gridSettingsBtn = document.getElementById("grid-settings-btn");
@@ -2149,8 +2148,6 @@ function handleMouseMove(e) {
         if (JSON.stringify(cell) !== JSON.stringify(state.hoveredCell)) {
             state.hoveredCell = cell;
             if (cell) {
-                coordinatesDisplay.textContent = `HEX coordinates: [Col: ${cell.col}, Row: ${cell.row}]`;
-                
                 // Show floating tooltip
                 const tileId = state.mapData[cell.col]?.[cell.row];
                 let displayLabel = tileId || "Empty";
@@ -2168,7 +2165,6 @@ function handleMouseMove(e) {
                 mapTooltip.innerHTML = tooltipHtml;
                 mapTooltip.style.display = "block";
             } else {
-                coordinatesDisplay.textContent = "";
                 mapTooltip.style.display = "none";
             }
             draw();
@@ -2192,7 +2188,6 @@ function handleMouseLeave(e) {
     state.isPanning = false;
     state.isPainting = false;
     state.hoveredCell = null;
-    coordinatesDisplay.textContent = "";
     mapTooltip.style.display = "none";
     draw();
 }

@@ -528,11 +528,6 @@ button:disabled,
     color: var(--accent-gold);
     border: 1px solid rgba(226, 183, 71, 0.3);
 }
-
-.coordinates-display {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-family: monospace;
 }
 
 .dimensions-display {
