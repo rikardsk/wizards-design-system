@@ -476,20 +476,25 @@ button:disabled,
     height: 54px;
     padding: 0 20px;
     margin-left: 332px;
+    margin-right: 332px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     z-index: 5;
     margin-bottom: 12px;
     flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
     gap: 16px;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .viewport-header.sidebar-hidden {
     margin-left: 12px;
+}
+
+.viewport-header.right-sidebar-hidden {
+    margin-right: 12px;
 }
 
 .tool-status, .tool-tips, .header-action-btns {
@@ -572,12 +577,23 @@ button:disabled,
 /* Canvas Area Container */
 .canvas-wrapper {
     flex: 1;
+    margin-left: 332px;
+    margin-right: 332px;
     border-radius: 16px;
     background: radial-gradient(circle at center, rgba(16, 20, 39, 0.8) 0%, rgba(5, 6, 10, 0.9) 100%);
     border: 1px solid rgba(255, 255, 255, 0.04);
     position: relative;
     overflow: hidden;
     cursor: grab;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.canvas-wrapper.sidebar-hidden {
+    margin-left: 12px;
+}
+
+.canvas-wrapper.right-sidebar-hidden {
+    margin-right: 12px;
 }
 
 .canvas-wrapper:active {
@@ -660,7 +676,7 @@ button:disabled,
     min-height: 110px;
     margin-top: 12px;
     margin-left: 332px;
-    margin-right: 12px;
+    margin-right: 332px;
     padding: 10px 18px;
     display: flex;
     flex-direction: column;
@@ -668,11 +684,14 @@ button:disabled,
     z-index: 5;
     flex-shrink: 0;
     overflow: hidden;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .palette-container.sidebar-hidden {
     margin-left: 12px;
+}
+
+.palette-container.right-sidebar-hidden {
     margin-right: 12px;
 }
 

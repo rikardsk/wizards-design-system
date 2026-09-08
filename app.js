@@ -416,7 +416,7 @@ async function init() {
         mapNameInput.value = state.mapName;
     }
 
-    // Sync Map Manager collapse state from localStorage
+    // Sync Map Manager collapse state (defaults to open)
     const mapManagerCollapsed = localStorage.getItem("mapManagerCollapsed") === "true";
     if (mapManagerCollapsed) {
         if (mapManagerSidebar) mapManagerSidebar.classList.add("collapsed");
@@ -425,23 +425,37 @@ async function init() {
             const icon = mapManagerToggleBtn.querySelector("i");
             if (icon) icon.className = "fa-solid fa-chevron-left";
         }
+        if (viewportHeader) viewportHeader.classList.add("right-sidebar-hidden");
+        if (canvasWrapper) canvasWrapper.classList.add("right-sidebar-hidden");
+        if (paletteContainer) paletteContainer.classList.add("right-sidebar-hidden");
     } else {
+        if (mapManagerSidebar) mapManagerSidebar.classList.remove("collapsed");
         if (mapManagerToggleBtn) {
+            mapManagerToggleBtn.classList.remove("collapsed");
             const icon = mapManagerToggleBtn.querySelector("i");
             if (icon) icon.className = "fa-solid fa-chevron-right";
         }
+        if (viewportHeader) viewportHeader.classList.remove("right-sidebar-hidden");
+        if (canvasWrapper) canvasWrapper.classList.remove("right-sidebar-hidden");
+        if (paletteContainer) paletteContainer.classList.remove("right-sidebar-hidden");
     }
 
-    // Sync Left Sidebar collapse state from localStorage
+    // Sync Left Sidebar collapse state (defaults to open)
     const leftSidebarCollapsed = localStorage.getItem("leftSidebarCollapsed") === "true";
     if (leftSidebarCollapsed) {
         if (leftSidebar) leftSidebar.classList.add("collapsed");
         if (leftSidebarToggleBtn) leftSidebarToggleBtn.classList.add("collapsed");
         if (viewportHeader) viewportHeader.classList.add("sidebar-hidden");
+        if (canvasWrapper) canvasWrapper.classList.add("sidebar-hidden");
         if (paletteContainer) paletteContainer.classList.add("sidebar-hidden");
         const icon = leftSidebarToggleBtn?.querySelector("i");
         if (icon) icon.className = "fa-solid fa-chevron-right";
     } else {
+        if (leftSidebar) leftSidebar.classList.remove("collapsed");
+        if (leftSidebarToggleBtn) leftSidebarToggleBtn.classList.remove("collapsed");
+        if (viewportHeader) viewportHeader.classList.remove("sidebar-hidden");
+        if (canvasWrapper) canvasWrapper.classList.remove("sidebar-hidden");
+        if (paletteContainer) paletteContainer.classList.remove("sidebar-hidden");
         const icon = leftSidebarToggleBtn?.querySelector("i");
         if (icon) icon.className = "fa-solid fa-chevron-left";
     }
@@ -990,6 +1004,7 @@ function setupEventListeners() {
     
     // Handle window resizing
     window.addEventListener("resize", () => {
+        centerMap();
         draw();
     });
 
@@ -1003,6 +1018,14 @@ function setupEventListeners() {
 
     if (newMapBtn) {
         newMapBtn.addEventListener("click", resetMapForm);
+    }
+
+    if (deleteMapBtn) {
+        deleteMapBtn.addEventListener("click", () => {
+            if (state.selectedMapId) {
+                deleteMap(state.selectedMapId);
+            }
+        });
     }
 
     if (exportMapsBtn) {
@@ -1023,10 +1046,14 @@ function setupEventListeners() {
         clearMapsBtn.addEventListener("click", clearAllMaps);
     }
 
+    // Map Manager Sidebar Toggle (Right)
     if (mapManagerToggleBtn && mapManagerSidebar) {
         mapManagerToggleBtn.addEventListener("click", () => {
             const isCollapsed = mapManagerSidebar.classList.toggle("collapsed");
             mapManagerToggleBtn.classList.toggle("collapsed", isCollapsed);
+            if (viewportHeader) viewportHeader.classList.toggle("right-sidebar-hidden", isCollapsed);
+            if (canvasWrapper) canvasWrapper.classList.toggle("right-sidebar-hidden", isCollapsed);
+            if (paletteContainer) paletteContainer.classList.toggle("right-sidebar-hidden", isCollapsed);
             
             const icon = mapManagerToggleBtn.querySelector("i");
             if (icon) {
@@ -1038,6 +1065,7 @@ function setupEventListeners() {
             }
             
             localStorage.setItem("mapManagerCollapsed", isCollapsed ? "true" : "false");
+            setTimeout(centerMap, 305);
         });
     }
 
@@ -1047,6 +1075,7 @@ function setupEventListeners() {
             const isCollapsed = leftSidebar.classList.toggle("collapsed");
             leftSidebarToggleBtn.classList.toggle("collapsed", isCollapsed);
             if (viewportHeader) viewportHeader.classList.toggle("sidebar-hidden", isCollapsed);
+            if (canvasWrapper) canvasWrapper.classList.toggle("sidebar-hidden", isCollapsed);
             if (paletteContainer) paletteContainer.classList.toggle("sidebar-hidden", isCollapsed);
 
             const icon = leftSidebarToggleBtn.querySelector("i");
@@ -1055,6 +1084,7 @@ function setupEventListeners() {
             }
 
             localStorage.setItem("leftSidebarCollapsed", isCollapsed ? "true" : "false");
+            setTimeout(centerMap, 305);
         });
     }
 
