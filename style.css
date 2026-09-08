@@ -538,22 +538,35 @@ button:disabled,
     padding: 2px 6px;
     border-radius: 4px;
 }
-
-.tool-tips {
-    display: flex;
-    gap: 16px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
 }
 
-.tool-tips kbd {
-    background: rgba(255, 255, 255, 0.1);
+.manual-controls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.manual-control-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    font-size: 0.85rem;
     color: var(--text-main);
-    padding: 2px 6px;
+}
+
+.manual-control-item kbd {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--accent-gold);
+    padding: 3px 8px;
     border-radius: 4px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-family: inherit;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Canvas Area Container */

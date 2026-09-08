@@ -178,6 +178,10 @@ const toggleScrollbarsText = document.getElementById("toggle-scrollbars-text");
 const canvasScrollContent = document.getElementById("canvas-scroll-content");
 const toggleQuestsBtn = document.getElementById("toggle-quests-btn");
 const toggleQuestsText = document.getElementById("toggle-quests-text");
+const manualModalBtn = document.getElementById("manual-modal-btn");
+const manualModal = document.getElementById("manual-modal");
+const closeManualModalBtn = document.getElementById("close-manual-modal-btn");
+const closeManualModalFooterBtn = document.getElementById("close-manual-modal-footer-btn");
 
 function toggleQuests() {
     state.showQuests = !state.showQuests;
@@ -830,6 +834,22 @@ function setupEventListeners() {
     }
     if (redoBtn) {
         redoBtn.addEventListener("click", redo);
+    }
+
+    if (manualModalBtn && manualModal) {
+        manualModalBtn.addEventListener("click", () => {
+            manualModal.style.display = "flex";
+        });
+        const hideManualModal = () => {
+            manualModal.style.display = "none";
+        };
+        if (closeManualModalBtn) closeManualModalBtn.addEventListener("click", hideManualModal);
+        if (closeManualModalFooterBtn) closeManualModalFooterBtn.addEventListener("click", hideManualModal);
+        manualModal.addEventListener("click", (e) => {
+            if (e.target === manualModal) {
+                hideManualModal();
+            }
+        });
     }
 
     document.addEventListener("keydown", (e) => {
