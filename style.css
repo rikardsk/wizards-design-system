@@ -486,15 +486,6 @@ button:disabled,
     overflow-x: auto;
     overflow-y: hidden;
     gap: 16px;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.viewport-header.sidebar-hidden {
-    margin-left: 12px;
-}
-
-.viewport-header.right-sidebar-hidden {
-    margin-right: 12px;
 }
 
 .tool-status, .tool-tips, .header-action-btns {
@@ -585,15 +576,6 @@ button:disabled,
     position: relative;
     overflow: hidden;
     cursor: grab;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.canvas-wrapper.sidebar-hidden {
-    margin-left: 12px;
-}
-
-.canvas-wrapper.right-sidebar-hidden {
-    margin-right: 12px;
 }
 
 .canvas-wrapper:active {
@@ -684,15 +666,6 @@ button:disabled,
     z-index: 5;
     flex-shrink: 0;
     overflow: hidden;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.palette-container.sidebar-hidden {
-    margin-left: 12px;
-}
-
-.palette-container.right-sidebar-hidden {
-    margin-right: 12px;
 }
 
 .palette-header {
