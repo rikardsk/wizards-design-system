@@ -90,7 +90,7 @@ const state = {
     seed: "12345",
     showGrid: true,
     useHires: false,
-    zoom: 1.0,
+    zoom: 0.7,
     panX: 0,
     panY: 0,
     isPanning: false,
@@ -387,6 +387,7 @@ async function init() {
     state.showCenter = centerToggle.checked;
     state.playerCount = parseInt(playerCountSelect.value) || 2;
     state.playerStartCells = [null, null, null, null];
+    state.zoom = (parseInt(zoomSlider.value) / 100) || 0.7;
     
     // Set initial slider max properties
     colsSlider.max = state.maxCols;
