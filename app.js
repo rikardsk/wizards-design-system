@@ -939,22 +939,58 @@ function setupEventListeners() {
     });
 
     // Painting UI
-    clearCanvasBtn.addEventListener("click", () => {
-        setMode("manual");
-        clearCanvas();
-        draw();
+    clearCanvasBtn.addEventListener("click", async () => {
+        const confirmed = await showActionConfirmModal({
+            headerIcon: "fa-solid fa-eraser",
+            headerTitle: "Clear Canvas",
+            bodyIcon: "fa-solid fa-eraser",
+            iconVariant: "danger",
+            title: "Clear Entire Canvas?",
+            message: "Are you sure you want to clear all drawn tiles from the canvas? This will reset the map to empty space.",
+            confirmText: '<i class="fa-solid fa-eraser"></i> Clear Canvas',
+            confirmClass: "danger-btn"
+        });
+        if (confirmed) {
+            setMode("manual");
+            clearCanvas();
+            draw();
+        }
     });
 
-    clearMapBtn.addEventListener("click", () => {
-        setMode("manual");
-        clearToGrass();
-        draw();
+    clearMapBtn.addEventListener("click", async () => {
+        const confirmed = await showActionConfirmModal({
+            headerIcon: "fa-solid fa-trash-can",
+            headerTitle: "Clear to Grass",
+            bodyIcon: "fa-solid fa-seedling",
+            iconVariant: "green",
+            title: "Reset Canvas to Grass?",
+            message: "Are you sure you want to fill the canvas with Grass tiles? All existing painted tiles will be overwritten.",
+            confirmText: '<i class="fa-solid fa-seedling"></i> Clear to Grass',
+            confirmClass: "primary-btn"
+        });
+        if (confirmed) {
+            setMode("manual");
+            clearToGrass();
+            draw();
+        }
     });
     
-    resetModeBtn.addEventListener("click", () => {
-        setMode("auto");
-        generateProceduralMap();
-        draw();
+    resetModeBtn.addEventListener("click", async () => {
+        const confirmed = await showActionConfirmModal({
+            headerIcon: "fa-solid fa-wand-magic-sparkles",
+            headerTitle: "Auto Mode",
+            bodyIcon: "fa-solid fa-wand-magic-sparkles",
+            iconVariant: "gold",
+            title: "Switch to Auto Mode?",
+            message: "Are you sure you want to generate a new procedural map? Your current manual tile edits will be replaced.",
+            confirmText: '<i class="fa-solid fa-wand-magic-sparkles"></i> Switch to Auto Mode',
+            confirmClass: "primary-btn"
+        });
+        if (confirmed) {
+            setMode("auto");
+            generateProceduralMap();
+            draw();
+        }
     });
 
     // Exports
@@ -3933,23 +3969,44 @@ function loadMapDetails(id) {
     updateMapsListUI();
 }
 
-function showConfirmModal(title, message, confirmBtnText = "Delete Map") {
+function showActionConfirmModal({
+    headerIcon = "fa-solid fa-triangle-exclamation",
+    headerTitle = "Confirm Action",
+    bodyIcon = "fa-solid fa-triangle-exclamation",
+    iconVariant = "danger",
+    title = "Are you sure?",
+    message = "This action cannot be undone.",
+    confirmText = "Confirm",
+    confirmClass = "danger-btn"
+} = {}) {
     return new Promise((resolve) => {
-        const modal = document.getElementById("confirm-delete-modal");
-        const titleEl = document.getElementById("confirm-delete-title");
-        const msgEl = document.getElementById("confirm-delete-message");
-        const confirmBtn = document.getElementById("action-confirm-delete-btn");
-        const cancelBtn = document.getElementById("cancel-confirm-delete-btn");
-        const closeBtn = document.getElementById("close-confirm-delete-btn");
+        const modal = document.getElementById("confirm-action-modal");
+        const headerIconEl = document.getElementById("confirm-action-header-icon");
+        const headerTitleEl = document.getElementById("confirm-action-header-title");
+        const iconWrapperEl = document.getElementById("confirm-action-icon-wrapper");
+        const bodyIconEl = document.getElementById("confirm-action-body-icon");
+        const titleEl = document.getElementById("confirm-action-title");
+        const msgEl = document.getElementById("confirm-action-message");
+        const confirmBtn = document.getElementById("ok-confirm-action-btn");
+        const cancelBtn = document.getElementById("cancel-confirm-action-btn");
+        const closeBtn = document.getElementById("close-confirm-action-btn");
 
         if (!modal) {
             resolve(confirm(message));
             return;
         }
 
+        if (headerIconEl) headerIconEl.className = headerIcon;
+        if (headerTitleEl) headerTitleEl.textContent = headerTitle;
+        if (bodyIconEl) bodyIconEl.className = bodyIcon;
+        if (iconWrapperEl) iconWrapperEl.className = `confirm-icon-wrapper icon-${iconVariant}`;
         if (titleEl) titleEl.textContent = title;
         if (msgEl) msgEl.textContent = message;
-        if (confirmBtn) confirmBtn.innerHTML = `<i class="fa-solid fa-trash-can"></i> ${confirmBtnText}`;
+
+        if (confirmBtn) {
+            confirmBtn.className = confirmClass;
+            confirmBtn.innerHTML = confirmText;
+        }
 
         modal.style.display = "flex";
 
@@ -3973,6 +4030,19 @@ function showConfirmModal(title, message, confirmBtnText = "Delete Map") {
         if (closeBtn) closeBtn.addEventListener("click", onCancel);
         modal.addEventListener("click", onBackdrop);
         document.addEventListener("keydown", onKeyDown);
+    });
+}
+
+function showConfirmModal(title, message, confirmBtnText = "Delete Map") {
+    return showActionConfirmModal({
+        headerIcon: "fa-solid fa-triangle-exclamation",
+        headerTitle: title,
+        bodyIcon: "fa-solid fa-trash-can",
+        iconVariant: "danger",
+        title: title,
+        message: message,
+        confirmText: `<i class="fa-solid fa-trash-can"></i> ${confirmBtnText}`,
+        confirmClass: "danger-btn"
     });
 }
 
