@@ -125,6 +125,39 @@ const state = {
     showQuests: true                                // Toggle quest tiles and highlights visibility
 };
 
+const QUEST_FALLBACK_TERRAIN = {
+    "Tower of terror": "Forrest L3",
+    "Dragons Nest": "Plain L1",
+    "Ancient Temple Ruins": "Plain L2",
+    "City of the dead": "Plain L4",
+    "Goblin Camp": "Mountain L3",
+    "Crypt of the undead": "Swamp L3",
+    "Gladiator School": "Plain L2",
+    "Battle Arena": "Plain L3",
+    "Dragons Lair": "Mountain L1",
+    "Tower of Power": "Forrest L2"
+};
+
+function getEffectiveTileId(c, r) {
+    const tileId = state.mapData[c]?.[r];
+    const quest = state.quests?.find(q => q.x === c && q.y === r);
+    
+    if (state.showQuests && quest && quest.tileId) {
+        return quest.tileId;
+    }
+    
+    if (!state.showQuests) {
+        if (quest && QUEST_FALLBACK_TERRAIN[quest.tileId]) {
+            return QUEST_FALLBACK_TERRAIN[quest.tileId];
+        }
+        if (tileId && QUEST_FALLBACK_TERRAIN[tileId]) {
+            return QUEST_FALLBACK_TERRAIN[tileId];
+        }
+    }
+    
+    return tileId;
+}
+
 // Helpers for cell highlights
 function isCellHighlighted(c, r) {
     return !!(state.cellHighlights && state.cellHighlights[c] && state.cellHighlights[c][r]);
@@ -1770,10 +1803,7 @@ function draw() {
             const tileId = state.mapData[c]?.[r];
             const { x, y } = getCellCenter(c, r);
             const quest = state.quests?.find(q => q.x === c && q.y === r);
-            let displayTileId = tileId;
-            if (state.showQuests && quest && quest.tileId) {
-                displayTileId = quest.tileId;
-            }
+            const displayTileId = getEffectiveTileId(c, r);
             
             // Draw tile image or flat color based on toggle
             if (displayTileId) {
@@ -2172,15 +2202,15 @@ function handleMouseMove(e) {
             state.hoveredCell = cell;
             if (cell) {
                 // Show floating tooltip
-                const tileId = state.mapData[cell.col]?.[cell.row];
-                let displayLabel = tileId || "Empty";
+                const effectiveId = getEffectiveTileId(cell.col, cell.row);
+                let displayLabel = effectiveId || "Empty";
                 if (displayLabel.startsWith("Forrest")) {
                     displayLabel = displayLabel.replace("Forrest", "Forest");
                 }
                 
                 const quest = state.quests?.find(q => q.x === cell.col && q.y === cell.row);
                 let tooltipHtml = `<strong>${displayLabel}</strong>`;
-                if (quest) {
+                if (state.showQuests && quest) {
                     tooltipHtml = `<strong style="color: var(--accent-gold);">${quest.name}</strong><br><span style="font-size: 0.75rem; color: #fff;">(Tile: ${displayLabel})</span>`;
                 }
                 tooltipHtml += `<br><span style="color: var(--text-muted); font-size: 0.65rem;">Col: ${cell.col}, Row: ${cell.row}</span>`;
@@ -2328,9 +2358,15 @@ async function exportSVG() {
             const { x: absX, y: absY } = getCellCenter(c, r);
             const x = absX - originX;
             const y = absY - originY;
+
+            const quest = state.quests?.find(q => q.x === c && q.y === r);
+            let displayTileId = tileId;
+            if (state.showQuests && quest && quest.tileId) {
+                displayTileId = quest.tileId;
+            }
             
-            if (tileId) {
-                const imgHref = base64Images[tileId];
+            if (displayTileId) {
+                const imgHref = base64Images[displayTileId];
                 const xPos = x - HEX_WIDTH / 2;
                 const yPos = y - HEX_HEIGHT / 2;
                 
@@ -2347,12 +2383,12 @@ async function exportSVG() {
                         ${x - wt},${y + ht} 
                         ${x - wp},${y}
                     `.replace(/\s+/g, ' ').trim();
-                    svgContent += `    <polygon points="${points}" fill="${getTerrainColor(tileId)}" />\n`;
+                    svgContent += `    <polygon points="${points}" fill="${getTerrainColor(displayTileId)}" />\n`;
                 }
                 
                 // Draw inside border if enabled and the tile type has one
                 if (state.showBorders) {
-                    const borderColor = getTileBorderColor(tileId);
+                    const borderColor = getTileBorderColor(displayTileId);
                     if (borderColor) {
                         const { wt, wp, ht } = getHexDims(1.5);
                         const points = `
@@ -2366,6 +2402,20 @@ async function exportSVG() {
                         svgContent += `    <polygon points="${points}" fill="none" stroke="${borderColor}" stroke-width="3.0" />\n`;
                     }
                 }
+            }
+
+            // Draw quest highlight overlay if cell is highlighted
+            if (isCellHighlighted(c, r) && (state.showQuests || !quest)) {
+                const { wt, wp, ht } = getHexDims(1.0);
+                const points = `
+                    ${x - wt},${y - ht} 
+                    ${x + wt},${y - ht} 
+                    ${x + wp},${y} 
+                    ${x + wt},${y + ht} 
+                    ${x - wt},${y + ht} 
+                    ${x - wp},${y}
+                `.replace(/\s+/g, ' ').trim();
+                svgContent += `    <polygon points="${points}" fill="rgba(192, 38, 211, 0.32)" stroke="rgba(192, 38, 211, 0.95)" stroke-width="3.0" />\n`;
             }
         }
     }
@@ -2668,12 +2718,14 @@ function exportPNG() {
     for (let c = minC; c <= maxC; c++) {
         for (let r = minR; r <= maxR; r++) {
             const tileId = state.mapData[c]?.[r];
+            const displayTileId = getEffectiveTileId(c, r);
+            const quest = state.quests?.find(q => q.x === c && q.y === r);
             const { x: absX, y: absY } = getCellCenter(c, r);
             const x = absX - originX;
             const y = absY - originY;
             
-            if (tileId) {
-                const img = state.images[tileId];
+            if (displayTileId) {
+                const img = state.images[displayTileId];
                 // Draw image or flat color based on toggle
                 if (state.showTiles && img) {
                     tempCtx.drawImage(
@@ -2684,16 +2736,22 @@ function exportPNG() {
                         HEX_HEIGHT
                     );
                 } else {
-                    drawHexagonFillOnCtx(tempCtx, x, y, getTerrainColor(tileId), 0.0);
+                    drawHexagonFillOnCtx(tempCtx, x, y, getTerrainColor(displayTileId), 0.0);
                 }
                 
                 // Draw inside border if enabled and the tile type has one
                 if (state.showBorders) {
-                    const borderColor = getTileBorderColor(tileId);
+                    const borderColor = getTileBorderColor(displayTileId);
                     if (borderColor) {
                         drawHexagonGridLineOnCtx(tempCtx, x, y, borderColor, 3.0, 1.5);
                     }
                 }
+            }
+
+            // Draw quest highlight overlay if cell is highlighted
+            if (isCellHighlighted(c, r) && (state.showQuests || !quest)) {
+                drawHexagonFillOnCtx(tempCtx, x, y, "rgba(192, 38, 211, 0.32)", 1.0);
+                drawHexagonGridLineOnCtx(tempCtx, x, y, "rgba(192, 38, 211, 0.95)", 3.0, 1.0);
             }
             
             // Draw grid line
@@ -3293,14 +3351,14 @@ const PRELOADED_WIZARDS_MAP = {
     mapData: [
         ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L2", "Wizards Tower L1", "Plain L2", "Plain L2", "Plain L3", "Plain L4"],
         ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4", "Plain L1"],
-        ["Forrest L1", "Tower of Power", "Forrest L2", "Forrest L2", "Plain L1", "Plain L2", "Plain L1", "Plain L4", "Plain L1"],
-        ["Forrest L2", "Forrest L1", "Forrest L1", "Forrest L2", "Plain L2", "Plain L1", "Grass", "Gladiator School", "Plain L1"],
+        ["Forrest L1", "Forrest L2", "Forrest L2", "Forrest L2", "Plain L1", "Plain L2", "Plain L1", "Plain L4", "Plain L1"],
+        ["Forrest L2", "Forrest L1", "Forrest L1", "Forrest L2", "Plain L2", "Plain L1", "Grass", "Plain L2", "Plain L1"],
         ["Forrest L1", "Forrest L2", "Grass", "Forrest L3", "Forrest L2", "Plain L4", "Grass", "Grass", "Plain L1"],
-        ["Dragons Nest", "Mountain L1", "Ancient Temple Ruins", "Forrest L4", "Tower of terror", "Battle Arena", "Grass", "Plain L2", "City of the dead"],
-        ["Mountain L2", "Mountain L1", "Grass", "Mountain L1", "Dragons Lair", "Swamp L4", "Grass", "Grass", "Swamp L1"],
+        ["Plain L1", "Mountain L1", "Plain L2", "Forrest L4", "Forrest L3", "Plain L3", "Grass", "Plain L2", "Plain L4"],
+        ["Mountain L2", "Mountain L1", "Grass", "Mountain L1", "Mountain L1", "Swamp L4", "Grass", "Grass", "Swamp L1"],
         ["Mountain L2", "Mountain L1", "Grass", "Mountain L2", "Swamp L2", "Swamp L1", "Swamp L2", "Swamp L1", "Swamp L1"],
         ["Mountain L1", "Mountain L4", "Mountain L2", "Mountain L2", "Mountain L1", "Swamp L2", "Swamp L1", "Swamp L4", "Swamp L1"],
-        ["Mountain L4", "Goblin Camp", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Crypt of the undead", "Swamp L1"],
+        ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Swamp L3", "Swamp L1"],
         ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L2", "Wizards Tower L1", "Swamp L2", "Swamp L2", "Swamp L3", "Swamp L4"]
     ],
     quests: [
@@ -3353,14 +3411,14 @@ const PRELOADED_WIZARDS_MAP_OLD = {
     mapData: [
         ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Wizards Tower L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4"],
         ["Forrest L4", "Forrest L3", "Forrest L2", "Forrest L1", "Plain L1", "Plain L2", "Plain L3", "Plain L4", "Plain L1"],
-        ["Forrest L1", "Tower of Power", "Forrest L2", "Forrest L2", "Grass", "Plain L2", "Grass", "Plain L4", "Plain L1"],
-        ["Forrest L1", "Forrest L1", "Grass", "Forrest L2", "Plain L2", "Grass", "Grass", "Gladiator School", "Plain L1"],
+        ["Forrest L1", "Forrest L2", "Forrest L2", "Forrest L2", "Grass", "Plain L2", "Grass", "Plain L4", "Plain L1"],
+        ["Forrest L1", "Forrest L1", "Grass", "Forrest L2", "Plain L2", "Grass", "Grass", "Plain L2", "Plain L1"],
         ["Forrest L1", "Forrest L1", "Grass", "Grass", "Forrest L2", "Plain L4", "Grass", "Grass", "Plain L1"],
-        ["Dragons Nest", "Grass", "Ancient Temple Ruins", "Forrest L4", "Tower of terror", "Battle Arena", "Grass", "Grass", "City of the dead"],
-        ["Mountain L1", "Mountain L1", "Grass", "Grass", "Dragons Lair", "Swamp L4", "Grass", "Grass", "Swamp L1"],
+        ["Plain L1", "Grass", "Plain L2", "Forrest L4", "Forrest L3", "Plain L3", "Grass", "Grass", "Plain L4"],
+        ["Mountain L1", "Mountain L1", "Grass", "Grass", "Mountain L1", "Swamp L4", "Grass", "Grass", "Swamp L1"],
         ["Mountain L1", "Mountain L1", "Grass", "Mountain L2", "Swamp L2", "Grass", "Grass", "Swamp L1", "Swamp L1"],
         ["Mountain L1", "Mountain L4", "Grass", "Mountain L2", "Grass", "Swamp L2", "Grass", "Swamp L4", "Swamp L1"],
-        ["Mountain L4", "Goblin Camp", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Crypt of the undead", "Swamp L1"],
+        ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L1", "Swamp L1", "Swamp L2", "Swamp L3", "Swamp L3", "Swamp L1"],
         ["Mountain L4", "Mountain L3", "Mountain L2", "Mountain L1", "Wizards Tower L1", "Swamp L1", "Swamp L2", "Swamp L3", "Swamp L4"]
     ],
     quests: [
@@ -3406,6 +3464,15 @@ function loadMapsFromDB() {
             request.onsuccess = (event) => {
                 if (event.target.result && Array.isArray(event.target.result.maps)) {
                     state.maps = event.target.result.maps;
+                    const pIndex = state.maps.findIndex(m => m.id === PRELOADED_WIZARDS_MAP.id);
+                    if (pIndex !== -1) {
+                        state.maps[pIndex] = JSON.parse(JSON.stringify(PRELOADED_WIZARDS_MAP));
+                    }
+                    state.maps.forEach(map => {
+                        if (!map.quests || map.quests.length === 0) {
+                            map.quests = JSON.parse(JSON.stringify(DEFAULT_QUESTS));
+                        }
+                    });
                 } else {
                     state.maps = JSON.parse(JSON.stringify(PRELOADED_MAPS));
                     saveMapsToDB();
@@ -3672,7 +3739,8 @@ function loadMapDetails(id) {
     state.playerStartCells = map.playerStartCells !== undefined ? JSON.parse(JSON.stringify(map.playerStartCells)) : [null, null, null, null];
     state.mapData = JSON.parse(JSON.stringify(map.mapData));
     state.cellHighlights = map.cellHighlights ? JSON.parse(JSON.stringify(map.cellHighlights)) : [];
-    state.quests = map.quests !== undefined ? JSON.parse(JSON.stringify(map.quests)) : [];
+    state.quests = (map.quests && map.quests.length > 0) ? JSON.parse(JSON.stringify(map.quests)) : JSON.parse(JSON.stringify(DEFAULT_QUESTS));
+    enforceQuestTiles();
     
     // Sync UI elements
     colsSlider.max = state.maxCols;
