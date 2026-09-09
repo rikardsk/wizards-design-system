@@ -189,7 +189,7 @@ function toggleQuests() {
         toggleQuestsBtn.classList.toggle("active", state.showQuests);
     }
     if (toggleQuestsText) {
-        toggleQuestsText.textContent = state.showQuests ? "Quests" : "Quests OFF";
+        toggleQuestsText.textContent = "Quests";
     }
     draw();
 }
@@ -230,7 +230,7 @@ function toggleScrollbars() {
         toggleScrollbarsBtn.classList.toggle("active", state.showScrollbars);
     }
     if (toggleScrollbarsText) {
-        toggleScrollbarsText.textContent = state.showScrollbars ? "Scrollbars ON" : "Scrollbars";
+        toggleScrollbarsText.textContent = "Scrollbars";
     }
     canvasWrapper.classList.toggle("show-scrollbars", state.showScrollbars);
     
@@ -1202,7 +1202,7 @@ function updateBrushPaletteVisibility() {
         togglePaintBrushBtn.classList.remove("active");
         togglePaintBrushBtn.title = "Show Paint Brush Panel";
         const textEl = document.getElementById("toggle-brush-text");
-        if (textEl) textEl.textContent = "Paint Brush (Off)";
+        if (textEl) textEl.textContent = "Paint Brush";
     }
     if (typeof draw === "function") draw();
 }
