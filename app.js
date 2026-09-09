@@ -394,6 +394,22 @@ const tileVisibilityList = document.getElementById("tile-visibility-list");
 const tileVisShowAllBtn = document.getElementById("tile-vis-show-all");
 const tileVisHideAllBtn = document.getElementById("tile-vis-hide-all");
 
+// Tile Viewer Modal Elements
+const viewTileBtn = document.getElementById("view-tile-btn");
+const tileViewerModal = document.getElementById("tile-viewer-modal");
+const closeTileViewerBtn = document.getElementById("close-tile-viewer-btn");
+const tileViewerPrevBtn = document.getElementById("tile-viewer-prev-btn");
+const tileViewerNextBtn = document.getElementById("tile-viewer-next-btn");
+const tileViewerImg = document.getElementById("tile-viewer-img");
+const tileViewerName = document.getElementById("tile-viewer-name");
+const tileViewerId = document.getElementById("tile-viewer-id");
+const tileViewerFile = document.getElementById("tile-viewer-file");
+const tileViewerMapCount = document.getElementById("tile-viewer-map-count");
+const tileViewerCountBadge = document.getElementById("tile-viewer-count-badge");
+const tileViewerSelectBtn = document.getElementById("tile-viewer-select-btn");
+
+let currentViewerIndex = 0;
+
 // Settings Quest UI elements
 const addQuestBtn = document.getElementById("add-quest-btn");
 const questsListContainer = document.getElementById("quests-list");
@@ -891,6 +907,24 @@ function setupEventListeners() {
     document.addEventListener("keydown", (e) => {
         if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
         const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+        if (tileViewerModal && tileViewerModal.style.display === "flex") {
+            if (e.key === "ArrowLeft") {
+                currentViewerIndex--;
+                updateTileViewerModal();
+                e.preventDefault();
+                return;
+            } else if (e.key === "ArrowRight") {
+                currentViewerIndex++;
+                updateTileViewerModal();
+                e.preventDefault();
+                return;
+            } else if (e.key === "Escape") {
+                tileViewerModal.style.display = "none";
+                e.preventDefault();
+                return;
+            }
+        }
+        
         if (isCmdOrCtrl && (e.key === "z" || e.key === "Z")) {
             if (e.shiftKey) {
                 redo();
@@ -1139,6 +1173,62 @@ function setupEventListeners() {
             saveHiddenTiles();
             renderTileVisibilityList();
             renderPalette();
+        });
+    }
+
+    // Tile Viewer Modal Listeners
+    if (viewTileBtn) {
+        viewTileBtn.addEventListener("click", () => {
+            openTileViewerModal();
+        });
+    }
+
+    if (closeTileViewerBtn) {
+        closeTileViewerBtn.addEventListener("click", () => {
+            if (tileViewerModal) tileViewerModal.style.display = "none";
+        });
+    }
+
+    if (tileViewerModal) {
+        tileViewerModal.addEventListener("click", (e) => {
+            if (e.target === tileViewerModal) {
+                tileViewerModal.style.display = "none";
+            }
+        });
+    }
+
+    if (tileViewerPrevBtn) {
+        tileViewerPrevBtn.addEventListener("click", () => {
+            currentViewerIndex--;
+            updateTileViewerModal();
+        });
+    }
+
+    if (tileViewerNextBtn) {
+        tileViewerNextBtn.addEventListener("click", () => {
+            currentViewerIndex++;
+            updateTileViewerModal();
+        });
+    }
+
+    if (tileViewerSelectBtn) {
+        tileViewerSelectBtn.addEventListener("click", () => {
+            const tiles = getVisibleTiles();
+            const tile = tiles[currentViewerIndex];
+            if (tile) {
+                state.selectedBrush = tile.id;
+                document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("active"));
+                const targetItems = document.querySelectorAll(".palette-item");
+                targetItems.forEach(item => {
+                    if (item.dataset.id === tile.id) {
+                        item.classList.add("active");
+                    }
+                });
+                setMode("manual");
+                updateCanvasCursor();
+                draw();
+            }
+            if (tileViewerModal) tileViewerModal.style.display = "none";
         });
     }
 
@@ -1415,6 +1505,10 @@ function renderPalette() {
             updateCanvasCursor();
             draw();
         });
+
+        item.addEventListener("dblclick", () => {
+            openTileViewerModal(tile.id);
+        });
         
         tilePalette.appendChild(item);
     });
@@ -1481,6 +1575,75 @@ function renderTileVisibilityList() {
         row.appendChild(checkbox);
         tileVisibilityList.appendChild(row);
     });
+}
+
+// Get list of visible tiles in palette
+function getVisibleTiles() {
+    const list = TILE_MANIFEST.filter(t => !state.hiddenTiles.has(t.id));
+    return list.length > 0 ? list : TILE_MANIFEST;
+}
+
+// Update content inside Tile Viewer Modal
+function updateTileViewerModal() {
+    const modalImg = document.getElementById("tile-viewer-img");
+    const modalName = document.getElementById("tile-viewer-name");
+    const modalId = document.getElementById("tile-viewer-id");
+    const modalFile = document.getElementById("tile-viewer-file");
+    const modalMapCount = document.getElementById("tile-viewer-map-count");
+    const modalCountBadge = document.getElementById("tile-viewer-count-badge");
+
+    const tiles = getVisibleTiles();
+    if (tiles.length === 0) return;
+    
+    if (currentViewerIndex < 0) currentViewerIndex = tiles.length - 1;
+    if (currentViewerIndex >= tiles.length) currentViewerIndex = 0;
+    
+    const tile = tiles[currentViewerIndex];
+    if (!tile) return;
+    
+    const counts = getTileCountsOnMap();
+    const mapCount = counts[tile.id] || 0;
+    
+    if (modalName) modalName.textContent = tile.label;
+    if (modalId) modalId.textContent = tile.id;
+    if (modalFile) modalFile.textContent = tile.file;
+    if (modalMapCount) modalMapCount.textContent = mapCount;
+    
+    if (modalCountBadge) {
+        modalCountBadge.textContent = mapCount;
+        if (mapCount > 0) {
+            modalCountBadge.classList.add("has-count");
+        } else {
+            modalCountBadge.classList.remove("has-count");
+        }
+    }
+    
+    if (modalImg) {
+        const base64Src = getBase64Asset(tile.id, state.useHires);
+        if (base64Src) {
+            modalImg.src = base64Src;
+        } else if (state.images[tile.id]?.src) {
+            modalImg.src = state.images[tile.id].src;
+        } else {
+            const folder = state.useHires ? "game tiles large" : "game tiles";
+            modalImg.src = `${folder}/${tile.file}`;
+        }
+    }
+}
+
+// Open Tile Viewer Modal
+function openTileViewerModal(targetTileId = null) {
+    const modal = document.getElementById("tile-viewer-modal");
+    const tiles = getVisibleTiles();
+    const searchId = targetTileId || state.selectedBrush;
+    let idx = tiles.findIndex(t => t.id === searchId);
+    if (idx === -1) idx = 0;
+    
+    currentViewerIndex = idx;
+    updateTileViewerModal();
+    if (modal) {
+        modal.style.display = "flex";
+    }
 }
 
 // Helper to retrieve base64 bundled asset if it exists

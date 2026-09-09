@@ -281,6 +281,9 @@
                         <button id="manage-tiles-btn" class="secondary-btn btn-sm" title="Show/Hide Tiles in Palette">
                             <i class="fa-solid fa-filter"></i> Filter Tiles
                         </button>
+                        <button id="view-tile-btn" class="secondary-btn btn-sm" title="View Selected Tile Close Up" onclick="openTileViewerModal()">
+                            <i class="fa-solid fa-magnifying-glass"></i> View Tile
+                        </button>
                         <button id="clear-canvas-btn" class="danger-btn btn-sm" title="Clear Canvas to Empty Space">
                             <i class="fa-solid fa-eraser"></i> Clear Canvas
                         </button>
@@ -410,6 +413,47 @@
                 </div>
                 <div class="tile-visibility-list" id="tile-visibility-list">
                     <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tile Viewer Modal -->
+    <div id="tile-viewer-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass-panel tile-viewer-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-magnifying-glass"></i> <span id="tile-viewer-title">Tile Viewer</span></h2>
+                <button id="close-tile-viewer-btn" class="icon-btn close-btn">&times;</button>
+            </div>
+            <div class="modal-body tile-viewer-body">
+                <!-- Navigation Carousel Container -->
+                <div class="tile-viewer-nav-container">
+                    <button id="tile-viewer-prev-btn" class="secondary-btn icon-nav-btn" title="Previous Tile (Left Arrow)" style="width: 42px; height: 42px; border-radius: 50%; padding: 0; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    
+                    <div class="tile-viewer-image-wrapper">
+                        <img id="tile-viewer-img" src="" alt="Tile Image" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); transition: transform 0.2s ease;">
+                        <span id="tile-viewer-count-badge" class="item-count-badge" style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem; padding: 4px 8px; border-radius: 12px;" title="Count on current map">0</span>
+                    </div>
+                    
+                    <button id="tile-viewer-next-btn" class="secondary-btn icon-nav-btn" title="Next Tile (Right Arrow)" style="width: 42px; height: 42px; border-radius: 50%; padding: 0; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Tile Details -->
+                <div class="tile-viewer-details">
+                    <h3 id="tile-viewer-name">Tile Name</h3>
+                    <div class="tile-viewer-meta-row">
+                        <span>ID: <strong id="tile-viewer-id" style="color: var(--text-main); font-family: monospace;">Grass</strong></span>
+                        <span>File: <strong id="tile-viewer-file" style="color: var(--text-main); font-family: monospace;">Grass.png</strong></span>
+                        <span>On Map: <strong id="tile-viewer-map-count" style="color: var(--accent-gold);">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="tile-viewer-actions">
+                    <button id="tile-viewer-select-btn" class="primary-btn" style="flex: 1;"><i class="fa-solid fa-paint-brush"></i> Select for Painting</button>
                 </div>
             </div>
         </div>

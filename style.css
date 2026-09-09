@@ -1606,6 +1606,95 @@ button:disabled,
     opacity: 0.3;
 }
 
+/* Tile Viewer Modal Fixed Size & Layout */
+.tile-viewer-content {
+    width: 540px !important;
+    height: 520px !important;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.tile-viewer-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding-top: 10px;
+}
+
+.tile-viewer-nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 230px;
+    flex-shrink: 0;
+}
+
+.tile-viewer-image-wrapper {
+    position: relative;
+    width: 270px;
+    height: 230px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    border: 1px solid var(--panel-border);
+    padding: 14px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+
+.tile-viewer-details {
+    width: 100%;
+    height: 92px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+#tile-viewer-name {
+    font-size: 1.35rem;
+    color: var(--accent-gold);
+    margin: 0;
+    font-family: var(--font-heading);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.5px;
+}
+
+.tile-viewer-meta-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    gap: 12px;
+}
+
+.tile-viewer-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+
+
 /* Custom Scrollbars for Viewport Header and Palette Header */
 .viewport-header::-webkit-scrollbar,
 .palette-header::-webkit-scrollbar {
