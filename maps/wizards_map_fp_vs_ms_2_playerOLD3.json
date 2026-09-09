@@ -25,7 +25,7 @@
   "mapData": [
     [
       "Forrest L4",
-      "Forrest L1",
+      "Forrest L3",
       "Forrest L2",
       "Forrest L2",
       "Wizards Tower L1",
@@ -37,13 +37,13 @@
     [
       "Forrest L4",
       "Forrest L3",
-      "Forrest L1",
+      "Forrest L2",
       "Forrest L1",
       "Plain L1",
-      "Plain L1",
+      "Plain L2",
       "Plain L3",
       "Plain L4",
-      "Plain L2"
+      "Plain L1"
     ],
     [
       "Forrest L1",
@@ -53,8 +53,8 @@
       "Plain L1",
       "Plain L2",
       "Plain L1",
-      "Plain L2",
-      "Plain L2"
+      "Plain L4",
+      "Plain L1"
     ],
     [
       "Forrest L2",
@@ -97,24 +97,24 @@
       "Mountain L4",
       "Swamp L4",
       "Grass",
-      "Swamp L2",
+      "Grass",
       "Swamp L1"
     ],
     [
       "Mountain L2",
       "Mountain L1",
+      "Grass",
       "Mountain L2",
-      "Mountain L4",
       "Swamp L2",
       "Swamp L1",
       "Swamp L2",
-      "Swamp L2",
+      "Swamp L1",
       "Swamp L1"
     ],
     [
       "Mountain L1",
+      "Mountain L4",
       "Mountain L2",
-      "Mountain L3",
       "Mountain L2",
       "Mountain L1",
       "Swamp L2",
