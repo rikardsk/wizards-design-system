@@ -455,7 +455,8 @@ async function init() {
     renderPalette();
     await loadTileImages();
     if (state.maps && state.maps.length > 0) {
-        loadMapDetails(PRELOADED_WIZARDS_MAP.id);
+        const initialMap = state.maps.find(m => m.id === PRELOADED_WIZARDS_MAP.id) || state.maps[0];
+        loadMapDetails(initialMap.id);
     } else {
         generateProceduralMap();
     }
@@ -3403,17 +3404,12 @@ function loadMapsFromDB() {
             const request = store.get("saved_maps");
             
             request.onsuccess = (event) => {
-                state.maps = (event.target.result && event.target.result.maps) ? event.target.result.maps : [];
-                
-                PRELOADED_MAPS.forEach(preset => {
-                    const existingIndex = state.maps.findIndex(m => m.name === preset.name || m.id === preset.id);
-                    if (existingIndex >= 0) {
-                        state.maps[existingIndex] = JSON.parse(JSON.stringify(preset));
-                    } else {
-                        state.maps.push(JSON.parse(JSON.stringify(preset)));
-                    }
-                });
-                
+                if (event.target.result && Array.isArray(event.target.result.maps)) {
+                    state.maps = event.target.result.maps;
+                } else {
+                    state.maps = JSON.parse(JSON.stringify(PRELOADED_MAPS));
+                    saveMapsToDB();
+                }
                 updateMapsListUI();
                 resolve();
             };
